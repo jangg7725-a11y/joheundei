@@ -114,6 +114,10 @@ class GoonghapRequest(BaseModel):
     person_b: NativeChartRequest
     name_a: str | None = Field(default=None, description="첫 번째 사람 표시 이름")
     name_b: str | None = Field(default=None, description="두 번째 사람 표시 이름")
+    current_year: int | None = Field(
+        default=None, ge=1800, le=2100,
+        description="세운 궁합 기준 연도 (미입력 시 올해)",
+    )
 
 
 def _compute_native(chart: NativeChartRequest) -> tuple[Any, Any, str, str, dict[str, Any]]:
@@ -377,6 +381,7 @@ async def api_goonghap(req: GoonghapRequest) -> dict[str, Any]:
         yong_b = ys.suggest_useful_gods(counts_b, dm_b, pillars_b["month"]["zhi"], pillars=pillars_b)
         na = (req.name_a or "").strip() or "A"
         nb = (req.name_b or "").strip() or "B"
+        cy = req.current_year if req.current_year is not None else datetime.now().year
         pack = gh.analyze_goonghap_pair(
             raw_a=raw_a,
             raw_b=raw_b,
@@ -386,6 +391,9 @@ async def api_goonghap(req: GoonghapRequest) -> dict[str, Any]:
             yong_b=yong_b,
             label_a=na,
             label_b=nb,
+            gender_a=req.person_a.gender,
+            gender_b=req.person_b.gender,
+            current_year=cy,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e

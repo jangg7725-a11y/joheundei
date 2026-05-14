@@ -398,10 +398,39 @@ body {
   color: var(--text);
 }
 
-.pillar-cell .zhi-kr-nayin {
+.pillar-cell .zhi-kr {
   font-size: 0.72rem;
   color: var(--muted);
   margin-top: 0.15rem;
+}
+
+.pillar-cell .pillar-sibi {
+  display: inline-block;
+  margin-top: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.55rem;
+  border-radius: 20px;
+  cursor: default;
+}
+
+.pillar-cell .sibi-strong {
+  background: rgba(212, 175, 55, 0.22);
+  color: #f0c040;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.pillar-cell .sibi-mid {
+  background: rgba(160, 200, 160, 0.15);
+  color: #9ecf9e;
+  border: 1px solid rgba(160, 200, 160, 0.3);
+}
+
+.pillar-cell .sibi-weak {
+  background: rgba(180, 180, 180, 0.12);
+  color: var(--muted);
+  border: 1px solid rgba(180, 180, 180, 0.25);
 }
 
 .ohaeng-chart {
@@ -1913,4 +1942,130 @@ body.has-bottom-nav .footer {
 .gh-disclaimer {
   margin-top: 0.65rem;
   font-size: 0.74rem !important;
+}
+
+/* ── 궁합 보강 UI ──────────────────────────────────────────── */
+.gh-card {
+  background: var(--card-bg, #fff);
+  border: 1px solid rgba(0,0,0,.08);
+  border-radius: 12px;
+  padding: 1rem 1.1rem;
+  margin-bottom: .9rem;
+}
+.gh-note   { font-size: .87rem; line-height: 1.65; color: var(--text); margin: .3rem 0; }
+.gh-sub    { font-size: .78rem; color: #888; margin: .2rem 0; }
+.gh-couple-type { font-size: 1rem; font-weight: 700; }
+.gh-tag {
+  display: inline-block; font-size: .7rem; border-radius: 20px;
+  background: #f0e6ff; color: #7c3aed; padding: .1rem .45rem;
+  margin: .1rem .15rem; vertical-align: middle;
+}
+
+/* 원국 테이블 */
+.gh-pillar-table {
+  width: 100%; border-collapse: collapse; margin: .5rem 0;
+  font-size: .9rem; font-family: var(--han-font,"serif");
+}
+.gh-pillar-table th { font-size: .7rem; color: #888; font-weight: 500; text-align: center; padding: .2rem; }
+.gh-cell-gz        { text-align: center; font-size: 1.2rem; padding: .25rem .15rem; }
+.gh-chart-dm       { font-size: .8rem; color: #666; margin-top: .3rem; }
+
+/* VS 구분선 */
+.gh-vs-divider {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 700; color: #d97706;
+  padding: 0 .5rem; min-width: 2rem;
+}
+
+/* 점수 게이지 */
+.gh-scores-block h4 { margin-bottom: .6rem; }
+.gh-score-row {
+  display: grid; grid-template-columns: 5rem 1fr 5rem;
+  align-items: center; gap: .4rem; margin-bottom: .4rem;
+}
+.gh-score-lab { font-size: .8rem; color: #555; }
+.gh-gauge-track {
+  height: 8px; background: #e5e7eb; border-radius: 4px; overflow: hidden;
+}
+.gh-gauge-fill {
+  height: 100%; border-radius: 4px; transition: width .5s;
+  background: linear-gradient(90deg,#a78bfa,#7c3aed);
+}
+.gh-g-conf .gh-gauge-fill { background: linear-gradient(90deg,#fca5a5,#ef4444); }
+.gh-g-bond .gh-gauge-fill { background: linear-gradient(90deg,#f9a8d4,#ec4899); }
+.gh-g-econ .gh-gauge-fill { background: linear-gradient(90deg,#86efac,#22c55e); }
+.gh-g-pers .gh-gauge-fill { background: linear-gradient(90deg,#7dd3fc,#3b82f6); }
+.gh-g-over .gh-gauge-fill { background: linear-gradient(90deg,#fcd34d,#f59e0b); }
+.gh-stars { font-size: .85rem; color: #d97706; text-align: right; }
+
+/* 하트 이모지 / 결혼 뱃지 */
+.gh-heart-emoji  { font-size: 1.5rem; text-align: center; margin: .3rem 0; }
+.gh-marriage-badge {
+  display: inline-block; font-size: 1rem; font-weight: 700;
+  border: 2px solid #d97706; color: #d97706; border-radius: 8px;
+  padding: .2rem .7rem; margin-top: .3rem;
+}
+
+/* 세운 섹션 */
+.gh-sewoon-section h5 { font-size: .85rem; color: #555; margin: .6rem 0 .3rem; }
+.gh-sewoon-two {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .6rem; margin-bottom: .6rem;
+}
+.gh-sew-person { background: #f9f9f9; border-radius: 8px; padding: .5rem .7rem; }
+.gh-sew-couple { border-left: 3px solid #a78bfa; padding-left: .6rem; margin: .5rem 0; }
+.gh-half-summary p { font-size: .82rem; margin: .2rem 0; }
+.gh-issues p { font-size: .8rem; margin: .2rem 0; }
+
+/* 월별 달력 */
+.gh-month-grid {
+  display: grid; grid-template-columns: repeat(6,1fr); gap: .3rem; margin: .4rem 0;
+}
+.gh-mon-cell {
+  border-radius: 8px; padding: .35rem .2rem; text-align: center;
+  font-size: .72rem; cursor: default;
+}
+.gh-mon-gz    { display: block; font-family: var(--han-font,"serif"); font-size: .8rem; }
+.gh-mon-emoji { display: block; font-size: .9rem; }
+.gh-mon-num   { display: block; font-size: .65rem; color: #888; }
+.gh-mon-good  { background: #dcfce7; }
+.gh-mon-bad   { background: #fee2e2; }
+.gh-mon-norm  { background: #f3f4f6; }
+
+/* 총평 카드 */
+.gh-story-card {
+  border: 2px solid #d97706;
+  border-radius: 12px; padding: 1.1rem 1.2rem; margin-bottom: .9rem;
+  background: linear-gradient(135deg,#fffbeb,#fff);
+}
+.gh-story-card h4 { color: #d97706; margin-bottom: .6rem; }
+.gh-story-card p  { font-size: .88rem; line-height: 1.7; margin: .3rem 0; }
+
+/* 강점/과제 */
+.gh-strengths-block {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .8rem;
+}
+.gh-str-col h5 { font-size: .82rem; margin-bottom: .4rem; }
+.gh-str-col .meta-list li { font-size: .8rem; line-height: 1.6; }
+
+/* 핵심 조언 */
+.gh-advice-card {
+  display: flex; gap: .7rem; align-items: flex-start;
+  background: #eff6ff; border-radius: 10px;
+  padding: .8rem 1rem; margin-bottom: .9rem;
+}
+.gh-advice-icon { font-size: 1.4rem; flex-shrink: 0; }
+.gh-advice-text { font-size: .9rem; font-weight: 600; line-height: 1.6; color: #1d4ed8; }
+
+/* 오행 분포 */
+.gh-ohaeng-dist p { font-size: .84rem; font-family: var(--han-font,"serif"); }
+
+/* 세운 기준 연도 행 */
+.gh-year-row { margin: .7rem 0 .4rem; }
+
+/* 모바일 */
+@media (max-width: 600px) {
+  .gh-month-grid     { grid-template-columns: repeat(4,1fr); }
+  .gh-strengths-block{ grid-template-columns: 1fr; }
+  .gh-sewoon-two     { grid-template-columns: 1fr; }
+  .gh-score-row      { grid-template-columns: 4rem 1fr 4.5rem; }
 }

@@ -715,13 +715,20 @@
     const chart = el("div", "chart-pillars");
     PILLAR_KEYS.forEach((k) => {
       const p = pillars[k];
+      const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
+      const stage = sb.stage || "";
+      const stageMeaning = sb.meaning || "";
+      const stageClass = ["장생","관대","건록","제왕"].includes(stage) ? "sibi-strong"
+                       : ["병","사","묘","절"].includes(stage) ? "sibi-weak"
+                       : "sibi-mid";
       const cell = el("div", "pillar-cell");
       cell.innerHTML = `
         <div class="label-kr">${LABELS[k]}</div>
-        <div class="gan-han">${p.gan}</div>
+        <div class="gan-han han-inline">${p.gan}</div>
         <div class="gan-kr">${p.gan_kr || ""}</div>
-        <div class="zhi-han">${p.zhi}</div>
-        <div class="zhi-kr-nayin">${p.zhi_kr || ""}${p.nayin ? " · " + p.nayin : ""}</div>`;
+        <div class="zhi-han han-inline">${p.zhi}</div>
+        <div class="zhi-kr">${p.zhi_kr || ""}</div>
+        <div class="pillar-sibi ${stageClass}" title="${stageMeaning}">${stage}</div>`;
       chart.appendChild(cell);
     });
     sec1.appendChild(chart);
@@ -1709,81 +1716,274 @@
     };
   }
 
+  /* ── 궁합 원국 카드 ─────────────────────────────────────── */
   function renderGhPillarCard(sn) {
-    const kr = { year: "년주", month: "월주", day: "일주", hour: "시주" };
+    const KR = { year: "年", month: "月", day: "日", hour: "時" };
     const zh = sn.주 || {};
-    const rows = ["year", "month", "day", "hour"]
-      .map((k) => {
-        const p = zh[k] || {};
-        return `<div class="gh-pillar-cell"><span class="gh-pk">${kr[k]}</span><span class="han-inline gh-pgz">${escapeHtml(p.간지 || "")}</span></div>`;
-      })
-      .join("");
+    const ganRow = ["year","month","day","hour"].map(k => {
+      const p = zh[k] || {};
+      return `<td class="gh-cell-gz han-inline">${escapeHtml(p.간||"")}</td>`;
+    }).join("");
+    const zhiRow = ["year","month","day","hour"].map(k => {
+      const p = zh[k] || {};
+      return `<td class="gh-cell-gz han-inline">${escapeHtml(p.지||"")}</td>`;
+    }).join("");
+    const hdrRow = ["year","month","day","hour"].map(k =>
+      `<th>${KR[k]}</th>`
+    ).join("");
     return `
       <div class="gh-chart-card">
-        <h4 class="gh-chart-name">${escapeHtml(sn.표시_이름 || "")}</h4>
-        <p class="gh-chart-ec han-inline">${escapeHtml(sn.eight_char_string || "")}</p>
-        <p class="gh-chart-date">${escapeHtml(sn.양력 || "")} · ${escapeHtml(sn.음력 || "")}</p>
-        <div class="gh-pillar-grid">${rows}</div>
+        <h4 class="gh-chart-name">${escapeHtml(sn.표시_이름||"")}</h4>
+        <p class="gh-chart-ec han-inline">${escapeHtml(sn.eight_char_string||"")}</p>
+        <p class="gh-chart-date">${escapeHtml(sn.양력||"")} · ${escapeHtml(sn.음력||"")}</p>
+        <table class="gh-pillar-table">
+          <thead><tr>${hdrRow}</tr></thead>
+          <tbody>
+            <tr>${ganRow}</tr>
+            <tr>${zhiRow}</tr>
+          </tbody>
+        </table>
+        <p class="gh-chart-dm">일간 <strong class="han-inline">${escapeHtml(sn.일간||"")}</strong>
+          (${escapeHtml(sn.일간_한글||"")} · ${escapeHtml(sn.일간_오행||"")})</p>
       </div>`;
   }
 
+  /* ── 게이지 바 ───────────────────────────────────────────── */
+  function ghGaugeBar(pct, colorClass) {
+    return `<div class="gh-gauge-track"><div class="gh-gauge-fill ${colorClass||""}" style="width:${pct}%"></div></div>`;
+  }
+
+  /* ── 월별 궁합 달력 ─────────────────────────────────────── */
+  function renderGhMonthGrid(monthlyArr, labelA, labelB) {
+    if (!monthlyArr || !monthlyArr.length) return "";
+    const cells = monthlyArr.map(m => {
+      const emoji = m.이모지 || "⚪";
+      const gz = escapeHtml(m.월주간지 || `${m.절월}월`);
+      const cls = emoji==="💚" ? "gh-mon-good" : emoji==="🔴" ? "gh-mon-bad" : "gh-mon-norm";
+      return `<div class="gh-mon-cell ${cls}" title="${escapeHtml(m.핵심한마디||"")}">
+        <span class="gh-mon-gz">${gz}</span>
+        <span class="gh-mon-emoji">${emoji}</span>
+        <span class="gh-mon-num">${m.절월}절</span>
+      </div>`;
+    }).join("");
+    return `<div class="gh-month-grid">${cells}</div>`;
+  }
+
+  /* ── 전체 궁합 결과 렌더 ─────────────────────────────────── */
   function renderGoonghapResult(pack) {
     const mount = document.getElementById("goonghap-result");
     if (!mount) return;
-    const sc = pack["종합_점수"] || {};
-    const pct = sc["하트_게이지_퍼센트"] ?? 0;
-    const side = pack["원국_나란히"] || {};
-    const ilji = pack["기본_일지"] || {};
-    const ohx = pack["오행_궁합"] || {};
-    const ig = pack["일간_궁합"] || {};
-    const cg = pack["천간합"] || {};
-    const ysx = pack["용신_궁합"] || {};
 
-    const scoreRows = [
-      ["인연 강도", sc["인연_강도"]],
-      ["갈등 가능성", sc["갈등_가능성"]],
-      ["경제적 궁합", sc["경제적_궁합"]],
-      ["성격 궁합", sc["성격_궁합"]],
-      ["전체 궁합", sc["전체_궁합"]],
-    ]
-      .map(([lab, o]) => {
-        if (!o) return "";
-        return `<div class="gh-score-row"><span>${escapeHtml(lab)}</span><span class="gh-stars">${escapeHtml(o.문자 || "")}</span></div>`;
-      })
+    const sc   = pack["종합_점수"]    || {};
+    const side = pack["원국_나란히"]  || {};
+    const snA  = side.A || {};
+    const snB  = side.B || {};
+    const la   = escapeHtml(snA.표시_이름 || "A");
+    const lb   = escapeHtml(snB.표시_이름 || "B");
+
+    const ilji = pack["기본_일지"]        || {};
+    const allZ = pack["전체_지지_대조"]   || {};
+    const ohx  = pack["오행_궁합"]        || {};
+    const ig   = pack["일간_궁합"]        || {};
+    const sip  = pack["십신_궁합"]        || {};
+    const cg   = pack["천간합"]           || {};
+    const ysx  = pack["용신_궁합"]        || {};
+    const sewG = pack["세운_궁합"]        || {};
+    const cy   = sewG.연도 || new Date().getFullYear();
+
+    const pct        = sc["하트_게이지_퍼센트"] ?? 0;
+    const heartEmoji = sc["하트_이모지"]       || "❤️".repeat(Math.round(pct/20));
+    const overall    = sc["전체_궁합"]         || {};
+    const overallStar= overall.문자 || "";
+
+    /* ── 종합 점수 게이지 행 ── */
+    const scoreItems = [
+      ["인연 강도",   sc["인연_강도"],   "gh-g-bond"],
+      ["갈등 가능성", sc["갈등_가능성"], "gh-g-conf"],
+      ["경제 궁합",   sc["경제적_궁합"], "gh-g-econ"],
+      ["성격 궁합",   sc["성격_궁합"],   "gh-g-pers"],
+      ["전체 궁합",   sc["전체_궁합"],   "gh-g-over"],
+    ];
+    const scoreHTML = scoreItems.map(([lab, o, cls]) => {
+      if (!o) return "";
+      const barPct = (o.별점||0) * 20;
+      return `<div class="gh-score-row">
+        <span class="gh-score-lab">${lab}</span>
+        ${ghGaugeBar(barPct, cls)}
+        <span class="gh-stars">${escapeHtml(o.문자||"")}</span>
+      </div>`;
+    }).join("");
+
+    /* ── 세운 A/B ── */
+    const sewA = sewG[`${snA.표시_이름||"A"}_세운`] || sewG["A_세운"] || {};
+    const sewB = sewG[`${snB.표시_이름||"B"}_세운`] || sewG["B_세운"] || {};
+
+    /* ── 월별 궁합 ── */
+    const monthlyHTML = renderGhMonthGrid(sewG["월별_궁합"], la, lb);
+
+    /* ── 강점/과제 ── */
+    const strengths  = pack["강점_3가지"]    || [];
+    const challenges = pack["극복과제_3가지"]|| [];
+    const advice     = pack["핵심조언"]       || "";
+    const marriage   = pack["결혼적합도_뱃지"] || "";
+
+    const strHTML = strengths.map(s =>
+      `<li>✅ ${escapeHtml(s)}</li>`).join("");
+    const chalHTML = challenges.map(c =>
+      `<li>⚠️ ${escapeHtml(c)}</li>`).join("");
+
+    /* ── 용신 궁합 텍스트 ── */
+    const ysA = ysx["A가_느끼는_상대"] || {};
+    const ysB = ysx["B가_느끼는_상대"] || {};
+
+    /* ── 십신 ── */
+    const sipAB = Object.entries(sip)
+      .filter(([k]) => k.endsWith("_해설"))
+      .map(([, v]) => `<p class="gh-note">${escapeHtml(String(v))}</p>`)
       .join("");
 
     mount.hidden = false;
     mount.innerHTML = `
-      <div class="gh-heart-section">
-        <div class="gh-heart-visual" aria-hidden="true">
-          <span class="gh-heart-icon">♥</span>
-          <div class="gh-heart-track"><div class="gh-heart-fill" style="width:${pct}%"></div></div>
-          <span class="gh-heart-pct">${pct}%</span>
-        </div>
-        <p class="gh-heart-caption">전체 궁합 하트 게이지 (참고)</p>
-      </div>
-      <div class="gh-charts-row">
-        ${renderGhPillarCard(side.A || {})}
-        ${renderGhPillarCard(side.B || {})}
-      </div>
-      <div class="gh-scores-block">${scoreRows}</div>
-      <div class="gh-detail-block">
-        <h4>기본 궁합 (일지)</h4>
-        <p>${escapeHtml(ilji.커플_유형 || "")} — ${escapeHtml((ilji.관계_표기 || []).join(", ") || "—")}</p>
-        <p class="panel-note">${escapeHtml(ilji.해설 || "")}</p>
-        <h4>오행 궁합</h4>
-        <ul class="meta-list">${(ohx.요약_문장 || []).map((x) => `<li>${escapeHtml(x)}</li>`).join("")}</ul>
-        <h4>일간 궁합</h4>
-        <p>${escapeHtml(ig.유형 || "")}: ${escapeHtml(ig.해설 || "")}</p>
-        <h4>천간합</h4>
-        <p>${cg.성립 ? `${escapeHtml(cg.표기 || "")} · ${escapeHtml(cg.해설 || "")}` : "일간 천간합 해당 없음"}</p>
-        <h4>용신 궁합</h4>
-        <p>A 기준: ${escapeHtml(ysx["A가_느끼는_상대"]?.등급 || "")} — ${escapeHtml(ysx["A가_느끼는_상대"]?.해설 || "")}</p>
-        <p>B 기준: ${escapeHtml(ysx["B가_느끼는_상대"]?.등급 || "")} — ${escapeHtml(ysx["B가_느끼는_상대"]?.해설 || "")}</p>
-      </div>
-      <blockquote class="gh-summary-quote">${escapeHtml(pack["총평"] || "")}</blockquote>
-      <p class="panel-note gh-disclaimer">${escapeHtml(pack["참고"] || "")}</p>
+<!-- ①  하트 게이지 -->
+<div class="gh-heart-section">
+  <div class="gh-heart-visual">
+    <span class="gh-heart-icon">♥</span>
+    <div class="gh-heart-track"><div class="gh-heart-fill" style="width:${pct}%"></div></div>
+    <span class="gh-heart-pct">${pct}%</span>
+  </div>
+  <div class="gh-heart-emoji">${heartEmoji}</div>
+  <div class="gh-marriage-badge">${escapeHtml(marriage)}</div>
+</div>
+
+<!-- ②  두 사람 원국 나란히 -->
+<div class="gh-charts-row">
+  ${renderGhPillarCard(snA)}
+  <div class="gh-vs-divider">VS</div>
+  ${renderGhPillarCard(snB)}
+</div>
+
+<!-- ③  종합 점수 게이지 -->
+<div class="gh-scores-block">
+  <h4>궁합 점수</h4>
+  ${scoreHTML}
+</div>
+
+<!-- ④  일지 궁합 -->
+<div class="gh-detail-block gh-card">
+  <h4>💑 일지 궁합</h4>
+  <p><strong class="gh-couple-type">${escapeHtml(ilji.커플_유형||"")} ${(ilji.커플_태그||[]).map(t=>`<span class="gh-tag">${escapeHtml(t)}</span>`).join("")}</strong></p>
+  <p class="gh-note">${escapeHtml(ilji.스토리||"")}</p>
+  <p class="gh-sub">관계: ${escapeHtml((ilji.관계_표기||[]).join(" · ")||"—")}</p>
+</div>
+
+<!-- ⑤  8글자 지지 전체 대조 -->
+<div class="gh-detail-block gh-card">
+  <h4>🔗 전체 지지 대조 (8글자)</h4>
+  <p class="gh-note">${escapeHtml(allZ["인연_강도_판정"]||"")}</p>
+  <p class="gh-sub">합 ${allZ["합_개수"]||0}개 · 충 ${allZ["충_개수"]||0}개</p>
+  ${(allZ["합_목록"]||[]).map(r=>`<p class="gh-sub">💚 합: ${escapeHtml(r.A_궁)} ${escapeHtml(r.A_지)} ↔ ${escapeHtml(r.B_궁)} ${escapeHtml(r.B_지)}</p>`).join("")}
+  ${(allZ["충_목록"]||[]).map(r=>`<p class="gh-sub">🔴 충: ${escapeHtml(r.A_궁)} ${escapeHtml(r.A_지)} ↔ ${escapeHtml(r.B_궁)} ${escapeHtml(r.B_지)}</p>`).join("")}
+</div>
+
+<!-- ⑥  오행 궁합 -->
+<div class="gh-detail-block gh-card">
+  <h4>☯ 오행 궁합</h4>
+  <div class="gh-ohaeng-dist">
+    <p><strong>${la}</strong> ${escapeHtml(ohx[`${snA.표시_이름||"A"}_오행_분포`]||ohx["A_오행_분포"]||"")}</p>
+    <p><strong>${lb}</strong> ${escapeHtml(ohx[`${snB.표시_이름||"B"}_오행_분포`]||ohx["B_오행_분포"]||"")}</p>
+  </div>
+  <p class="gh-note">${escapeHtml(ohx.스토리||"")}</p>
+  <p class="gh-sub">오행 보완 점수: ${"★".repeat(ohx["오행_보완_점수"]||0)}${"☆".repeat(5-(ohx["오행_보완_점수"]||0))}</p>
+</div>
+
+<!-- ⑦  일간 궁합 -->
+<div class="gh-detail-block gh-card">
+  <h4>⚡ 일간 궁합 (${escapeHtml(ig.유형||"")})</h4>
+  <p class="gh-note">${escapeHtml(ig.연애_해석||ig.해설||"")}</p>
+  <p class="gh-note gh-sub">${escapeHtml(ig.결혼_해석||"")}</p>
+</div>
+
+<!-- ⑧  십신 궁합 -->
+<div class="gh-detail-block gh-card">
+  <h4>🔢 십신으로 보는 궁합</h4>
+  ${sipAB||`<p class="gh-note">${escapeHtml(Object.values(sip).find(v=>typeof v==="string")||"")}</p>`}
+</div>
+
+<!-- ⑨  천간합 -->
+<div class="gh-detail-block gh-card">
+  <h4>🌟 천간합</h4>
+  <p class="gh-note">${cg.성립
+    ? `<strong>${escapeHtml(cg.표기||"")}</strong> — ${escapeHtml(cg.해설||"")}`
+    : escapeHtml(cg.해설||"일간 천간합 해당 없음")}</p>
+</div>
+
+<!-- ⑩  용신 궁합 -->
+<div class="gh-detail-block gh-card">
+  <h4>🌿 용신 궁합</h4>
+  <p class="gh-note"><strong>${la} 기준</strong> ${escapeHtml(ysA.등급_한글||ysA.등급||"")} — ${escapeHtml(ysA.해설||"")}</p>
+  <p class="gh-note"><strong>${lb} 기준</strong> ${escapeHtml(ysB.등급_한글||ysB.등급||"")} — ${escapeHtml(ysB.해설||"")}</p>
+  <p class="gh-sub">${escapeHtml(ysx["종합_평가"]||"")}</p>
+</div>
+
+<!-- ⑪  세운 궁합 -->
+<div class="gh-detail-block gh-card gh-sewoon-section">
+  <h4>📅 ${cy}년 세운 궁합</h4>
+  <div class="gh-sewoon-two">
+    <div class="gh-sew-person">
+      <p><strong>${la}</strong> ${escapeHtml(sewA.운세등급||"")} ${escapeHtml(sewA.별점||"")}</p>
+      <p class="gh-note">${escapeHtml(sewA.세운_총평||"")}</p>
+    </div>
+    <div class="gh-sew-person">
+      <p><strong>${lb}</strong> ${escapeHtml(sewB.운세등급||"")} ${escapeHtml(sewB.별점||"")}</p>
+      <p class="gh-note">${escapeHtml(sewB.세운_총평||"")}</p>
+    </div>
+  </div>
+  <p class="gh-note gh-sew-couple">${escapeHtml(sewG["궁합_세운_분석"]||"")}</p>
+  <h5>월별 궁합 달력</h5>
+  ${monthlyHTML}
+  <div class="gh-half-summary">
+    <p>📈 ${escapeHtml(sewG["상반기_총평"]||"")}</p>
+    <p>📉 ${escapeHtml(sewG["하반기_총평"]||"")}</p>
+  </div>
+  <div class="gh-issues">
+    <p>💍 ${escapeHtml((sewG["올해_주요이슈"]||{})["결혼_동거_가능성"]||"")}</p>
+    <p>⚡ ${escapeHtml((sewG["올해_주요이슈"]||{})["갈등_주의"]||"")}</p>
+    <p>💚 함께 좋은 달: ${((sewG["올해_주요이슈"]||{})["함께_좋은_달_TOP3"]||[]).join(", ")||"—"}</p>
+    <p>🔴 함께 주의 달: ${((sewG["올해_주요이슈"]||{})["함께_주의할_달_TOP3"]||[]).join(", ")||"—"}</p>
+  </div>
+</div>
+
+<!-- ⑫  총평 카드 -->
+<div class="gh-story-card">
+  <h4>✨ 종합 총평</h4>
+  ${(pack["총평"]||"").split("\n").map(l=>`<p>${escapeHtml(l)}</p>`).join("")}
+</div>
+
+<!-- ⑬  강점 / 과제 / 조언 -->
+<div class="gh-strengths-block gh-card">
+  <div class="gh-str-col">
+    <h5>💪 이 커플의 강점</h5>
+    <ul class="meta-list">${strHTML||"<li>서로를 향한 노력이 가장 큰 강점입니다.</li>"}</ul>
+  </div>
+  <div class="gh-str-col">
+    <h5>🎯 극복 과제</h5>
+    <ul class="meta-list">${chalHTML||"<li>꾸준한 소통이 관계를 지킵니다.</li>"}</ul>
+  </div>
+</div>
+<div class="gh-advice-card">
+  <span class="gh-advice-icon">💡</span>
+  <p class="gh-advice-text">${escapeHtml(advice)}</p>
+</div>
+
+<p class="panel-note gh-disclaimer">${escapeHtml(pack["참고"]||"")}</p>
     `;
+
+    /* 커플 태그 — innerHTML 주입이라 다시 렌더 */
+    const typeEl = mount.querySelector(".gh-couple-type");
+    if (typeEl) {
+      typeEl.innerHTML = escapeHtml(ilji.커플_유형||"") + " " +
+        (ilji.커플_태그||[]).map(t=>`<span class="gh-tag">${escapeHtml(t)}</span>`).join("");
+    }
   }
 
   const ghForm = document.getElementById("goonghap-form");
@@ -1798,11 +1998,14 @@
       e.preventDefault();
       ghStatus.textContent = "궁합 계산 중…";
       ghStatus.classList.remove("error");
+      const cyEl = document.getElementById("gh-current-year");
+      const cyVal = cyEl && cyEl.value.trim() ? Number(cyEl.value) : undefined;
       const body = {
         person_a: readGhNative("a"),
         person_b: readGhNative("b"),
         name_a: (document.getElementById("gh-name-a").value || "").trim(),
         name_b: (document.getElementById("gh-name-b").value || "").trim(),
+        ...(cyVal ? { current_year: cyVal } : {}),
       };
       try {
         const res = await fetch("/api/goonghap", {

@@ -33,9 +33,10 @@ htmlcov/
 Thumbs.db
 desktop.ini
 
-# 임시 파일
-_api_results.json
-_check_story.py
+# 임시·개발 산출물 (_접두사 파일)
+_*.py
+_*.json
+_*.txt
 *.log
 
 # Render / 배포 환경 변수 (있을 경우)
