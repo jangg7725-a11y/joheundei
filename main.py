@@ -48,6 +48,7 @@ class NativeChartRequest(BaseModel):
     minute: int = Field(default=0, ge=0, le=59, description="생분")
     gender: str = Field(description="남/여 또는 male/female")
     lunar_leap: bool = Field(default=False, description="음력 윤달 여부")
+    ya_jasi: bool = Field(default=False, description="야자시(夜子時) 처리: 23시 출생을 다음 날 일주로 배속")
 
     @field_validator("calendar", mode="before")
     @classmethod
@@ -131,6 +132,7 @@ def _compute_native(chart: NativeChartRequest) -> tuple[Any, Any, str, str, dict
         minute=chart.minute,
         lunar_leap=chart.lunar_leap,
         gender=chart.gender,
+        ya_jasi=chart.ya_jasi,
     )
     raw = sc.compute_saju(birth)
     ec = raw["_eight_char"]
@@ -151,6 +153,7 @@ class SajuRequest(BaseModel):
     minute: int = Field(default=0, ge=0, le=59, description="분")
     gender: str = Field(description="남/여 또는 male/female")
     lunar_leap: bool = Field(default=False, description="음력 윤달 여부")
+    ya_jasi: bool = Field(default=False, description="야자시(夜子時) 처리: 23시 출생을 다음 날 일주로 배속")
     sewoon_center_year: int | None = Field(default=None, ge=1800, le=2100, description="세운 기준 연도")
     wolwoon_center_year: int | None = Field(
         default=None,
@@ -253,6 +256,7 @@ def _run_saju(req: SajuRequest) -> dict[str, Any]:
         minute=req.minute,
         gender=req.gender,
         lunar_leap=req.lunar_leap,
+        ya_jasi=req.ya_jasi,
         sewoon_center_year=req.sewoon_center_year,
         wolwoon_center_year=req.wolwoon_center_year,
         partner_day_pillar=req.partner_day_pillar,

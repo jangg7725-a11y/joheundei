@@ -448,6 +448,7 @@ def analyze_sinsal(
         )
 
     # 공망 — 일주·년주 순각
+    # 충공(沖空): 대운·세운이 공망 지지를 충(沖)하면 오히려 공망이 깨져 발동됨 — UI에 안내
     for label_key, pk in (("일주", "day"), ("년주", "year")):
         pillar = pillars[pk]["pillar"]
         k1, k2 = _xunkong_for_pillar(pillar)
@@ -459,8 +460,12 @@ def analyze_sinsal(
                     "공망(空亡)",
                     "흉",
                     f"{k1}{k2}",
-                    f"{label_key} 순공망 시 → {_format_where(hit_labels)}",
-                    "허무·실속 부족·인연 공허를 나타내 재물·인연에서 헛수고를 줄여야 합니다.",
+                    f"{label_key} 기준 공망: {k1}{k2} → 원국 {_format_where(hit_labels)} 해당",
+                    (
+                        "공망한 자리는 허무·실속 부족·인연 공허로 읽습니다. "
+                        "단, 대운·세운에서 공망 지지를 충(沖)하면 충공(沖空)이 일어나 "
+                        "오히려 잠재 에너지가 활성화될 수 있으니 그 시기에 주목하세요."
+                    ),
                 )
             )
 

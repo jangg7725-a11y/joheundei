@@ -15,6 +15,39 @@
     hour: "時柱 · 시주",
   };
 
+  /* ── 오행 색상 코딩 ── */
+  const STEM_OH = {
+    甲:"목",乙:"목",丙:"화",丁:"화",戊:"토",己:"토",庚:"금",辛:"금",壬:"수",癸:"수"
+  };
+  const BRANCH_OH = {
+    子:"수",丑:"토",寅:"목",卯:"목",辰:"토",巳:"화",午:"화",未:"토",申:"금",酉:"금",戌:"토",亥:"수"
+  };
+  function ohClass(char) {
+    const e = STEM_OH[char] || BRANCH_OH[char] || "";
+    return e ? "oh-" + e : "";
+  }
+  /* 한자 텍스트 노드에 오행 색 span 씌우기 */
+  function coloredHan(char) {
+    const cls = ohClass(char);
+    return cls ? `<span class="han-inline ${cls}">${escapeHtml(char)}</span>`
+               : `<span class="han-inline">${escapeHtml(char)}</span>`;
+  }
+
+  /* ── 십신 + 용신 연계 CSS 클래스 ── */
+  function sipYongClass(sipsinName, yong) {
+    if (!yong || !sipsinName) return "sip-neutral";
+    const yongE  = yong["용신_오행"] || "";
+    const heeArr = yong["희신"] || [];
+    const giArr  = yong["기신"] || [];
+    const sipElem = (sipsinName.match(/목|화|토|금|수/) || [""])[0]; // crude check
+    // 십신명에서 오행을 바로 추출하기보다 sipsin_stems 에 stem_element 포함 여부 확인
+    if (!sipElem) return "sip-neutral";
+    if (sipElem === yongE) return "sip-yong";
+    if (heeArr.includes(sipElem)) return "sip-hee";
+    if (giArr.includes(sipElem)) return "sip-gi";
+    return "sip-neutral";
+  }
+
   const SK = "⭐ 핵심 한줄 요약";
   const EV = "📌 근거";
   const WR = "⚠️ 주의사항";
@@ -557,13 +590,16 @@
       const yrs = Number.isFinite(sy) && Number.isFinite(ey) ? Math.max(1, ey - sy + 1) : 10;
       const pct = (100 * yrs) / spanYears;
       const score = daewoonToneScore(yong, c.ganzhi);
+      const isCurDw = Number.isFinite(sy) && Number.isFinite(ey) && cy >= sy && cy <= ey;
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "dhw-segment";
+      btn.className = "dhw-segment" + (isCurDw ? " dhw-segment--current" : "");
       btn.style.width = `${pct}%`;
       btn.style.background = daewoonSegmentGradient(score);
-      btn.title = `${c.ganzhi} · ${c.start_age}–${c.end_age}세 · ${c.start_year}–${c.end_year}년`;
-      btn.innerHTML = `<span class="dhw-segment-inner han-inline">${escapeHtml(c.ganzhi)}</span>`;
+      btn.title = `${c.ganzhi} · ${c.start_age}–${c.end_age}세 · ${c.start_year}–${c.end_year}년${isCurDw ? " ◀ 현재 대운" : ""}`;
+      const ganC = ohClass((c.ganzhi||"")[0]);
+      const zhiC = ohClass((c.ganzhi||"")[1]);
+      btn.innerHTML = `<span class="dhw-segment-inner"><span class="han-inline ${ganC}">${escapeHtml((c.ganzhi||"")[0]||"")}</span><span class="han-inline ${zhiC}">${escapeHtml((c.ganzhi||"")[1]||"")}</span></span>`;
       track.appendChild(btn);
     });
     chart.appendChild(track);
@@ -721,14 +757,16 @@
       const stageClass = ["장생","관대","건록","제왕"].includes(stage) ? "sibi-strong"
                        : ["병","사","묘","절"].includes(stage) ? "sibi-weak"
                        : "sibi-mid";
+      const ganOh = ohClass(p.gan);
+      const zhiOh = ohClass(p.zhi);
       const cell = el("div", "pillar-cell");
       cell.innerHTML = `
         <div class="label-kr">${LABELS[k]}</div>
-        <div class="gan-han han-inline">${p.gan}</div>
-        <div class="gan-kr">${p.gan_kr || ""}</div>
-        <div class="zhi-han han-inline">${p.zhi}</div>
-        <div class="zhi-kr">${p.zhi_kr || ""}</div>
-        <div class="pillar-sibi ${stageClass}" title="${stageMeaning}">${stage}</div>`;
+        <div class="gan-han han-inline ${ganOh}">${escapeHtml(p.gan)}</div>
+        <div class="gan-kr">${escapeHtml(p.gan_kr || "")}</div>
+        <div class="zhi-han han-inline ${zhiOh}">${escapeHtml(p.zhi)}</div>
+        <div class="zhi-kr">${escapeHtml(p.zhi_kr || "")}</div>
+        <div class="pillar-sibi ${stageClass}" title="${escapeHtml(stageMeaning)}">${escapeHtml(stage)}</div>`;
       chart.appendChild(cell);
     });
     sec1.appendChild(chart);
@@ -742,17 +780,35 @@
     tb.innerHTML =
       "<thead><tr><th>주柱</th><th>천간干</th><th>지지支</th><th>십신十神</th><th>십이運星</th><th>運星 의미</th></tr></thead><tbody></tbody>";
     const body = tb.querySelector("tbody");
+    const yong = r.yongsin || {};
     PILLAR_KEYS.forEach((k) => {
       const p = pillars[k];
-      const sip = r.sipsin_stems[k];
+      const sip = r.sipsin_stems[k] || {};
       const sb = r.sibiunsung[k] || {};
+      const ganOh = ohClass(p.gan);
+      const zhiOh = ohClass(p.zhi);
+      // 십신 + 용신 연계 색
+      const stemElem = (r.pillars && r.pillars[k]) ? (r.pillars[k].stem_element || "") : "";
+      const yongE   = yong["용신_오행"] || "";
+      const heeArr  = yong["희신"] || [];
+      const giArr   = yong["기신"] || [];
+      let sipCls = "sip-neutral";
+      if (stemElem) {
+        if (stemElem === yongE) sipCls = "sip-yong";
+        else if (heeArr.includes(stemElem)) sipCls = "sip-hee";
+        else if (giArr.includes(stemElem)) sipCls = "sip-gi";
+      }
+      const sipLabel = sip.sipsin || "";
+      const yongTag  = sipCls === "sip-yong" ? " <span class='sip-badge sip-yong'>[용신]</span>"
+                     : sipCls === "sip-hee"  ? " <span class='sip-badge sip-hee'>[희신]</span>"
+                     : sipCls === "sip-gi"   ? " <span class='sip-badge sip-gi'>[기신]</span>" : "";
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${LABELS[k]}</td>
-        <td><span class="han-inline">${p.gan}</span> ${sip.gan_kr || ""}</td>
-        <td><span class="han-inline">${p.zhi}</span> ${sb.zhi_kr || ""}</td>
-        <td>${sip.sipsin || ""}${sip.yukchin && sip.yukchin.length ? `<br><small>(${sip.yukchin.join(", ")})</small>` : ""}</td>
-        <td>${sb.stage || ""}</td>
-        <td>${sb.meaning || ""}</td>`;
+        <td><span class="han-inline ${ganOh}">${escapeHtml(p.gan)}</span> <small>${escapeHtml(sip.gan_kr || "")}</small></td>
+        <td><span class="han-inline ${zhiOh}">${escapeHtml(p.zhi)}</span> <small>${escapeHtml(sb.zhi_kr || "")}</small></td>
+        <td class="${sipCls}">${escapeHtml(sipLabel)}${yongTag}${sip.yukchin && sip.yukchin.length ? `<br><small class="muted-small">(${sip.yukchin.map(escapeHtml).join(", ")})</small>` : ""}</td>
+        <td>${escapeHtml(sb.stage || "")}</td>
+        <td class="muted-small">${escapeHtml(sb.meaning || "")}</td>`;
       body.appendChild(tr);
     });
     tw.appendChild(tb);
@@ -1051,12 +1107,17 @@
     if (risky) shellCls += " sew-detail--risk";
     else if (lucky) shellCls += " sew-detail--luck";
 
+    const ipNote = row["입춘_안내"] ? `<p class="ipchun-notice">${escapeHtml(row["입춘_안내"])}</p>` : "";
+    const gz = row["간지"] || "";
+    const ganOhDet = ohClass(gz[0]||"");
+    const zhiOhDet = ohClass(gz[1]||"");
     detail.innerHTML = `
       <div class="sewoon-detail-rich">
+        ${ipNote}
         <div class="${shellCls}">
           <div class="sewoon-detail-head sew-head-rich">
             <span class="sewoon-detail-year">${yi}년</span>
-            <span class="han-inline sewoon-detail-gz sew-gz-large">${escapeHtml(row["간지"] || "")}</span>
+            <span class="sewoon-detail-gz sew-gz-large"><span class="han-inline ${ganOhDet}">${escapeHtml(gz[0]||"")}</span><span class="han-inline ${zhiOhDet}">${escapeHtml(gz[1]||"")}</span></span>
             <span class="badge-risk sew-grade-badge">${escapeHtml(row["운세등급"] || "")}</span>
           </div>
           <div class="sewoon-detail-big-luck" aria-label="별점">${escapeHtml(row["별점_문자"] || ratingBarFromNum(row["별점"]))}</div>
@@ -1364,10 +1425,17 @@
     const hBar = renderHorizontalDaewoonTimeline(r, nativeZhis);
     if (hBar) sec.appendChild(hBar);
     const tl = el("div", "timeline timeline-legacy");
+    const currentYear = new Date().getFullYear();
     r.daewoon.cycles.forEach((c) => {
       const gzDisp = c.표시_간지 || (c.ganzhi && String(c.ganzhi).trim().length >= 2 ? c.ganzhi : "〈대운 시작 전〉");
-      const item = el("div", "timeline-item");
-      item.innerHTML = `<div class="gz">${escapeHtml(gzDisp)}</div><div class="age">${c.start_age}–${c.end_age}세</div><div class="age">${c.start_year}–${c.end_year}</div>`;
+      const isCurrent = Number(c.start_year) <= currentYear && currentYear <= Number(c.end_year);
+      const item = el("div", isCurrent ? "timeline-item dw-current" : "timeline-item");
+      const ganC = ohClass((gzDisp||"")[0]);
+      const zhiC = ohClass((gzDisp||"")[1]);
+      item.innerHTML = `<div class="gz">
+        <span class="han-inline ${ganC}">${escapeHtml((gzDisp||"")[0]||"")}</span><span class="han-inline ${zhiC}">${escapeHtml((gzDisp||"")[1]||"")}</span>
+        ${isCurrent ? '<span class="dw-now-badge">▶ 현재</span>' : ""}
+      </div><div class="age">${c.start_age}–${c.end_age}세</div><div class="age">${c.start_year}–${c.end_year}</div>`;
       tl.appendChild(item);
     });
     sec.appendChild(tl);
@@ -1673,6 +1741,8 @@
     if (sewVal) body.sewoon_center_year = Number(sewVal);
     const partner = (fd.get("partner_day_pillar") || "").toString().trim();
     if (partner) body.partner_day_pillar = partner;
+    const yaJasiEl = document.getElementById("ya_jasi");
+    if (yaJasiEl && yaJasiEl.checked) body.ya_jasi = true;
 
     if (lunarLeapCheck) lunarLeapCheck.checked = leapOn;
 

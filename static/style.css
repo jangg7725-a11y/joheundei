@@ -501,6 +501,79 @@ table.data-table .han-inline {
   font-weight: 700;
 }
 
+/* ── 오행 색상 코딩 ──────────────────────────────────────────
+   천간·지지 한자에 .oh-목 .oh-화 .oh-토 .oh-금 .oh-수 적용
+   배경 위에 잘 보이도록 텍스트 + 미묘한 언더라인
+─────────────────────────────────────────────────────────── */
+.oh-목 { color: #4ade80 !important; }
+.oh-화 { color: #f87171 !important; }
+.oh-토 { color: #fbbf24 !important; }
+.oh-금 { color: #d1d5db !important; }
+.oh-수 { color: #60a5fa !important; }
+
+/* 원국 카드 큰 한자 */
+.pillar-cell .gan-han.oh-목, .pillar-cell .zhi-han.oh-목 { color: #4ade80 !important; }
+.pillar-cell .gan-han.oh-화, .pillar-cell .zhi-han.oh-화 { color: #f87171 !important; }
+.pillar-cell .gan-han.oh-토, .pillar-cell .zhi-han.oh-토 { color: #fbbf24 !important; }
+.pillar-cell .gan-han.oh-금, .pillar-cell .zhi-han.oh-금 { color: #cfd8e3 !important; }
+.pillar-cell .gan-han.oh-수, .pillar-cell .zhi-han.oh-수 { color: #60a5fa !important; }
+
+/* 십신 + 용신 연계 배지 */
+.sip-yong  { color: #f0c040; font-weight: 700; }   /* 용신 십신 — 금색  */
+.sip-hee   { color: #4ade80; font-weight: 700; }   /* 희신 십신 — 연녹  */
+.sip-gi    { color: #f87171; }                      /* 기신 십신 — 빨강  */
+.sip-neutral { color: var(--text); }                /* 무관 십신 */
+
+/* 대운 현재 위치 */
+.dw-current {
+  border: 2px solid #f0c040 !important;
+  background: rgba(240,192,64,.12) !important;
+}
+.dw-current .gz { color: #f0c040 !important; font-weight: 700 !important; }
+.dhw-segment--current {
+  outline: 2px solid #f0c040;
+  outline-offset: 2px;
+  position: relative;
+}
+.dhw-segment--current::after {
+  content: "▼ 현재";
+  position: absolute;
+  bottom: -1.1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: .55rem;
+  color: #f0c040;
+  white-space: nowrap;
+}
+
+/* 십신 용신 연계 뱃지 */
+.sip-badge {
+  font-size: .65rem; padding: .05rem .3rem;
+  border-radius: 10px; margin-left: .2rem;
+  vertical-align: middle;
+}
+.sip-badge.sip-yong { background: rgba(240,192,64,.18); color: #f0c040; }
+.sip-badge.sip-hee  { background: rgba(74,222,128,.15); color: #4ade80; }
+.sip-badge.sip-gi   { background: rgba(248,113,113,.15); color: #f87171; }
+
+/* 대운 현재 배지 */
+.dw-now-badge {
+  font-size: .6rem; color: #f0c040;
+  font-weight: 700; margin-left: .3rem;
+  vertical-align: middle;
+}
+
+/* 세운 입춘 안내 배너 */
+.ipchun-notice {
+  font-size: .78rem;
+  color: #fbbf24;
+  background: rgba(251,191,36,.08);
+  border-left: 3px solid #fbbf24;
+  padding: .35rem .6rem;
+  border-radius: 4px;
+  margin: .4rem 0;
+}
+
 .risk-legend {
   display: flex;
   flex-wrap: wrap;

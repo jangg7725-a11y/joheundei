@@ -44,7 +44,12 @@ DAY_INDICES_MAX_ABS_DELTA = 365242 * 2
 
 @dataclass
 class BirthInput:
-    """calendar: ``solar``(양력 입력) 또는 ``lunar``(음력 입력)."""
+    """calendar: ``solar``(양력 입력) 또는 ``lunar``(음력 입력).
+
+    ya_jasi: 야자시(夜子時) 처리 여부.
+      True = 23:00~23:59 출생을 다음 날 일주로 배속 (다수 학파 기준).
+      False(기본) = 당일 일주 유지.
+    """
 
     calendar: str
     year: int
@@ -54,6 +59,7 @@ class BirthInput:
     minute: int = 0
     lunar_leap: bool = False
     gender: str = ""
+    ya_jasi: bool = False  # 야자시 처리 여부
 
 
 def _day_gan_zhi_indices(y: int, m: int, d: int) -> Tuple[int, int]:
@@ -65,10 +71,18 @@ def _day_gan_zhi_indices(y: int, m: int, d: int) -> Tuple[int, int]:
     return idx60 % 10, idx60 % 12
 
 
-def _patch_lunar_day_and_time(lunar: Lunar) -> None:
-    """라이브러리 일주를 기준일 역산 결과로 맞추고 시주를 재계산합니다."""
+def _patch_lunar_day_and_time(lunar: Lunar, *, ya_jasi: bool = False) -> None:
+    """라이브러리 일주를 기준일 역산 결과로 맞추고 시주를 재계산합니다.
+
+    ya_jasi=True이면 23시(夜子時)를 다음 날 일주로 배속합니다.
+    """
+    from datetime import date as _date, timedelta as _td
     solar = lunar.getSolar()
-    dg, dz = _day_gan_zhi_indices(solar.getYear(), solar.getMonth(), solar.getDay())
+    y, m, d, h = solar.getYear(), solar.getMonth(), solar.getDay(), solar.getHour()
+    if ya_jasi and h == 23:
+        next_day = _date(y, m, d) + _td(days=1)
+        y, m, d = next_day.year, next_day.month, next_day.day
+    dg, dz = _day_gan_zhi_indices(y, m, d)
     object.__setattr__(lunar, "_Lunar__dayGanIndex", dg)
     object.__setattr__(lunar, "_Lunar__dayZhiIndex", dz)
     object.__setattr__(lunar, "_Lunar__dayGanIndexExact", dg)
@@ -132,7 +146,7 @@ def compute_saju(birth: BirthInput, *, sect: int = 1) -> Dict[str, Any]:
         0,
     )
     lunar = solar.getLunar()
-    _patch_lunar_day_and_time(lunar)
+    _patch_lunar_day_and_time(lunar, ya_jasi=birth.ya_jasi)
 
     ec = lunar.getEightChar()
     ec.setSect(sect)
@@ -170,7 +184,11 @@ def compute_saju(birth: BirthInput, *, sect: int = 1) -> Dict[str, Any]:
         "day_master_kr": gj.STEM_KR[gj.stem_index(day_master)],
         "day_master_element": gj.element_of_stem(day_master),
         "eight_char_string": ec.toString(),
-        "day_anchor_note": "일주 기준: 1900-01-01=甲戌, 양력 일자 기준(야자 시 일주 진일 규칙 미적용).",
+        "day_anchor_note": (
+            "일주 기준: 1900-01-01=甲戌, 양력 일자 기준."
+            + (" ⚡야자시(23시) → 다음 날 일주 적용." if birth.ya_jasi else " (야자시 미적용: 23시도 당일 일주)")
+        ),
+        "ya_jasi_applied": birth.ya_jasi,
         "jieqi_embedded_year": _embedded_jieqi_row(solar_dt.year),
         "_eight_char": ec,
     }

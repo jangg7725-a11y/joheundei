@@ -78,12 +78,35 @@ STEM_CHONG_SET: Set[frozenset] = frozenset(
 )
 
 
+def _ipchun_date(year: int) -> Optional[Tuple[int, int, int, int]]:
+    """입춘(立春) 일시 (월,일,시,분) — jieqi_embedded 에서 읽거나 근사값 반환."""
+    try:
+        from . import jieqi_embedded as _je
+        row = _je.TERM_TWELVE_BY_YEAR.get(year)
+        if row:
+            return row[0]  # 첫 번째 절 = 입춘
+    except ImportError:
+        pass
+    return (2, 4, 0, 0)  # 근사값
+
+
 def yearly_pillar_for_solar_year(year: int) -> Dict[str, str]:
-    solar = Solar.fromYmd(year, 6, 1)
+    """세운(歲運) 간지 — 입춘(立春) 이후 기준으로 확정된 연도 간지를 반환.
+
+    • 세운은 입춘(보통 양력 2월 4일)부터 전환됩니다.
+    • 이 함수는 3월 1일 기준으로 간지를 추출하여 입춘 경계를 안전하게 처리합니다.
+    • 반환값에 입춘 날짜·시각을 함께 포함합니다.
+    """
+    # 3월 1일: 항상 입춘(2월 초) 이후이므로 안전하게 해당 세운 연도 간지 확정
+    solar = Solar.fromYmd(year, 3, 1)
     lunar = solar.getLunar()
     gz = lunar.getYearInGanZhiExact()
     gan, zhi = gz[0], gz[1]
     pillar = gz
+
+    ic = _ipchun_date(year)
+    ipchun_str = f"{year}년 {ic[0]}월 {ic[1]}일 {ic[2]:02d}:{ic[3]:02d}" if ic else f"{year}년 2월 4일경"
+
     return {
         "year": year,
         "gan": gan,
@@ -91,6 +114,9 @@ def yearly_pillar_for_solar_year(year: int) -> Dict[str, str]:
         "pillar": pillar,
         "label_kr": gj.pillar_label_kr(gan, zhi),
         "nayin": gj.nayin_for_pillar(pillar),
+        "입춘": ipchun_str,
+        "입춘_월": ic[0] if ic else 2,
+        "입춘_일": ic[1] if ic else 4,
     }
 
 
@@ -636,6 +662,14 @@ def analyze_sewoon_year(
     sg, sz = sw["gan"], sw["zhi"]
     pillar_full = sw["pillar"]
 
+    # 입춘 기준 안내 — 세운은 입춘(立春)부터 전환됨
+    _ic_m = sw.get("입춘_월", 2)
+    _ic_d = sw.get("입춘_일", 4)
+    _ipchun_note = (
+        f"⚠ {solar_year}년 세운({pillar_full})은 입춘({_ic_m}월 {_ic_d}일경)부터 시작됩니다. "
+        f"그 이전({solar_year}년 1월 1일~입춘 전)은 아직 {solar_year-1}년 세운입니다."
+    )
+
     zhis = {k: pillars[k]["zhi"] for k in PILLAR_KEYS}
     gans = {k: pillars[k]["gan"] for k in PILLAR_KEYS}
     nat_pillar = {k: pillars[k]["pillar"] for k in PILLAR_KEYS}
@@ -999,6 +1033,8 @@ def analyze_sewoon_year(
         "주의_키워드": caution_kw,
         "이해_총평_한마디": closing_advice,
         "출력_트리텍스트": "\n".join(outline_lines),
+        "입춘_안내": _ipchun_note,
+        "입춘_날짜": sw.get("입춘", ""),
     }
 
 

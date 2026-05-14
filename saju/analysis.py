@@ -1501,6 +1501,7 @@ def build_report(
     minute: int,
     gender: str,
     lunar_leap: bool = False,
+    ya_jasi: bool = False,
     sewoon_center_year: int | None = None,
     wolwoon_center_year: int | None = None,
     partner_day_pillar: str | None = None,
@@ -1514,6 +1515,7 @@ def build_report(
         minute=minute,
         lunar_leap=lunar_leap,
         gender=gender,
+        ya_jasi=ya_jasi,
     )
     raw = sc.compute_saju(birth)
     ec = raw["_eight_char"]
