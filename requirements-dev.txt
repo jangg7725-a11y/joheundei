@@ -1,0 +1,8 @@
+# 개발·테스트 패키지
+# Install: pip install -r requirements-dev.txt
+
+-r requirements.txt
+
+pytest>=9.0
+httpx>=0.27
+anyio>=4.0

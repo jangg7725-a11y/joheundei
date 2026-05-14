@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>四柱 八字 분석</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <header class="hero">
+    <p class="hero-badge">四柱八字 · 명리 참고</p>
+    <h1><span class="han-title">四柱八字</span> 사주 팔자</h1>
+    <p class="lead">생년월일시를 입력하면 원국·합충·용신·대운·세운·월운·일운·신살을 탭으로 정리해 드립니다.</p>
+  </header>
+
+  <main class="layout">
+    <section class="card panel" aria-labelledby="panel-input-heading">
+      <h2 id="panel-input-heading">출생 정보 입력</h2>
+      <form id="saju-form" class="form-saju">
+        <label class="field field-full">
+          <span>이름 <small class="hint">(표시용, 선택)</small></span>
+          <input type="text" name="user_name" id="user_name" maxlength="40" placeholder="예: 홍길동" autocomplete="name" />
+        </label>
+
+        <div class="field field-full">
+          <span class="label-row">달력 <small class="hint">양력 / 음력</small></span>
+          <div class="seg seg-calendar" role="group" aria-label="달력 종류">
+            <button type="button" class="seg-btn active" data-calendar="solar" aria-pressed="true">양력</button>
+            <button type="button" class="seg-btn" data-calendar="lunar" aria-pressed="false">음력</button>
+          </div>
+          <input type="hidden" name="calendar" id="calendar" value="solar" />
+        </div>
+
+        <div class="grid grid-dates">
+          <label class="field">
+            <span>생년 <small class="hint">西曆·陰曆</small></span>
+            <input type="number" name="year" id="year" min="1800" max="2100" required />
+          </label>
+          <label class="field">
+            <span>생월</span>
+            <input type="number" name="month" id="month" min="1" max="12" required />
+          </label>
+          <label class="field">
+            <span>생일</span>
+            <input type="number" name="day" id="day" min="1" max="31" required />
+          </label>
+        </div>
+
+        <div class="grid grid-time">
+          <label class="field">
+            <span>시 <small class="hint">0–23</small></span>
+            <input type="number" name="hour" id="hour" min="0" max="23" value="12" />
+          </label>
+          <label class="field">
+            <span>분</span>
+            <input type="number" name="minute" id="minute" min="0" max="59" value="0" />
+          </label>
+        </div>
+
+        <div class="field field-full">
+          <span class="label-row">성별</span>
+          <div class="seg seg-gender" role="group" aria-label="성별">
+            <button type="button" class="seg-btn active" data-gender="male" aria-pressed="true">남</button>
+            <button type="button" class="seg-btn" data-gender="female" aria-pressed="false">여</button>
+          </div>
+          <input type="hidden" name="gender" id="gender" value="male" />
+        </div>
+
+        <div class="field field-full leap-block" id="leap-block">
+          <span class="label-row">음력 달 <small class="hint">平朔·閏月</small></span>
+          <div class="seg seg-leap" role="group" aria-label="평달 또는 윤달">
+            <button type="button" class="seg-btn active" data-leap="0" aria-pressed="true">평달</button>
+            <button type="button" class="seg-btn" data-leap="1" aria-pressed="false">윤달</button>
+          </div>
+          <input type="hidden" name="lunar_leap_val" id="lunar_leap_val" value="0" />
+          <label class="checkbox-leap fallback-hidden">
+            <input type="checkbox" name="lunar_leap" id="lunar_leap" />
+            <span>윤달로 계산</span>
+          </label>
+        </div>
+
+        <details class="extra-fields">
+          <summary>추가 입력 (선택)</summary>
+          <div class="grid">
+            <label class="field">
+              <span>세운 기준 연도</span>
+              <input type="number" name="sewoon_year" id="sewoon_year" min="1800" max="2100" placeholder="비우면 올해" />
+            </label>
+            <label class="field">
+              <span>상대 일주 <small class="hint">궁합</small></span>
+              <input type="text" name="partner_day_pillar" id="partner_day_pillar" maxlength="2" placeholder="庚子" autocomplete="off" />
+            </label>
+          </div>
+        </details>
+
+        <button type="submit" class="btn primary btn-submit">
+          <span class="btn-icon" aria-hidden="true">☯</span>
+          사주 분석하기
+        </button>
+      </form>
+      <p id="status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card panel goonghap-panel" aria-labelledby="goonghap-heading">
+      <h2 id="goonghap-heading">💕 두 사람 궁합</h2>
+      <p class="panel-note gh-intro">양력·음력 생년월일시를 각각 넣으면 일지·오행·일간·천간합·용신 관점의 참고 궁합을 보여 드립니다.</p>
+      <form id="goonghap-form" class="goonghap-form">
+        <div class="goonghap-two">
+          <fieldset class="goonghap-person">
+            <legend>첫 번째 사람</legend>
+            <label class="field field-full">
+              <span>이름 <small class="hint">(표시용)</small></span>
+              <input type="text" id="gh-name-a" maxlength="24" placeholder="A" autocomplete="name" />
+            </label>
+            <label class="field field-full">
+              <span>달력</span>
+              <select id="gh-a-calendar" class="gh-select">
+                <option value="solar" selected>양력</option>
+                <option value="lunar">음력</option>
+              </select>
+            </label>
+            <div class="grid grid-dates">
+              <label class="field">
+                <span>생년</span>
+                <input type="number" id="gh-a-year" min="1800" max="2100" required />
+              </label>
+              <label class="field">
+                <span>생월</span>
+                <input type="number" id="gh-a-month" min="1" max="12" value="1" required />
+              </label>
+              <label class="field">
+                <span>생일</span>
+                <input type="number" id="gh-a-day" min="1" max="31" value="1" required />
+              </label>
+            </div>
+            <div class="grid grid-time">
+              <label class="field">
+                <span>시</span>
+                <input type="number" id="gh-a-hour" min="0" max="23" value="12" />
+              </label>
+              <label class="field">
+                <span>분</span>
+                <input type="number" id="gh-a-minute" min="0" max="59" value="0" />
+              </label>
+            </div>
+            <label class="field field-full">
+              <span>성별</span>
+              <select id="gh-a-gender" class="gh-select">
+                <option value="male" selected>남</option>
+                <option value="female">여</option>
+              </select>
+            </label>
+            <label class="checkbox-leap gh-leap">
+              <input type="checkbox" id="gh-a-leap" />
+              <span>음력 윤달</span>
+            </label>
+          </fieldset>
+
+          <fieldset class="goonghap-person">
+            <legend>두 번째 사람</legend>
+            <label class="field field-full">
+              <span>이름 <small class="hint">(표시용)</small></span>
+              <input type="text" id="gh-name-b" maxlength="24" placeholder="B" autocomplete="name" />
+            </label>
+            <label class="field field-full">
+              <span>달력</span>
+              <select id="gh-b-calendar" class="gh-select">
+                <option value="solar" selected>양력</option>
+                <option value="lunar">음력</option>
+              </select>
+            </label>
+            <div class="grid grid-dates">
+              <label class="field">
+                <span>생년</span>
+                <input type="number" id="gh-b-year" min="1800" max="2100" required />
+              </label>
+              <label class="field">
+                <span>생월</span>
+                <input type="number" id="gh-b-month" min="1" max="12" value="1" required />
+              </label>
+              <label class="field">
+                <span>생일</span>
+                <input type="number" id="gh-b-day" min="1" max="31" value="1" required />
+              </label>
+            </div>
+            <div class="grid grid-time">
+              <label class="field">
+                <span>시</span>
+                <input type="number" id="gh-b-hour" min="0" max="23" value="12" />
+              </label>
+              <label class="field">
+                <span>분</span>
+                <input type="number" id="gh-b-minute" min="0" max="59" value="0" />
+              </label>
+            </div>
+            <label class="field field-full">
+              <span>성별</span>
+              <select id="gh-b-gender" class="gh-select">
+                <option value="male">남</option>
+                <option value="female" selected>여</option>
+              </select>
+            </label>
+            <label class="checkbox-leap gh-leap">
+              <input type="checkbox" id="gh-b-leap" />
+              <span>음력 윤달</span>
+            </label>
+          </fieldset>
+        </div>
+        <button type="submit" class="btn primary gh-submit">
+          <span class="btn-icon" aria-hidden="true">♥</span>
+          궁합 분석하기
+        </button>
+      </form>
+      <p id="goonghap-status" class="status" aria-live="polite"></p>
+      <div id="goonghap-result" class="goonghap-result" hidden></div>
+    </section>
+
+    <section class="card results results-fluid" id="results" hidden>
+      <header class="results-head">
+        <h2 id="results-title">분석 결과</h2>
+        <p id="results-sub" class="results-sub"></p>
+      </header>
+
+      <div id="dashboard-summary" class="dashboard-summary" hidden aria-label="오늘의 핵심 요약"></div>
+
+      <div class="tabs-wrap" id="result-tabs">
+        <div class="tab-bar" role="tablist" aria-label="결과 구역">
+          <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="0" id="tab-0">📋 원국</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="1" id="tab-1">🔄 합충</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="2" id="tab-2">⭐ 용신</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="3" id="tab-3">🌊 대운·세운·월·일</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="4" id="tab-4">🔮 종합</button>
+          <button type="button" class="tab" role="tab" aria-selected="false" data-tab="5" id="tab-5">💫 신살</button>
+        </div>
+
+        <div class="tab-panels">
+          <div class="tab-panel active" role="tabpanel" id="panel-0" aria-labelledby="tab-0"></div>
+          <div class="tab-panel" role="tabpanel" id="panel-1" hidden aria-labelledby="tab-1"></div>
+          <div class="tab-panel" role="tabpanel" id="panel-2" hidden aria-labelledby="tab-2"></div>
+          <div class="tab-panel" role="tabpanel" id="panel-3" hidden aria-labelledby="tab-3"></div>
+          <div class="tab-panel" role="tabpanel" id="panel-4" hidden aria-labelledby="tab-4"></div>
+          <div class="tab-panel" role="tabpanel" id="panel-5" hidden aria-labelledby="tab-5"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" id="bottom-nav" aria-label="주요 탭" hidden>
+    <button type="button" class="bottom-nav-btn active" data-tab="0" aria-current="page">원국</button>
+    <button type="button" class="bottom-nav-btn" data-tab="1">합충</button>
+    <button type="button" class="bottom-nav-btn" data-tab="2">용신</button>
+    <button type="button" class="bottom-nav-btn" data-tab="3">운세</button>
+    <button type="button" class="bottom-nav-btn" data-tab="4">종합</button>
+    <button type="button" class="bottom-nav-btn" data-tab="5">신살</button>
+  </nav>
+
+  <footer class="footer">
+    <small>명리는 유파·월장·시각에 따라 달라질 수 있습니다. 학습·참고용입니다.</small>
+  </footer>
+
+  <script src="/static/script.js"></script>
+</body>
+</html>

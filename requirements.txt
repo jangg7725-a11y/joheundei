@@ -1,0 +1,9 @@
+# 운영 필수 패키지
+# Keep this file ASCII-only for Korean Windows pip.
+# Install: pip install -r requirements.txt
+
+fastapi>=0.136
+uvicorn>=0.46
+pydantic>=2.13
+lunar-python>=1.4
+korean-lunar-calendar>=0.3
