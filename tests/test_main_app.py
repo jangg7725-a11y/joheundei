@@ -44,6 +44,11 @@ def test_step12_get_index_and_post_saju() -> None:
     assert data.get("ok") is True
     assert data["result"]["day_master"]
     assert data["result"]["분석_카테고리"]
+    oh = data["result"]["ohaeng"]
+    assert "counts_surface" in oh and "counts_hidden" in oh
+    order = ["목", "화", "토", "금", "수"]
+    for e in order:
+        assert oh["counts"][e] == oh["counts_surface"][e] + oh["counts_hidden"][e]
 
 
 def test_step12_validation_error_shape() -> None:

@@ -25,6 +25,22 @@ def count_elements(pillars: dict, include_hidden: bool = True) -> Dict[str, int]
     return {e: counts.get(e, 0) for e in order}
 
 
+def count_elements_surface(pillars: dict) -> Dict[str, int]:
+    """천간·지지 표면 오행만 (지장간 제외). 주당 천간 1 + 지지 본기 1."""
+    return count_elements(pillars, include_hidden=False)
+
+
+def count_elements_hidden_only(pillars: dict) -> Dict[str, int]:
+    """지장간(地支蔵干)에서 나오는 오행만."""
+    counts: Counter[str] = Counter()
+    order: List[str] = ["목", "화", "토", "금", "수"]
+    for key in ("year", "month", "day", "hour"):
+        p = pillars[key]
+        for gan in jj.hidden_stems(p["zhi"]):
+            counts[gj.element_of_stem(gan)] += 1
+    return {e: counts.get(e, 0) for e in order}
+
+
 def element_summary(counts: Dict[str, int]) -> List[str]:
     total = sum(counts.values()) or 1
     lines = []

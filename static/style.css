@@ -441,13 +441,20 @@ body {
 
 .ohaeng-row {
   display: grid;
-  grid-template-columns: 2.5rem 1fr 2.5rem;
+  grid-template-columns: 2.25rem 1fr minmax(9rem, auto);
   align-items: center;
   gap: 0.5rem;
   font-size: 0.85rem;
 }
 
+.ohaeng-row .ohaeng-el {
+  font-weight: 600;
+  color: var(--gold-dim, #d4af37);
+}
+
 .ohaeng-row .bar-bg {
+  display: flex;
+  align-items: center;
   height: 10px;
   border-radius: 99px;
   background: rgba(255, 255, 255, 0.06);
@@ -461,10 +468,64 @@ body {
   transition: width 0.35s ease;
 }
 
+.ohaeng-row .bar-stack {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  min-width: 0;
+  border-radius: 99px;
+  overflow: hidden;
+  transition: width 0.35s ease;
+}
+
+.ohaeng-row .bar-seg-surface {
+  height: 100%;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #c9a227, #e8c547);
+}
+
+.ohaeng-row .bar-seg-hidden {
+  height: 100%;
+  flex-shrink: 0;
+  background: linear-gradient(90deg, #7c6fc9, #a78bfa);
+}
+
+.ohaeng-split-legend {
+  margin: 0 0 0.35rem !important;
+  font-size: 0.72rem !important;
+  line-height: 1.45;
+}
+
+.ohaeng-leg-surf {
+  color: #e8c547;
+  margin-right: 0.15rem;
+}
+
+.ohaeng-leg-hid {
+  color: #a78bfa;
+  margin-right: 0.15rem;
+}
+
+.ohaeng-leg-sum {
+  color: var(--muted);
+}
+
+.ohaeng-num-split {
+  font-weight: 700;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.ohaeng-pct-muted {
+  color: var(--muted);
+  font-size: 0.8em;
+}
+
 .ohaeng-row .pct {
   text-align: right;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  line-height: 1.25;
 }
 
 .table-wrap {
@@ -1374,7 +1435,10 @@ body.has-bottom-nav .layout {
 /* —— 오행 레이더 —— */
 .ohaeng-radar-wrap {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  gap: 0.35rem;
   margin: 0.85rem 0 1rem;
 }
 
@@ -1391,7 +1455,13 @@ body.has-bottom-nav .layout {
   justify-content: center;
   font-size: 0.68rem;
   color: var(--muted);
-  margin-top: 0.35rem;
+}
+
+.ohaeng-radar-note {
+  margin: 0;
+  max-width: 28rem;
+  text-align: center;
+  font-size: 0.72rem !important;
 }
 
 /* —— 건강 실루엣 —— */
@@ -1853,6 +1923,40 @@ body.has-bottom-nav .footer {
   display: none !important;
 }
 
+/* 밝은 배경 궁합 카드: body의 연한 --text 상속 방지 → 본문 검정에 가까운 색 */
+.goonghap-result .gh-card,
+.goonghap-result .gh-story-card {
+  color: #111;
+}
+
+.goonghap-result .gh-card p,
+.goonghap-result .gh-story-card p,
+.goonghap-result .gh-card li {
+  color: #111;
+}
+
+.goonghap-result .gh-card strong,
+.goonghap-result .gh-couple-type {
+  color: #111;
+}
+
+.goonghap-result .gh-half-summary p,
+.goonghap-result .gh-issues p {
+  color: #111;
+}
+
+.goonghap-result .gh-str-col h5 {
+  color: #111;
+}
+
+.goonghap-result .gh-sew-person {
+  color: #111;
+}
+
+.goonghap-result .gh-sewoon-section > h5 {
+  color: #222;
+}
+
 .gh-heart-section {
   text-align: center;
   margin-bottom: 1.25rem;
@@ -2025,8 +2129,8 @@ body.has-bottom-nav .footer {
   padding: 1rem 1.1rem;
   margin-bottom: .9rem;
 }
-.gh-note   { font-size: .87rem; line-height: 1.65; color: var(--text); margin: .3rem 0; }
-.gh-sub    { font-size: .78rem; color: #888; margin: .2rem 0; }
+.gh-note   { font-size: .87rem; line-height: 1.65; color: #111; margin: .3rem 0; }
+.gh-sub    { font-size: .78rem; color: #222; margin: .2rem 0; }
 .gh-couple-type { font-size: 1rem; font-weight: 700; }
 .gh-tag {
   display: inline-block; font-size: .7rem; border-radius: 20px;
@@ -2111,7 +2215,7 @@ body.has-bottom-nav .footer {
   background: linear-gradient(135deg,#fffbeb,#fff);
 }
 .gh-story-card h4 { color: #d97706; margin-bottom: .6rem; }
-.gh-story-card p  { font-size: .88rem; line-height: 1.7; margin: .3rem 0; }
+.gh-story-card p  { font-size: .88rem; line-height: 1.7; margin: .3rem 0; color: #111; }
 
 /* 강점/과제 */
 .gh-strengths-block {

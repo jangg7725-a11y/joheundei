@@ -344,17 +344,56 @@
     return { cls: "row-risk-low", icon: "🟡" };
   }
 
-  function renderOhaengChart(counts) {
+  function renderOhaengChart(ohaeng) {
     const wrap = el("div", "ohaeng-chart");
     const order = ["목", "화", "토", "금", "수"];
-    const total = order.reduce((s, k) => s + (counts[k] || 0), 0) || 1;
-    const maxV = Math.max(...order.map((k) => counts[k] || 0), 1);
+    const counts = (ohaeng && ohaeng.counts) || ohaeng || {};
+    const surf = ohaeng && ohaeng.counts_surface;
+    const hid = ohaeng && ohaeng.counts_hidden;
+    const hasSplit =
+      surf &&
+      hid &&
+      typeof surf === "object" &&
+      typeof hid === "object" &&
+      order.every((k) => typeof (surf[k] ?? 0) === "number" && typeof (hid[k] ?? 0) === "number");
+
+    const total = order.reduce((s, k) => s + (Number(counts[k]) || 0), 0) || 1;
+    const maxV = Math.max(...order.map((k) => Number(counts[k]) || 0), 1);
+
+    if (hasSplit) {
+      const legend = el("p", "ohaeng-split-legend panel-note");
+      legend.innerHTML =
+        '<span class="ohaeng-leg-surf" aria-hidden="true">■</span> 표면(천간·지지) ' +
+        '<span class="ohaeng-leg-hid" aria-hidden="true">■</span> 지장간 · ' +
+        '<span class="ohaeng-leg-sum">숫자는 「표면+지장간=합」·괄호 안은 전체 대비 비율</span>';
+      wrap.appendChild(legend);
+    }
+
     order.forEach((k) => {
-      const v = counts[k] || 0;
+      const v = Number(counts[k]) || 0;
       const pct = Math.round((100 * v) / total);
-      const wbar = Math.round((100 * v) / maxV);
+      const wOuter = Math.max(0, Math.round((100 * v) / maxV));
+      const sVal = hasSplit ? Number(surf[k]) || 0 : v;
+      const hVal = hasSplit ? Number(hid[k]) || 0 : 0;
+
       const row = el("div", "ohaeng-row");
-      row.innerHTML = `<span>${k}</span><div class="bar-bg"><div class="bar-fill" style="width:${wbar}%"></div></div><span class="pct">${v} (${pct}%)</span>`;
+      let barInner = "";
+      if (hasSplit && v > 0) {
+        const ws = Math.round((100 * sVal) / v);
+        const wh = 100 - ws;
+        barInner = `<div class="bar-stack" style="width:${wOuter}%">
+          <div class="bar-seg-surface" style="width:${ws}%"></div>
+          <div class="bar-seg-hidden" style="width:${wh}%"></div>
+        </div>`;
+      } else {
+        barInner = `<div class="bar-fill" style="width:${wOuter}%"></div>`;
+      }
+
+      const numTxt = hasSplit
+        ? `<span class="ohaeng-num-split">${sVal}+${hVal}</span>=${v} <span class="ohaeng-pct-muted">(${pct}%)</span>`
+        : `${v} (${pct}%)`;
+
+      row.innerHTML = `<span class="ohaeng-el">${k}</span><div class="bar-bg">${barInner}</div><span class="pct">${numTxt}</span>`;
       wrap.appendChild(row);
     });
     return wrap;
@@ -451,7 +490,8 @@
         <span style="color:#6ba3ff">결핍</span>
         <span style="color:#6fcf97">적정</span>
         <span style="color:#f0d878">용신 ★</span>
-      </div>`;
+      </div>
+      <p class="ohaeng-radar-note panel-note">레이더 면적·꼭짓점 거리는 표면+지장간 합계 기준입니다.</p>`;
     return wrap;
   }
 
@@ -831,9 +871,9 @@
     root.appendChild(sec2);
 
     const sec3 = el("div", "panel-section");
-    sec3.appendChild(el("h3", null, "오행 五行 분포 (지장간 포함)"));
+    sec3.appendChild(el("h3", null, "오행 五行 분포 · 표면과 지장간 구분"));
     sec3.appendChild(renderOhaengRadar(r));
-    sec3.appendChild(renderOhaengChart(r.ohaeng.counts));
+    sec3.appendChild(renderOhaengChart(r.ohaeng));
     root.appendChild(sec3);
 
     const sec4 = el("div", "panel-section");

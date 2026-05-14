@@ -1523,6 +1523,8 @@ def build_report(
     dm = raw["day_master"]
 
     counts = oh.count_elements(pillars, include_hidden=True)
+    counts_surface = oh.count_elements_surface(pillars)
+    counts_hidden = oh.count_elements_hidden_only(pillars)
     gender_male = gender.strip().lower() in ("male", "m", "남", "남자")
 
     center = sewoon_center_year or datetime.now().year
@@ -1605,6 +1607,8 @@ def build_report(
         "day_master_element": raw["day_master_element"],
         "ohaeng": {
             "counts": counts,
+            "counts_surface": counts_surface,
+            "counts_hidden": counts_hidden,
             "summary_lines": oh.element_summary(counts),
             "dominant_weak": oh.dominant_weak_elements(counts),
         },
