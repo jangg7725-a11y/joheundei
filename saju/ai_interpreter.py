@@ -30,8 +30,11 @@ except ImportError:  # pragma: no cover
     genai = None  # type: ignore[assignment]
 
 DEFAULT_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
+# 무료 한도: gemini-2.0-flash 보다 1.5-flash 가 넉넉한 경우가 많음
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+GEMINI_MAX_TOKENS = int(os.getenv("SAJU_AI_GEMINI_MAX_TOKENS", "4096"))
 MAX_TOKENS = int(os.getenv("SAJU_AI_MAX_TOKENS", "8192"))
+GEMINI_PROMPT_LIMIT = int(os.getenv("SAJU_AI_PROMPT_LIMIT", "7000"))
 
 
 def active_provider() -> Optional[str]:
@@ -110,7 +113,17 @@ def _anthropic_client() -> Any:
     return Anthropic(api_key=api_key)
 
 
-def _gemini_model(system: str) -> Any:
+def _gemini_model_names() -> List[str]:
+    primary = (os.getenv("GEMINI_MODEL") or DEFAULT_GEMINI_MODEL).strip()
+    fallbacks = ["gemini-1.5-flash", "gemini-2.0-flash-lite", "gemini-1.5-flash-8b"]
+    out: List[str] = []
+    for name in [primary, *fallbacks]:
+        if name and name not in out:
+            out.append(name)
+    return out
+
+
+def _gemini_model(system: str, model_name: Optional[str] = None) -> Any:
     if genai is None:
         raise RuntimeError(
             "google-generativeai 패키지가 없습니다. pip install google-generativeai"
@@ -119,14 +132,45 @@ def _gemini_model(system: str) -> Any:
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY 환경 변수를 설정해 주세요.")
     genai.configure(api_key=api_key)
+    use_name = model_name or DEFAULT_GEMINI_MODEL
     return genai.GenerativeModel(
-        DEFAULT_GEMINI_MODEL,
+        use_name,
         system_instruction=system,
-        generation_config={"max_output_tokens": MAX_TOKENS, "temperature": 0.75},
+        generation_config={
+            "max_output_tokens": GEMINI_MAX_TOKENS,
+            "temperature": 0.75,
+        },
     )
 
 
-def _compact(obj: Any, *, limit: int = 12000) -> str:
+def _is_quota_error(exc: BaseException) -> bool:
+    text = str(exc).lower()
+    return (
+        "429" in str(exc)
+        or "quota" in text
+        or "resource_exhausted" in text
+        or "rate limit" in text
+        or "exceeded" in text
+    )
+
+
+def _friendly_api_error(exc: BaseException) -> str:
+    if _is_quota_error(exc):
+        return (
+            "⏳ Gemini 무료 사용 한도에 잠시 걸렸습니다.\n\n"
+            "• 15~30분 뒤 「🔄 다시 해설받기」를 눌러 보세요.\n"
+            "• 탭을 여러 개 연속으로 열면 한도가 빨리 찹니다. 원국 하나씩 천천히 시도해 보세요.\n"
+            "• Google AI Studio → 사용량·한도에서 남은량을 확인할 수 있습니다.\n\n"
+            "지금은 아래 「데이터 보기 ▼」에 있는 기본 해설(규칙 기반)을 참고하실 수 있습니다. "
+            "내일이면 무료 한도가 다시 채워지는 경우가 많습니다."
+        )
+    short = str(exc).strip()
+    if len(short) > 280:
+        short = short[:280] + "…"
+    return f"AI 해설을 만들지 못했습니다.\n\n{short}"
+
+
+def _compact(obj: Any, *, limit: int = GEMINI_PROMPT_LIMIT) -> str:
     text = json.dumps(obj, ensure_ascii=False, indent=None, default=str)
     if len(text) > limit:
         return text[:limit] + "…(이하 생략)"
@@ -160,12 +204,24 @@ def _parse_sections(raw: str) -> List[Dict[str, str]]:
     return [{"id": "full", "title": "맞춤 해설", "content": text}]
 
 
+def _call_gemini(system: str, user: str) -> str:
+    last_err: Optional[BaseException] = None
+    for name in _gemini_model_names():
+        try:
+            model = _gemini_model(system, name)
+            resp = model.generate_content(user)
+            return str(getattr(resp, "text", None) or "")
+        except Exception as e:
+            last_err = e
+            if not _is_quota_error(e):
+                raise RuntimeError(_friendly_api_error(e)) from e
+    raise RuntimeError(_friendly_api_error(last_err or RuntimeError("quota")))
+
+
 def _call_llm(system: str, user: str) -> str:
     provider = active_provider()
     if provider == "gemini":
-        model = _gemini_model(system)
-        resp = model.generate_content(user)
-        return str(getattr(resp, "text", None) or "")
+        return _call_gemini(system, user)
     if provider == "anthropic":
         client = _anthropic_client()
         msg = client.messages.create(
@@ -187,13 +243,21 @@ def _call_llm(system: str, user: str) -> str:
 def _stream_llm(system: str, user: str) -> Iterator[str]:
     provider = active_provider()
     if provider == "gemini":
-        model = _gemini_model(system)
-        resp = model.generate_content(user, stream=True)
-        for chunk in resp:
-            text = getattr(chunk, "text", None)
-            if text:
-                yield text
-        return
+        last_err: Optional[BaseException] = None
+        for name in _gemini_model_names():
+            try:
+                model = _gemini_model(system, name)
+                resp = model.generate_content(user, stream=True)
+                for chunk in resp:
+                    text = getattr(chunk, "text", None)
+                    if text:
+                        yield text
+                return
+            except Exception as e:
+                last_err = e
+                if not _is_quota_error(e):
+                    raise RuntimeError(_friendly_api_error(e)) from e
+        raise RuntimeError(_friendly_api_error(last_err or RuntimeError("quota")))
     if provider == "anthropic":
         client = _anthropic_client()
         with client.messages.stream(
@@ -603,7 +667,7 @@ def stream_interpret_tab(
             buf.append(chunk)
             yield {"type": "delta", "text": chunk}
     except Exception as e:
-        yield {"type": "error", "message": str(e)}
+        yield {"type": "error", "error": "api_error", "message": _friendly_api_error(e)}
         return
 
     raw = "".join(buf)

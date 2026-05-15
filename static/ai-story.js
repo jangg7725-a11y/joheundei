@@ -251,7 +251,12 @@
     } catch (e) {
       clearInterval(msgTimer);
       setStatus(st.block, "");
-      bodyEl.innerHTML = `<p class="ai-story-error">${escapeHtml(e.message || String(e))}</p>`;
+      const msg = String(e.message || e);
+      const friendly =
+        msg.includes("429") || /quota|한도/i.test(msg)
+          ? "⏳ Gemini 무료 한도에 잠시 걸렸습니다. 15~30분 후 「🔄 다시 해설받기」를 눌러 보세요. 지금은 「데이터 보기 ▼」 기본 해설을 참고하세요."
+          : msg;
+      bodyEl.innerHTML = `<p class="ai-story-error">${formatContent(friendly)}</p>`;
     } finally {
       st.loading = false;
     }
