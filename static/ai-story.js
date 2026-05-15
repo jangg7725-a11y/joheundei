@@ -12,6 +12,7 @@
   ];
 
   let aiEnabled = false;
+  let aiUnavailableMessage = "AI 해설 서비스 준비 중입니다";
   let tier = "free";
   const panelState = new Map();
 
@@ -30,10 +31,11 @@
       const res = await fetch("/api/ai/config");
       const data = await res.json();
       aiEnabled = !!data.enabled;
+      if (data.message) aiUnavailableMessage = data.message;
       return data;
     } catch {
       aiEnabled = false;
-      return { enabled: false };
+      return { enabled: false, message: aiUnavailableMessage, fallback: true };
     }
   }
 
@@ -152,17 +154,18 @@
   async function loadTab(tabKey, report, { force = false } = {}) {
     const st = panelState.get(tabKey);
     if (!st || !st.block) return;
+    const bodyEl = st.block.querySelector(".ai-story-body");
     if (!aiEnabled) {
-      setStatus(
-        st.block,
-        "AI 해설: PowerShell에서 GEMINI_API_KEY(또는 ANTHROPIC_API_KEY) 설정 후 서버를 다시 시작하세요."
-      );
+      setStatus(st.block, aiUnavailableMessage);
+      if (bodyEl) {
+        bodyEl.innerHTML = `<p class="ai-story-prep">${escapeHtml(aiUnavailableMessage)}</p><p class="panel-note">아래 「데이터 보기 ▼」에서 규칙 기반 해설을 확인할 수 있습니다.</p>`;
+      }
+      st.loaded = true;
+      st.loading = false;
       return;
     }
     if (st.loading) return;
     st.loading = true;
-
-    const bodyEl = st.block.querySelector(".ai-story-body");
     const fb = st.block.querySelector(".ai-story-feedback");
     if (fb) fb.hidden = true;
     bodyEl.innerHTML = "";
@@ -225,6 +228,13 @@
             bodyEl.innerHTML = `<pre class="ai-stream-raw">${escapeHtml(streamBuf)}</pre>`;
           } else if (ev.type === "done" && ev.sections) {
             doneSections = ev.sections;
+          } else if (ev.type === "unavailable" || (ev.fallback && ev.enabled === false)) {
+            clearInterval(msgTimer);
+            const prepMsg = ev.message || aiUnavailableMessage;
+            setStatus(st.block, prepMsg);
+            bodyEl.innerHTML = `<p class="ai-story-prep">${escapeHtml(prepMsg)}</p><p class="panel-note">아래 「데이터 보기 ▼」에서 규칙 기반 해설을 확인할 수 있습니다.</p>`;
+            st.loaded = true;
+            return;
           } else if (ev.type === "error") {
             throw new Error(ev.message || "해설 생성 실패");
           }

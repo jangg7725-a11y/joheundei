@@ -36,10 +36,35 @@ GEMINI_MAX_TOKENS = int(os.getenv("SAJU_AI_GEMINI_MAX_TOKENS", "4096"))
 MAX_TOKENS = int(os.getenv("SAJU_AI_MAX_TOKENS", "8192"))
 GEMINI_PROMPT_LIMIT = int(os.getenv("SAJU_AI_PROMPT_LIMIT", "7000"))
 
+AI_UNAVAILABLE_MESSAGE = "AI 해설 서비스 준비 중입니다"
+
+
+def unavailable_response(**extra: Any) -> Dict[str, Any]:
+    """API 키 없음·비활성 시 클라이언트·API 공통 응답."""
+    body: Dict[str, Any] = {
+        "ok": False,
+        "enabled": False,
+        "message": AI_UNAVAILABLE_MESSAGE,
+        "fallback": True,
+    }
+    body.update(extra)
+    return body
+
+
+def _gemini_api_key() -> str:
+    return (
+        os.getenv("GEMINI_API_KEY", "").strip()
+        or os.getenv("GOOGLE_API_KEY", "").strip()
+    )
+
+
+def is_ai_available() -> bool:
+    return active_provider() is not None
+
 
 def active_provider() -> Optional[str]:
     """gemini | anthropic | None"""
-    if os.getenv("GEMINI_API_KEY", "").strip():
+    if _gemini_api_key():
         return "gemini"
     if os.getenv("ANTHROPIC_API_KEY", "").strip():
         return "anthropic"
@@ -128,7 +153,7 @@ def _gemini_model(system: str, model_name: Optional[str] = None) -> Any:
         raise RuntimeError(
             "google-generativeai 패키지가 없습니다. pip install google-generativeai"
         )
-    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    api_key = _gemini_api_key()
     if not api_key:
         raise RuntimeError("GEMINI_API_KEY 환경 변수를 설정해 주세요.")
     genai.configure(api_key=api_key)
@@ -235,9 +260,7 @@ def _call_llm(system: str, user: str) -> str:
             if getattr(block, "type", None) == "text":
                 parts.append(getattr(block, "text", "") or "")
         return "".join(parts)
-    raise RuntimeError(
-        "AI API 키가 없습니다. PowerShell에서 GEMINI_API_KEY 또는 ANTHROPIC_API_KEY를 설정하세요."
-    )
+    raise RuntimeError(AI_UNAVAILABLE_MESSAGE)
 
 
 def _stream_llm(system: str, user: str) -> Iterator[str]:
@@ -270,9 +293,7 @@ def _stream_llm(system: str, user: str) -> Iterator[str]:
                 if text:
                     yield text
         return
-    raise RuntimeError(
-        "AI API 키가 없습니다. PowerShell에서 GEMINI_API_KEY 또는 ANTHROPIC_API_KEY를 설정하세요."
-    )
+    raise RuntimeError(AI_UNAVAILABLE_MESSAGE)
 
 
 def _base_context(saju_data: Dict[str, Any], user_name: Optional[str] = None) -> str:
@@ -448,6 +469,8 @@ def _run_interpret(
     tier: str = "free",
 ) -> Dict[str, Any]:
     tab_n = normalize_tab(tab)
+    if not is_ai_available():
+        return unavailable_response(tab=tab_n)
     cache_key = ai_cache.chart_cache_key(saju_data)
     if force_refresh:
         ai_cache.delete_cached(cache_key, tab_n)
@@ -627,6 +650,9 @@ def stream_interpret_tab(
 ) -> Generator[Dict[str, Any], None, None]:
     """SSE용 이벤트 생성 (실시간 Claude 스트리밍)."""
     tab_n = normalize_tab(tab)
+    if not is_ai_available():
+        yield {"type": "unavailable", **unavailable_response(tab=tab_n)}
+        return
     cache_key = ai_cache.chart_cache_key(saju_data)
 
     if force_refresh:

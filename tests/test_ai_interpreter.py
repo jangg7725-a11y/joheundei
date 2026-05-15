@@ -80,3 +80,22 @@ def test_interpret_wonkuk_mock(sample_report, monkeypatch):
 def test_normalize_tab():
     assert ai.normalize_tab("0") == "wonkuk"
     assert ai.normalize_tab("종합") == "jonghap"
+
+
+def test_unavailable_without_api_keys(sample_report, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.delenv("GOOGLE_API_KEY", raising=False)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert ai.is_ai_available() is False
+    out = ai.interpret_tab("wonkuk", sample_report)
+    assert out == {
+        "ok": False,
+        "enabled": False,
+        "message": "AI 해설 서비스 준비 중입니다",
+        "fallback": True,
+        "tab": "wonkuk",
+    }
+    events = list(ai.stream_interpret_tab("wonkuk", sample_report))
+    assert events[0]["type"] == "unavailable"
+    assert events[0]["fallback"] is True
+    assert events[0]["message"] == "AI 해설 서비스 준비 중입니다"

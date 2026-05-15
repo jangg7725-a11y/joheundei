@@ -913,6 +913,154 @@
     return m ? `${m[1]}.${m[2]}.${m[3]}` : String(iso || "");
   }
 
+  /** 원국_스토리텔링 한 줄 → narrative 폴백 */
+  function getStoryQuoteLine(r) {
+    const story = r["원국_스토리텔링"];
+    const narr = r.narrative;
+    if (story && story["사주_한줄_핵심"]) return String(story["사주_한줄_핵심"]).trim();
+    if (narr?.main) return String(narr.main).trim();
+    if (typeof narr?.bullets === "string") {
+      const line = narr.bullets.split("\n").find((x) => x.trim());
+      if (line) return line.trim();
+    }
+    return "";
+  }
+
+  function appendStoryCoreCard(parent, r, { prepend = true } = {}) {
+    const line = getStoryQuoteLine(r);
+    if (!line || !parent) return null;
+    const card = el("div", "story-card");
+    const p = el("p", "story-main");
+    p.textContent = line;
+    card.appendChild(p);
+    if (prepend && parent.firstChild) parent.insertBefore(card, parent.firstChild);
+    else parent.appendChild(card);
+    return card;
+  }
+
+  function appendStoryListBlock(parent, title, items) {
+    if (!Array.isArray(items) || !items.length) return;
+    const b = el("div", "story-block");
+    b.appendChild(el("h4", "story-block-title", title));
+    const ul = document.createElement("ul");
+    ul.className = "story-list";
+    items.forEach((item) => {
+      const li = document.createElement("li");
+      if (item && typeof item === "object" && item["직군"]) {
+        li.textContent = `${item["직군"]}: ${item["이유"] || ""}`;
+      } else {
+        li.textContent = String(item ?? "");
+      }
+      ul.appendChild(li);
+    });
+    b.appendChild(ul);
+    parent.appendChild(b);
+  }
+
+  function appendStoryKvBlock(parent, title, obj, keys) {
+    if (!obj || typeof obj !== "object") return;
+    const b = el("div", "story-block");
+    b.appendChild(el("h4", "story-block-title", title));
+    keys.forEach(([key, label]) => {
+      const val = obj[key];
+      if (val == null || val === "") return;
+      if (Array.isArray(val)) {
+        appendStoryListBlock(b, label, val);
+        return;
+      }
+      const p = el("p", "story-line");
+      p.innerHTML = `<strong>${escapeHtml(label)}</strong> ${escapeHtml(String(val))}`;
+      b.appendChild(p);
+    });
+    if (b.querySelector(".story-line, .story-list")) parent.appendChild(b);
+  }
+
+  function renderNativeStoryFull(root, story) {
+    if (!story || typeof story !== "object") return;
+    const sec = el("div", "panel-section story-pack");
+    sec.appendChild(el("h3", null, "원국 스토리텔링"));
+    if (story["사주_한줄_핵심"]) {
+      const card = el("div", "story-card story-card--hero");
+      const p = el("p", "story-main");
+      p.textContent = story["사주_한줄_핵심"];
+      card.appendChild(p);
+      sec.appendChild(card);
+    }
+    appendStoryKvBlock(sec, "성격 · 기질", story["성격_분석"], [
+      ["대인관계_스타일", "대인관계"],
+      ["스트레스_반응", "스트레스"],
+      ["의사결정_방식", "의사결정"],
+    ]);
+    if (story["성격_분석"]) {
+      appendStoryListBlock(sec, "장점", story["성격_분석"]["장점_5"]);
+      appendStoryListBlock(sec, "주의할 점", story["성격_분석"]["단점_5"]);
+    }
+    const life = story["인생_전체_흐름"];
+    if (life && typeof life === "object") {
+      const b = el("div", "story-block");
+      b.appendChild(el("h4", "story-block-title", "인생 흐름"));
+      Object.entries(life).forEach(([k, v]) => {
+        const p = el("p", "story-line");
+        p.innerHTML = `<strong>${escapeHtml(k)}</strong> ${escapeHtml(String(v))}`;
+        b.appendChild(p);
+      });
+      sec.appendChild(b);
+    }
+    appendStoryKvBlock(sec, "직업 · 적성", story["직업_적성"], [
+      ["사업_적합", "사업"],
+    ]);
+    if (story["직업_적성"]) {
+      appendStoryListBlock(sec, "추천 직군 TOP5", story["직업_적성"]["최적_직군_TOP5"]);
+      appendStoryListBlock(sec, "피할 직군", story["직업_적성"]["피해야_할_직군"]);
+      const modes = story["직업_적성"]["근무형태_판정"];
+      if (Array.isArray(modes)) appendStoryListBlock(sec, "근무 형태", modes);
+    }
+    appendStoryKvBlock(sec, "재물", story["재물_패턴"], [
+      ["버는_방식", "버는 방식"],
+      ["평생_재물_흐름", "평생 흐름"],
+      ["부자_가능성_판정", "부자 가능성"],
+    ]);
+    if (story["재물_패턴"]) {
+      appendStoryListBlock(sec, "새는 패턴", story["재물_패턴"]["새는_패턴"]);
+    }
+    appendStoryKvBlock(sec, "건강", story["건강_평생"], [
+      ["장수_가능성", "장수"],
+    ]);
+    if (story["건강_평생"]) {
+      appendStoryListBlock(sec, "선천 취약 축", story["건강_평생"]["선천_취약_축"]);
+      const age = story["건강_평생"]["나이대별_주의"];
+      if (age && typeof age === "object") {
+        const b = el("div", "story-block");
+        b.appendChild(el("h4", "story-block-title", "나이대별 건강"));
+        Object.entries(age).forEach(([k, v]) => {
+          const p = el("p", "story-line");
+          p.innerHTML = `<strong>${escapeHtml(k)}</strong> ${escapeHtml(String(v))}`;
+          b.appendChild(p);
+        });
+        sec.appendChild(b);
+      }
+      appendStoryListBlock(sec, "건강 유지", story["건강_평생"]["건강_유지_조언"]);
+    }
+    const special = story["특별_포인트"];
+    if (special && typeof special === "object") {
+      const b = el("div", "story-block");
+      b.appendChild(el("h4", "story-block-title", "특별 포인트"));
+      Object.entries(special).forEach(([k, v]) => {
+        if (Array.isArray(v)) appendStoryListBlock(b, k, v);
+        else if (v) {
+          const p = el("p", "story-line");
+          p.innerHTML = `<strong>${escapeHtml(k)}</strong> ${escapeHtml(String(v))}`;
+          b.appendChild(p);
+        }
+      });
+      sec.appendChild(b);
+    }
+    if (story["안내"]) {
+      sec.appendChild(el("p", "panel-note story-footnote", story["안내"]));
+    }
+    root.insertBefore(sec, root.firstChild);
+  }
+
   function renderDashboardSummary(r) {
     const mount = document.getElementById("dashboard-summary");
     if (!mount) return;
@@ -948,9 +1096,7 @@
       today?.한줄판정 ||
       row?.이해_총평_한마디 ||
       row?.세운_총평_한줄 ||
-      (typeof r.narrative?.bullets === "string"
-        ? r.narrative.bullets.split("\n").find((x) => x.trim())
-        : "") ||
+      getStoryQuoteLine(r) ||
       "무리한 확장보다 검토와 정리에 집중하면 안정적입니다.";
 
     mount.hidden = false;
@@ -1088,10 +1234,118 @@
     return wrap;
   }
 
+  function appendWongukStorySections(panel, story) {
+    if (!story || !panel) return;
+
+    if (story["성격_분석"]) {
+      const per = story["성격_분석"];
+      const perDiv = el("div", "story-section");
+      perDiv.innerHTML = `
+        <h4 class="story-section-title">💫 성격과 특성</h4>
+        <p class="story-text">${escapeHtml(per["대인관계_스타일"] || "")}</p>
+        <p class="story-text">⚡ ${escapeHtml(per["스트레스_반응"] || "")}</p>
+        <p class="story-text">🎯 ${escapeHtml(per["의사결정_방식"] || "")}</p>
+        <div class="story-pros-cons">
+          <div class="story-pros">
+            <h5>✅ 장점</h5>
+            ${(per["장점_5"] || []).map((s) => `<p>${escapeHtml(s)}</p>`).join("")}
+          </div>
+          <div class="story-cons">
+            <h5>⚠️ 단점</h5>
+            ${(per["단점_5"] || []).map((s) => `<p>${escapeHtml(s)}</p>`).join("")}
+          </div>
+        </div>`;
+      panel.appendChild(perDiv);
+    }
+
+    if (story["인생_전체_흐름"]) {
+      const arc = story["인생_전체_흐름"];
+      const arcDiv = el("div", "story-section");
+      arcDiv.innerHTML = `<h4 class="story-section-title">🌊 인생 흐름</h4>`;
+      Object.entries(arc).forEach(([k, v]) => {
+        const row = el("div", "life-arc-row");
+        row.innerHTML = `
+          <span class="arc-label">${escapeHtml(k)}</span>
+          <span class="arc-text">${escapeHtml(String(v))}</span>`;
+        arcDiv.appendChild(row);
+      });
+      panel.appendChild(arcDiv);
+    }
+
+    if (story["직업_적성"]) {
+      const job = story["직업_적성"];
+      const jobDiv = el("div", "story-section");
+      const top5 = (job["최적_직군_TOP5"] || [])
+        .map(
+          (j) => `
+        <div class="job-item">
+          <span class="job-name">${escapeHtml(j["직군"] || "")}</span>
+          <span class="job-why">${escapeHtml(j["이유"] || "")}</span>
+        </div>`
+        )
+        .join("");
+      const modes = job["근무형태_판정"];
+      const modesText = Array.isArray(modes) ? modes.join(" / ") : String(modes || "");
+      jobDiv.innerHTML = `
+        <h4 class="story-section-title">💼 직업 적성</h4>
+        ${top5}
+        <p class="story-text">🏢 ${escapeHtml(modesText)}</p>`;
+      panel.appendChild(jobDiv);
+    }
+
+    if (story["재물_패턴"]) {
+      const w = story["재물_패턴"];
+      const wDiv = el("div", "story-section");
+      wDiv.innerHTML = `
+        <h4 class="story-section-title">💰 재물 패턴</h4>
+        <p class="story-text">💵 ${escapeHtml(w["버는_방식"] || "")}</p>
+        <p class="story-text">💸 새는 패턴: ${escapeHtml((w["새는_패턴"] || []).join(", "))}</p>
+        <p class="story-text">📈 ${escapeHtml(w["평생_재물_흐름"] || "")}</p>
+        <p class="story-highlight">${escapeHtml(w["부자_가능성_판정"] || "")}</p>`;
+      panel.appendChild(wDiv);
+    }
+
+    if (story["건강_평생"]) {
+      const h = story["건강_평생"];
+      const hDiv = el("div", "story-section");
+      hDiv.innerHTML = `
+        <h4 class="story-section-title">🏥 건강 패턴</h4>
+        <p class="story-text">⚠️ 취약 축: ${escapeHtml((h["선천_취약_축"] || []).join(", "))}</p>
+        <p class="story-text">💪 ${escapeHtml(h["장수_가능성"] || "")}</p>
+        ${(h["건강_유지_조언"] || [])
+          .map((a) => `<p class="story-text">✅ ${escapeHtml(a)}</p>`)
+          .join("")}`;
+      panel.appendChild(hDiv);
+    }
+
+    if (story["특별_포인트"]) {
+      const sp = story["특별_포인트"];
+      const spDiv = el("div", "story-section");
+      spDiv.innerHTML = `
+        <h4 class="story-section-title">✨ 특별 포인트</h4>
+        <p class="story-text">🌟 ${escapeHtml(sp["귀인_복"] || "")}</p>
+        <p class="story-text">🔄 ${escapeHtml(sp["고난_역전_가능성"] || "")}</p>
+        <p class="story-text">🙏 ${escapeHtml(sp["종교_정신세계_성향"] || "")}</p>`;
+      panel.appendChild(spDiv);
+    }
+
+    if (story["안내"]) {
+      panel.appendChild(el("p", "panel-note story-footnote", story["안내"]));
+    }
+  }
+
   function renderTab0(r) {
     const root = panels[0];
     root.innerHTML = "";
     const pillars = r.pillars;
+
+    const story = r["원국_스토리텔링"];
+    if (story) {
+      const storyPanel = el("div", "panel-section wonguk-story-panel");
+      appendStoryCoreCard(storyPanel, r);
+      appendWongukStorySections(storyPanel, story);
+      root.appendChild(storyPanel);
+    }
 
     const sec1 = el("div", "panel-section");
     sec1.appendChild(el("h3", null, "사주 원국 四柱"));
@@ -1209,16 +1463,34 @@
     sec3.appendChild(renderOhaengRadar(r));
     sec3.appendChild(renderOhaengChart(r.ohaeng));
     root.appendChild(sec3);
-
-    const sec4 = el("div", "panel-section");
-    sec4.appendChild(el("h3", null, "요약"));
-    sec4.appendChild(el("pre", "pre-plain", r.narrative.bullets));
-    root.appendChild(sec4);
   }
 
   function renderTab1(r) {
     const root = panels[1];
     root.innerHTML = "";
+    const cat = r["분석_카테고리"];
+    if (cat) {
+      const catSec = el("div", "panel-section");
+      catSec.appendChild(el("h3", null, "합·충과 연결된 생활 해석"));
+      catSec.appendChild(
+        el(
+          "p",
+          "panel-note",
+          "원국 충·파·해·형과 맞물리는 연애·건강·사고·이별 테마를 카테고리 분석으로 정리했습니다."
+        )
+      );
+      const chungCats = [
+        ["1_연애_궁합", "연애 · 궁합"],
+        ["4_건강", "건강"],
+        ["5_사고_관재", "사고 · 관재"],
+        ["9_이별_별리", "이별 · 거리"],
+      ];
+      chungCats.forEach(([key, title]) => {
+        const node = renderCategoryCompact(title, cat[key]);
+        if (node) catSec.appendChild(node);
+      });
+      root.appendChild(catSec);
+    }
     root.appendChild(renderPillarRelationMap(r));
     const cp = r.chung_pa_hae || {};
     const detail = cp["관계_상세_전체"] || [];
@@ -2036,9 +2308,12 @@
   function renderTab4(r) {
     const root = panels[4];
     root.innerHTML = "";
+    const story = r["원국_스토리텔링"];
+    if (story) renderNativeStoryFull(root, story);
+
     const cat = r["분석_카테고리"];
     if (!cat) {
-      root.appendChild(el("p", "panel-note", "분석 카테고리 데이터가 없습니다."));
+      if (!story) root.appendChild(el("p", "panel-note", "분석 데이터가 없습니다."));
       return;
     }
 

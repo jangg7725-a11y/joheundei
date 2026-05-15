@@ -438,9 +438,14 @@ async def api_ai_interpret(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except RuntimeError as e:
-        raise HTTPException(status_code=503, detail=str(e)) from e
+        if not ai.is_ai_available():
+            result = ai.unavailable_response()
+        else:
+            raise HTTPException(status_code=503, detail=str(e)) from e
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI 해설 오류: {e}") from e
+    if result.get("fallback"):
+        return result
     return {"ok": bool(result.get("ok")), "result": result}
 
 
@@ -481,10 +486,19 @@ async def api_ai_config() -> dict[str, Any]:
     """클라이언트용 AI 설정."""
     import os
 
+    if not ai.is_ai_available():
+        return {
+            **ai.unavailable_response(),
+            "provider": "",
+            "model": "",
+            "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
+        }
     provider = ai.active_provider()
     return {
         "ok": True,
-        "enabled": provider is not None,
+        "enabled": True,
+        "fallback": False,
+        "message": "",
         "provider": provider or "",
         "model": ai.active_model_name(),
         "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
