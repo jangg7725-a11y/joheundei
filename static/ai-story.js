@@ -14,6 +14,7 @@
   let aiEnabled = false;
   let aiUnavailableMessage = "AI 해설 서비스 준비 중입니다";
   let tier = "free";
+  let configReady = null;
   const panelState = new Map();
 
   function escapeHtml(text) {
@@ -24,6 +25,11 @@
 
   function formatContent(text) {
     return escapeHtml(text || "").replace(/\n/g, "<br>");
+  }
+
+  function ensureConfig() {
+    if (!configReady) configReady = fetchConfig();
+    return configReady;
   }
 
   async function fetchConfig() {
@@ -44,11 +50,41 @@
     return el ? (el.value || "").trim() : "";
   }
 
+  /** AI 래핑 해제 — 규칙 기반 콘텐츠를 패널에 바로 노출 */
+  function unwrapRuleContent(panel) {
+    if (!panel) return;
+    const details = panel.querySelector(".ai-data-collapse");
+    if (details) {
+      const inner = details.querySelector(".ai-data-inner");
+      if (inner) {
+        [...inner.childNodes].forEach((node) => panel.appendChild(node));
+      }
+      details.remove();
+    }
+    const aiBlock = panel.querySelector(".ai-story-panel");
+    if (aiBlock) aiBlock.remove();
+    delete panel.dataset.aiWrapped;
+  }
+
+  /** AI 비활성: 토글 제거 + 스토리·데이터 섹션 바로 표시 */
+  function showRuleContentOnly(panel) {
+    if (!panel) return;
+    unwrapRuleContent(panel);
+    panel.querySelectorAll(".ai-data-collapse, .ai-data-toggle").forEach((el) => el.remove());
+    panel.querySelectorAll(".wonguk-story-panel, .panel-section, .story-section").forEach((el) => {
+      el.hidden = false;
+      el.style.display = "";
+    });
+    panel.classList.add("panel-rules-only");
+  }
+
   function wrapPanel(panel, tabKey) {
-    if (!panel || panel.querySelector(".ai-story-panel")) return;
+    if (!panel || !aiEnabled) return;
+    if (panel.querySelector(".ai-story-panel")) return;
     const children = [...panel.childNodes];
     panel.innerHTML = "";
     panel.dataset.aiWrapped = "1";
+    panel.classList.remove("panel-rules-only");
 
     const aiBlock = document.createElement("section");
     aiBlock.className = "ai-story-panel";
@@ -95,11 +131,26 @@
         } catch (_) {
           /* ignore */
         }
-        btn.closest(".ai-story-feedback").innerHTML = "<span class=\"ai-fb-thanks\">소중한 의견 감사합니다 🙏</span>";
+        btn.closest(".ai-story-feedback").innerHTML =
+          '<span class="ai-fb-thanks">소중한 의견 감사합니다 🙏</span>';
       });
     });
 
     panelState.set(tabKey, { block: aiBlock, loaded: false });
+  }
+
+  function applyAllPanelLayouts() {
+    TAB_KEYS.forEach((key, i) => {
+      const panel = document.getElementById(`panel-${i}`);
+      if (!panel) return;
+      if (aiEnabled) {
+        panel.classList.remove("panel-rules-only");
+        wrapPanel(panel, key);
+      } else {
+        panelState.delete(key);
+        showRuleContentOnly(panel);
+      }
+    });
   }
 
   function reportCacheKey(report) {
@@ -113,7 +164,7 @@
   function renderSections(bodyEl, sections, { typing = false } = {}) {
     bodyEl.innerHTML = "";
     if (!sections || !sections.length) {
-      bodyEl.innerHTML = "<p class=\"ai-story-empty\">해설을 불러오지 못했습니다.</p>";
+      bodyEl.innerHTML = '<p class="ai-story-empty">해설을 불러오지 못했습니다.</p>';
       return;
     }
     sections.forEach((sec, idx) => {
@@ -152,20 +203,13 @@
   }
 
   async function loadTab(tabKey, report, { force = false } = {}) {
+    if (!aiEnabled) return;
     const st = panelState.get(tabKey);
     if (!st || !st.block) return;
-    const bodyEl = st.block.querySelector(".ai-story-body");
-    if (!aiEnabled) {
-      setStatus(st.block, aiUnavailableMessage);
-      if (bodyEl) {
-        bodyEl.innerHTML = `<p class="ai-story-prep">${escapeHtml(aiUnavailableMessage)}</p><p class="panel-note">아래 「데이터 보기 ▼」에서 규칙 기반 해설을 확인할 수 있습니다.</p>`;
-      }
-      st.loaded = true;
-      st.loading = false;
-      return;
-    }
     if (st.loading) return;
     st.loading = true;
+
+    const bodyEl = st.block.querySelector(".ai-story-body");
     const fb = st.block.querySelector(".ai-story-feedback");
     if (fb) fb.hidden = true;
     bodyEl.innerHTML = "";
@@ -230,10 +274,11 @@
             doneSections = ev.sections;
           } else if (ev.type === "unavailable" || (ev.fallback && ev.enabled === false)) {
             clearInterval(msgTimer);
-            const prepMsg = ev.message || aiUnavailableMessage;
-            setStatus(st.block, prepMsg);
-            bodyEl.innerHTML = `<p class="ai-story-prep">${escapeHtml(prepMsg)}</p><p class="panel-note">아래 「데이터 보기 ▼」에서 규칙 기반 해설을 확인할 수 있습니다.</p>`;
-            st.loaded = true;
+            aiEnabled = false;
+            const idx = TAB_KEYS.indexOf(tabKey);
+            const panel = idx >= 0 ? document.getElementById(`panel-${idx}`) : null;
+            if (panel) showRuleContentOnly(panel);
+            st.loading = false;
             return;
           } else if (ev.type === "error") {
             throw new Error(ev.message || "해설 생성 실패");
@@ -243,7 +288,7 @@
 
       clearInterval(msgTimer);
       if (doneSections) {
-        setStatus(st.block, evFromCacheLabel(streamBuf, doneSections));
+        setStatus(st.block, "✅ 맞춤 해설이 준비되었습니다.");
         renderSections(bodyEl, doneSections, { typing: false });
         if (fb) fb.hidden = false;
       } else if (streamBuf) {
@@ -264,7 +309,7 @@
       const msg = String(e.message || e);
       const friendly =
         msg.includes("429") || /quota|한도/i.test(msg)
-          ? "⏳ Gemini 무료 한도에 잠시 걸렸습니다. 15~30분 후 「🔄 다시 해설받기」를 눌러 보세요. 지금은 「데이터 보기 ▼」 기본 해설을 참고하세요."
+          ? "⏳ Gemini 무료 한도에 잠시 걸렸습니다. 15~30분 후 「🔄 다시 해설받기」를 눌러 보세요. 지금은 아래 기본 해설을 참고하세요."
           : msg;
       bodyEl.innerHTML = `<p class="ai-story-error">${formatContent(friendly)}</p>`;
     } finally {
@@ -272,11 +317,8 @@
     }
   }
 
-  function evFromCacheLabel(_buf, _sections) {
-    return "✅ 맞춤 해설이 준비되었습니다.";
-  }
-
   function onTabVisible(tabIndex, report) {
+    if (!aiEnabled) return;
     const tabKey = TAB_KEYS[tabIndex];
     if (!tabKey || !report) return;
     window.__latestSajuReport = report;
@@ -291,30 +333,37 @@
 
   function afterReport(report) {
     window.__latestSajuReport = report;
-    TAB_KEYS.forEach((key, i) => {
-      const panel = document.getElementById(`panel-${i}`);
-      if (panel) wrapPanel(panel, key);
-      const st = panelState.get(key);
-      if (st) {
-        st.loaded = false;
-        st.lastKey = "";
-      }
+    return ensureConfig().then(() => {
+      applyAllPanelLayouts();
+      TAB_KEYS.forEach((key) => {
+        const st = panelState.get(key);
+        if (st) {
+          st.loaded = false;
+          st.lastKey = "";
+        }
+      });
+      if (report && aiEnabled) onTabVisible(0, report);
     });
-    if (report) onTabVisible(0, report);
   }
 
   window.SajuAi = {
     TAB_KEYS,
     fetchConfig,
+    ensureConfig,
     wrapPanel,
+    showRuleContentOnly,
+    applyAllPanelLayouts,
     onTabVisible,
     loadTab,
     afterReport,
+    isEnabled() {
+      return aiEnabled;
+    },
     setTier(t) {
       tier = t || "free";
     },
     init() {
-      return fetchConfig();
+      return ensureConfig();
     },
   };
 

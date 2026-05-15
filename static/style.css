@@ -728,6 +728,16 @@ body {
   padding: 0 0.75rem 0.85rem;
 }
 
+/* AI 비활성: 규칙 기반 해설만 바로 표시 */
+.panel-rules-only .ai-story-panel,
+.panel-rules-only .ai-data-collapse {
+  display: none !important;
+}
+
+.panel-rules-only .wonguk-story-panel {
+  display: block;
+}
+
 .chart-pillars {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

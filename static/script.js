@@ -2421,9 +2421,17 @@
     renderTab3(r);
     renderTab4(r);
     renderTab5(r);
-    if (window.SajuAi) window.SajuAi.afterReport(r);
-    activateTab(0);
-    updateResultsChrome();
+    const finish = () => {
+      activateTab(0);
+      updateResultsChrome();
+    };
+    if (window.SajuAi && typeof window.SajuAi.afterReport === "function") {
+      const p = window.SajuAi.afterReport(r);
+      if (p && typeof p.then === "function") p.then(finish);
+      else finish();
+    } else {
+      finish();
+    }
   }
 
   form.addEventListener("submit", async (e) => {
