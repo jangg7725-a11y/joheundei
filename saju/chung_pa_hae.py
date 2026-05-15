@@ -39,6 +39,71 @@ ZHI_YUKCHIN_SHORT = {
     "hour": "자녀·말년·아랫사람",
 }
 
+# 세운·복음·충·해 — 사용자가 바로 이해할 수 있는 쉬운 해석 문장
+_PILLAR_PLAIN = {
+    "year": "가문·유년기·대외 이미지",
+    "month": "부모·직장·사회생활·수입 기반",
+    "day": "본인·배우자·건강·가정 안정",
+    "hour": "자녀·말년·후배·실행·결과",
+}
+
+
+def _fuyin_sewoon_note(pillar_key: str, ju_label: str, year: Optional[int]) -> str:
+    yr = f"{year}년 " if year else "올해 "
+    theme = _PILLAR_PLAIN.get(pillar_key, ju_label)
+    return (
+        f"{yr}운의 기운이 태어날 때의 「{ju_label}」와 글자가 똑같습니다(복음). "
+        f"예전에 겪었던 {theme} 쪽 일이 비슷한 모양으로 다시 나오기 쉬운 해입니다. "
+        f"완전히 새로운 변화라기보다, ‘전에도 한 번 겪은 숙제’를 다시 풀게 되는 느낌으로 보시면 됩니다."
+    )
+
+
+def _fuyin_zhi_repeat_note(pillar_key: str, zhi: str) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, ZHI_LABEL.get(pillar_key, ""))
+    body = ZHI_BODY.get(zhi, "해당 부위")
+    return (
+        f"올해 지지 「{zhi}」가 원국 {ZHI_LABEL.get(pillar_key, '')}와 같습니다. "
+        f"{theme}·{body} 관련 이슈가 작년과 비슷하게 반복될 수 있으니, 같은 실수·갈등을 두 번 하지 않도록 정리하는 것이 좋습니다."
+    )
+
+
+def _fuyin_daewoon_note(pillar_key: str, ju_label: str) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, ju_label)
+    return (
+        f"지금 대운 간지가 원국 「{ju_label}」와 같습니다. "
+        f"10년 동안 {theme} 주제가 크게 반복·확대되는 시기로, 익숙한 패턴을 알아차리면 손해를 줄일 수 있습니다."
+    )
+
+
+def _sewoon_chong_note(pillar_key: str, sew_zhi: str, nat_zhi: str) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, "")
+    body = ZHI_BODY.get(nat_zhi, "몸의 해당 부위")
+    return (
+        f"올해 기운(지지 {sew_zhi})이 원국 {ZHI_LABEL.get(pillar_key, '')}({nat_zhi})와 정면으로 부딪칩니다(충). "
+        f"{theme} 자리에서 이사·이직·관계 갈등·급한 결정·환경 변화가 생기기 쉽습니다. "
+        f"몸으로는 {body} 쪽(통증·피로·검진) 신호가 나올 수 있으니 평소보다 챙기세요."
+    )
+
+
+def _sewoon_po_note(pillar_key: str, sew_zhi: str, nat_zhi: str) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, "")
+    body = ZHI_BODY.get(nat_zhi, "몸")
+    return (
+        f"올해 {sew_zhi}가 {ZHI_LABEL.get(pillar_key, '')}({nat_zhi})를 ‘깨뜨리는’ 기운(파)입니다. "
+        f"{theme}에서 약속·계약·신뢰·수입 구조가 흔들리거나 갑자기 바뀔 수 있습니다. "
+        f"{body} 피로·스트레스도 함께 올라갈 수 있습니다."
+    )
+
+
+def _sewoon_hai_note(pillar_key: str, sew_zhi: str, nat_zhi: str) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, "")
+    body = ZHI_BODY.get(nat_zhi, "몸")
+    return (
+        f"올해 {sew_zhi}가 {ZHI_LABEL.get(pillar_key, '')}({nat_zhi})를 서서히 찌르는 기운(해)입니다. "
+        f"{theme}에서 말다툼·서운함·질투·뒤에서 오는 방해가 은근히 쌓일 수 있습니다. "
+        f"몸은 {body} 쪽 만성 피로·소화 불편을 먼저 신호로 느끼는 경우가 많습니다."
+    )
+
 CHEON_GAN_HAP_RESULT = {
     frozenset(("甲", "己")): "토",
     frozenset(("乙", "庚")): "금",
@@ -325,7 +390,7 @@ def analyze_fuyin(
                         sewoon_pillar,
                         f"{yr}세운이 {lbl}와 동일",
                         "중",
-                        f"세운이 {lbl}를 그대로 되풀이해 같은 과제·감정이 표면화되기 쉽습니다.",
+                        _fuyin_sewoon_note(k, lbl, sewoon_year),
                     )
                 )
             sz = sewoon_pillar[1] if len(sewoon_pillar) >= 2 else ""
@@ -336,7 +401,7 @@ def analyze_fuyin(
                         sz,
                         f"세운 지지={sz}가 {ZHI_LABEL[k]}와 동일",
                         "참고",
-                        "지지만 겹치는 반복 자극으로 같은 부위·관계 테마가 되살아납니다.",
+                        _fuyin_zhi_repeat_note(k, sz),
                     )
                 )
 
@@ -354,7 +419,7 @@ def analyze_fuyin(
                             gz,
                             f"대운 {age}·{JU_LABEL[k]}",
                             "중",
-                            "대운 간지가 원국 해당 주와 같아 10년간 같은 과제가 확대 재생됩니다.",
+                            _fuyin_daewoon_note(k, JU_LABEL[k]),
                         )
                     )
     return out
@@ -381,8 +446,6 @@ def analyze_sewoon_injection(
         nz = pillars[k]["zhi"]
         pair = tuple(sorted((sz, nz)))
         pos_lbl = ZHI_LABEL[k]
-        yuk = ZHI_YUKCHIN_SHORT[k]
-        body = ZHI_BODY.get(nz, "")
 
         if pair in ch_set:
             out.append(
@@ -391,7 +454,7 @@ def analyze_sewoon_injection(
                     f"{sz}×{nz}",
                     f"{yr_note}지지 {sz}가 {pos_lbl}({nz})와 충",
                     "중",
-                    f"{yuk} 축이 요동하며 신체는 {body} 쪽을 의식합니다.",
+                    _sewoon_chong_note(k, sz, nz),
                 )
             )
         if pair in po_set:
@@ -401,7 +464,7 @@ def analyze_sewoon_injection(
                     f"{sz}×{nz}",
                     f"{yr_note}{sz}가 {pos_lbl} 파",
                     "중",
-                    f"{yuk} 계약·관계가 깨지기 쉽고 {body} 피로가 동반될 수 있습니다.",
+                    _sewoon_po_note(k, sz, nz),
                 )
             )
         if pair in hai_set:
@@ -411,7 +474,7 @@ def analyze_sewoon_injection(
                     f"{sz}×{nz}",
                     f"{yr_note}{sz}가 {pos_lbl} 해",
                     "중",
-                    f"{yuk} 은근한 방해·시기가 생기고 {body} 만성 통증을 유발하기도 합니다.",
+                    _sewoon_hai_note(k, sz, nz),
                 )
             )
 
