@@ -42,3 +42,7 @@ _*.txt
 # Render / 배포 환경 변수 (있을 경우)
 .env.local
 .env.production
+
+# AI 해설 캐시·사용량
+data/ai_cache/
+data/ai_usage/

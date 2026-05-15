@@ -10,18 +10,20 @@
 
 from __future__ import annotations
 
+import json
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.encoders import jsonable_encoder
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from saju import ai_interpreter as ai
 from saju import analysis
 from saju import daewoon as dw
 from saju import goonghap as gh
@@ -406,6 +408,86 @@ async def api_goonghap(req: GoonghapRequest) -> dict[str, Any]:
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"서버 계산 오류: {e}") from e
     return {"ok": True, "result": pack}
+
+
+class AiInterpretRequest(BaseModel):
+    """AI 맞춤 스토리텔링 해설 요청."""
+
+    tab: str = Field(description="wonkuk|hapchung|yongsin|daewoon|jonghap|sinsal 또는 0~5")
+    saju_data: dict[str, Any] = Field(description="build_report 결과 전체")
+    user_name: str | None = Field(default=None, description="표시 이름")
+    force_refresh: bool = Field(default=False, description="캐시 무시 재생성")
+    tier: str = Field(default="free", description="free | premium")
+
+
+@app.post("/api/ai/interpret")
+async def api_ai_interpret(
+    req: AiInterpretRequest,
+    x_saju_tier: str | None = Header(default=None, alias="X-Saju-Tier"),
+) -> dict[str, Any]:
+    """탭별 AI 맞춤 해설 (JSON)."""
+    tier = (x_saju_tier or req.tier or "free").strip().lower()
+    try:
+        result = ai.interpret_tab(
+            req.tab,
+            req.saju_data,
+            user_name=req.user_name,
+            force_refresh=req.force_refresh,
+            tier=tier,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except RuntimeError as e:
+        raise HTTPException(status_code=503, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI 해설 오류: {e}") from e
+    return {"ok": bool(result.get("ok")), "result": result}
+
+
+@app.post("/api/ai/interpret/stream")
+async def api_ai_interpret_stream(
+    req: AiInterpretRequest,
+    x_saju_tier: str | None = Header(default=None, alias="X-Saju-Tier"),
+) -> StreamingResponse:
+    """탭별 AI 해설 SSE 스트리밍."""
+    tier = (x_saju_tier or req.tier or "free").strip().lower()
+
+    def event_gen() -> Iterator[str]:
+        try:
+            for ev in ai.stream_interpret_tab(
+                req.tab,
+                req.saju_data,
+                user_name=req.user_name,
+                force_refresh=req.force_refresh,
+                tier=tier,
+            ):
+                yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
+        except ValueError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+        except RuntimeError as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': str(e)}, ensure_ascii=False)}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'type': 'error', 'message': f'AI 오류: {e}'}, ensure_ascii=False)}\n\n"
+
+    return StreamingResponse(
+        event_gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+@app.get("/api/ai/config")
+async def api_ai_config() -> dict[str, Any]:
+    """클라이언트용 AI 설정."""
+    import os
+
+    has_key = bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
+    return {
+        "ok": True,
+        "enabled": has_key,
+        "model": ai.DEFAULT_MODEL,
+        "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
+    }
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

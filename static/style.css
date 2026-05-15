@@ -582,6 +582,140 @@ body {
   color: var(--text);
 }
 
+/* ── AI 맞춤 스토리텔링 ── */
+.ai-story-panel {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.1rem;
+  border-radius: var(--radius);
+  background: linear-gradient(145deg, rgba(212, 175, 55, 0.1), rgba(18, 26, 38, 0.95));
+  border: 1px solid var(--gold-dim);
+}
+
+.ai-story-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+}
+
+.ai-story-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.ai-refresh-btn {
+  font-size: 0.78rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.ai-refresh-btn:hover {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.ai-story-status {
+  font-size: 0.82rem;
+  color: var(--muted);
+  min-height: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.ai-story-body {
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--text);
+}
+
+.ai-story-section {
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-story-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.ai-story-section-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.ai-story-section-body {
+  color: var(--text);
+}
+
+.ai-stream-raw {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.ai-story-error {
+  color: var(--danger);
+}
+
+.ai-story-feedback {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+  color: var(--muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.ai-fb-btn {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.ai-fb-thanks {
+  color: var(--gold);
+}
+
+.ai-data-collapse {
+  margin-top: 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.ai-data-toggle {
+  cursor: pointer;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  list-style: none;
+}
+
+.ai-data-toggle::-webkit-details-marker {
+  display: none;
+}
+
+.ai-data-inner {
+  padding: 0 0.75rem 0.85rem;
+}
+
 .chart-pillars {
   display: grid;
   grid-template-columns: repeat(4, 1fr);

@@ -7,3 +7,4 @@ uvicorn>=0.46
 pydantic>=2.13
 lunar-python>=1.4
 korean-lunar-calendar>=0.3
+anthropic>=0.49

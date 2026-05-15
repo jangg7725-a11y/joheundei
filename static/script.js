@@ -519,6 +519,9 @@
       b.classList.toggle("active", on);
       b.setAttribute("aria-current", on ? "page" : "false");
     });
+    if (window.SajuAi && latestReport) {
+      window.SajuAi.onTabVisible(idx, latestReport);
+    }
   }
 
   tabBtns.forEach((btn, i) => {
@@ -2143,6 +2146,7 @@
     renderTab3(r);
     renderTab4(r);
     renderTab5(r);
+    if (window.SajuAi) window.SajuAi.afterReport(r);
     activateTab(0);
     updateResultsChrome();
   }
