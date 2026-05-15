@@ -8,6 +8,8 @@
   const lunarLeapCheck = document.getElementById("lunar_leap");
 
   const PILLAR_KEYS = ["year", "month", "day", "hour"];
+  /** 원국 화면: 전통 열람 순서(시→일→월→년, 좌에서 우로). */
+  const PILLAR_KEYS_WONGUK_ORDER = ["hour", "day", "month", "year"];
   const LABELS = {
     year: "年柱 · 년주",
     month: "月柱 · 월주",
@@ -787,9 +789,16 @@
     const sec1 = el("div", "panel-section");
     sec1.appendChild(el("h3", null, "사주 원국 四柱"));
     sec1.appendChild(el("p", "panel-note", `${r.solar.label} · ${r.lunar.label}`));
+    sec1.appendChild(
+      el(
+        "p",
+        "panel-note wonguk-order-hint",
+        "四柱 배열: 시주 → 일주 → 월주 → 년주 순(왼쪽이 시주, 오른쪽이 년주)."
+      )
+    );
 
     const chart = el("div", "chart-pillars");
-    PILLAR_KEYS.forEach((k) => {
+    PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
       const p = pillars[k];
       const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
       const stage = sb.stage || "";
@@ -810,6 +819,31 @@
       chart.appendChild(cell);
     });
     sec1.appendChild(chart);
+
+    const sibiGuide = el("div", "sibi-guide-block");
+    sibiGuide.appendChild(el("h4", "sibi-guide-heading", "십이운성 · 궁(연·월·일·시)별 이해"));
+    sibiGuide.appendChild(
+      el(
+        "p",
+        "panel-note sibi-guide-intro",
+        "아래는 일간 기준으로 각 주의 지지에 붙은 운성을, 어느 「궁」에서 볼 때 쓰는지와 함께 풀어 쓴 참고 해석입니다. 파종·세팅에 따라 세부는 달라질 수 있습니다."
+      )
+    );
+    const guideGrid = el("div", "sibi-guide-grid");
+    PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
+      const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
+      const card = el("div", "sibi-guide-card");
+      const head = el("div", "sibi-guide-card-head");
+      head.innerHTML = `<span class="sibi-guide-ju">${escapeHtml(sb["주"] || LABELS[k])}</span><span class="sibi-guide-stage han-inline">${escapeHtml(sb.stage || "")}</span>`;
+      card.appendChild(head);
+      const body = el("p", "sibi-guide-body");
+      body.textContent = sb["해설_통합"] || sb["해설통합"] || "";
+      card.appendChild(body);
+      guideGrid.appendChild(card);
+    });
+    sibiGuide.appendChild(guideGrid);
+    sec1.appendChild(sibiGuide);
+
     root.appendChild(sec1);
 
     const sec2 = el("div", "panel-section");
@@ -821,7 +855,7 @@
       "<thead><tr><th>주柱</th><th>천간干</th><th>지지支</th><th>십신十神</th><th>십이運星</th><th>運星 의미</th></tr></thead><tbody></tbody>";
     const body = tb.querySelector("tbody");
     const yong = r.yongsin || {};
-    PILLAR_KEYS.forEach((k) => {
+    PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
       const p = pillars[k];
       const sip = r.sipsin_stems[k] || {};
       const sb = r.sibiunsung[k] || {};
@@ -856,8 +890,10 @@
 
     const jj = el("div", "panel-section");
     jj.appendChild(el("h3", null, "지장간 支藏干 · 십신"));
-    r.jijanggan &&
-      Object.entries(r.jijanggan).forEach(([k, block]) => {
+    if (r.jijanggan) {
+      PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
+        const block = r.jijanggan[k];
+        if (!block) return;
         const hid = block.hidden.map((h) => `${h.gan}(${h.element})`).join(", ");
         const sp = r.sipsin_hidden[k] || [];
         const spTxt = sp
@@ -867,6 +903,7 @@
           .join(" · ");
         jj.appendChild(el("p", "panel-note", `${LABELS[k]} 지지 ${block.zhi} → ${hid} / ${spTxt}`));
       });
+    }
     sec2.appendChild(jj);
     root.appendChild(sec2);
 

@@ -358,6 +358,81 @@ body {
   margin-bottom: 1rem;
 }
 
+.wonguk-order-hint {
+  font-size: 0.78rem !important;
+  margin-top: -0.35rem !important;
+  margin-bottom: 0.85rem !important;
+}
+
+/* 십이운성 궁별 안내(원국 박스 아래) */
+.sibi-guide-block {
+  margin-top: 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  background: rgba(0, 0, 0, 0.22);
+}
+
+.sibi-guide-heading {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.sibi-guide-intro {
+  margin: 0 0 0.65rem !important;
+  font-size: 0.76rem !important;
+  line-height: 1.5;
+}
+
+.sibi-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+@media (max-width: 560px) {
+  .sibi-guide-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sibi-guide-card {
+  padding: 0.55rem 0.65rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sibi-guide-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.sibi-guide-ju {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold-dim, #d4af37);
+}
+
+.sibi-guide-stage {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.sibi-guide-body {
+  margin: 0;
+  font-size: 0.76rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
 @media (max-width: 640px) {
   .chart-pillars {
     grid-template-columns: repeat(2, 1fr);

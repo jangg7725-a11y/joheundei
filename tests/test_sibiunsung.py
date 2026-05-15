@@ -16,3 +16,6 @@ def test_step9_pillar_twelve(day_master: str, sample_pillars) -> None:
     for k in ("year", "month", "day", "hour"):
         assert out[k]["stage"]
         assert out[k]["meaning"]
+        assert out[k].get("해설_통합")
+        assert out[k].get("단계_해설")
+        assert out[k].get("궁_역할")
