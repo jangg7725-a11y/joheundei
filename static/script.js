@@ -1279,6 +1279,13 @@
     root.appendChild(sec2);
   }
 
+  function renderStrengthBadge(grade) {
+    const g = String(grade || "보통");
+    const cls =
+      g === "유리" ? "strength-badge strength-good" : g === "주의" ? "strength-badge strength-warn" : "strength-badge";
+    return `<span class="${cls}">${escapeHtml(g)}</span>`;
+  }
+
   function renderTab2(r) {
     const root = panels[2];
     root.innerHTML = "";
@@ -1287,7 +1294,61 @@
     sec.appendChild(el("h3", null, "신강·신약 身强身弱"));
     const j = ys["일간_강약"] || "";
     const score = ys["강약_점수"];
-    sec.appendChild(el("p", "panel-note", `판단: ${j}${score != null ? ` (점수 ${score})` : ""}`));
+    const detail = ys["강약_상세"] || {};
+    const head = el("div", "strength-head");
+    head.innerHTML = `<span class="strength-verdict">${escapeHtml(j || "—")}</span>${
+      score != null ? `<span class="strength-score">점수 ${escapeHtml(score)}</span>` : ""
+    }${detail["점수_구간"] ? `<span class="strength-band">${escapeHtml(detail["점수_구간"])}</span>` : ""}`;
+    sec.appendChild(head);
+    if (detail["판단_요약"]) sec.appendChild(el("p", "strength-lead", detail["판단_요약"]));
+    if (detail["점수_해설"]) sec.appendChild(el("p", "panel-note strength-score-note", detail["점수_해설"]));
+    if (Array.isArray(detail["현상_특징"]) && detail["현상_특징"].length) {
+      const box = el("div", "strength-box");
+      box.appendChild(el("h4", "strength-subtitle", "이렇게 나타나기 쉽습니다"));
+      const ul = el("ul", "strength-list");
+      detail["현상_특징"].forEach((line) => ul.appendChild(el("li", null, line)));
+      box.appendChild(ul);
+      sec.appendChild(box);
+    }
+    if (Array.isArray(detail["생활_조언"]) && detail["생활_조언"].length) {
+      const box2 = el("div", "strength-box strength-box-tip");
+      box2.appendChild(el("h4", "strength-subtitle", "생활에서 이렇게 보세요"));
+      const ul2 = el("ul", "strength-list");
+      detail["생활_조언"].forEach((line) => ul2.appendChild(el("li", null, line)));
+      box2.appendChild(ul2);
+      sec.appendChild(box2);
+    }
+    if (detail["세운_읽는_법"]) sec.appendChild(el("p", "panel-note", detail["세운_읽는_법"]));
+    const sewStrength = ys["세운_강약_해설"] || [];
+    if (sewStrength.length) {
+      const sewSec = el("div", "strength-sewoon-block");
+      sewSec.appendChild(el("h4", "strength-subtitle", "세운별 강약 해설 (±10년)"));
+      sewSec.appendChild(
+        el(
+          "p",
+          "panel-note",
+          "원국이 신강·신약인지에 따라, 매년 들어오는 오행이 도움이 되는지·부담인지를 짧게 정리했습니다. 합충·신살과 함께 보세요."
+        )
+      );
+      const tw = el("div", "table-wrap strength-sewoon-table-wrap");
+      const table = el("table", "data-table strength-sewoon-table");
+      table.innerHTML =
+        "<thead><tr><th>연도</th><th>간지</th><th>등급</th><th>한줄 요약</th><th>해설</th></tr></thead>";
+      const tb = el("tbody");
+      sewStrength.forEach((row) => {
+        const tr = el("tr", row["기준년"] ? "strength-row-current" : "");
+        tr.innerHTML = `<td>${escapeHtml(row["연도"])}</td><td class="gz">${escapeHtml(
+          row["간지"] || ""
+        )}</td><td>${renderStrengthBadge(row["종합_등급"])}</td><td>${escapeHtml(row["한줄"] || "")}</td><td class="strength-detail-cell">${escapeHtml(
+          row["상세"] || ""
+        )}</td>`;
+        tb.appendChild(tr);
+      });
+      table.appendChild(tb);
+      tw.appendChild(table);
+      sewSec.appendChild(tw);
+      sec.appendChild(sewSec);
+    }
     root.appendChild(sec);
 
     const sec2 = el("div", "panel-section");

@@ -139,6 +139,302 @@ def _strength_verdict(
     return "중화", score
 
 
+def _score_band_text(verdict: str, score: float) -> str:
+    if verdict == "신약":
+        if score <= 28:
+            return "매우 신약 (28점 이하) — 혼자 버티기보다 도움·휴식이 꼭 필요한 편"
+        return "신약 (38점 이하) — 힘이 부족해 부담이 쌓이기 쉬운 편"
+    if verdict == "신강":
+        if score >= 72:
+            return "매우 신강 (72점 이상) — 기운이 넘쳐 조절·배출이 중요한 편"
+        return "신강 (58점 이상) — 스스로 밀고 나가기 쉬운 편"
+    if score <= 44:
+        return "중화·약한 쪽 (39~44점) — 상황에 따라 신약처럼 보일 때가 많음"
+    if score >= 52:
+        return "중화·강한 쪽 (52~57점) — 상황에 따라 신강처럼 보일 때가 많음"
+    return "중화 (39~57점) — 신강·신약 사이, 때에 따라 기운이 오르내림"
+
+
+def _phenomena_for_verdict(verdict: str, score: float, dm_elem: str) -> Dict[str, Any]:
+    """판단별 생활 속 현상·주의·대처."""
+    resource = RESOURCE_MAP[dm_elem]
+    output = GENERATE_MAP[dm_elem]
+    wealth = GENERATE_MAP[output]
+    officer = CONTROL_MAP[dm_elem]
+
+    if verdict == "신약":
+        traits = [
+            "혼자 모든 일을 떠맡으면 금방 지치고, 몸·마음이 먼저 신호(피로·불면·소화)를 보냅니다.",
+            "큰 결정·이직·투자·대출을 한꺼번에 하면 부담이 커지기 쉽습니다.",
+            "주변의 도움·멘토·가족 지원, 또는 학습·자격(인성) 쪽에서 힘이 붙습니다.",
+            f"기운을 보태 주는 방향은 「{resource}」(인성)·「{dm_elem}」(비겁) 오행에 가깝습니다.",
+            f"한꺼번에 몰아오는 「{officer}」(관살)·「{wealth}」(재성) 기운이 강한 해·월에는 특히 조심하세요.",
+        ]
+        tips = [
+            "무리한 확장보다 체력·수면·루틴을 먼저 챙기세요.",
+            "혼자 끙끙대지 말고, 믿을 수 있는 사람에게 역할을 나누세요.",
+            f"색·소품·방향에서 {resource}·{dm_elem} 기운(용신·희신)을 가볍게 보강하는 것도 참고가 됩니다.",
+        ]
+        sewoon_hint = (
+            f"세운에 {resource}·{dm_elem} 기운이 오면 힘이 붙고, "
+            f"{officer}·{wealth}가 과하면 일·돈·책임이 무거워질 수 있습니다."
+        )
+    elif verdict == "신강":
+        traits = [
+            "의지·추진력이 강해, 한 번 방향을 잡으면 밀고 나가기 쉽습니다.",
+            "남의 말보다 내 판단을 믿는 편이라, 고집·독주·과로로 이어질 수 있습니다.",
+            "에너지가 넘치면 말·행동이 앞서거나, 관계에서 부딪침이 생기기 쉽습니다.",
+            f"기운을 빼 주는(설기) 방향은 「{output}」(식상), 일을 벌이는 쪽은 「{wealth}」(재성)입니다.",
+            f"「{resource}」·「{dm_elem}」이 또 강해지면 더 고집·피로·부담이 쌓일 수 있습니다.",
+        ]
+        tips = [
+            "일을 더 벌리기보다, 표현·운동·창작 등으로 기운을 한 번 흘려보내세요.",
+            "혼자 결정만 하지 말고, 한 번 더 검토할 상대를 두세요.",
+            f"용신 {output}·재성 {wealth} 방향의 일·직업·취미에 에너지를 쓰면 균형이 맞기 쉽습니다.",
+        ]
+        sewoon_hint = (
+            f"세운에 {output}·{wealth}가 오면 일이 풀리고, "
+            f"{resource}·{dm_elem}이 과하면 답답함·부담·고집이 커질 수 있습니다."
+        )
+    else:
+        traits = [
+            "신강·신약 어느 한쪽으로 치우치지 않아, 환경·대운·세운에 따라 기운이 오르내립니다.",
+            "좋을 때는 균형 잡힌 판단이 가능하고, 불리할 때는 갑자기 지치거나 답답해질 수 있습니다.",
+            "한 해·한 달의 오행만으로 운이 좌우되는 느낌이 큽니다.",
+            f"기본 용신 후보는 인성 「{resource}」 쪽을 두고, 세운·대운을 함께 봅니다.",
+        ]
+        tips = [
+            "세운표에서 ‘유리·주의’ 표시가 바뀌는 해를 기준으로 계획을 조절하세요.",
+            "극단적인 일(올인 투자·무리한 이직)은 피하고, 중간 속도를 유지하세요.",
+        ]
+        sewoon_hint = "아래 세운별 해설에서 매년 유리·주의를 확인하세요."
+
+    return {
+        "현상_특징": traits,
+        "생활_조언": tips,
+        "세운_읽는_법": sewoon_hint,
+    }
+
+
+def _build_strength_detail(
+    verdict: str,
+    score: float,
+    dm_elem: str,
+    *,
+    bib_pct: float,
+    scg_pct: float,
+    deoling_note: str,
+    sup_note: str,
+    sipsin_note: str,
+) -> Dict[str, Any]:
+    phen = _phenomena_for_verdict(verdict, score, dm_elem)
+    band = _score_band_text(verdict, score)
+    score_expl = (
+        f"강약 점수 {score}점 = 월령 득력(최대 38) + 비겁·인성 비중(최대 32) + "
+        f"일간·인성 오행 비중(최대 30)을 합친 값입니다. "
+        f"58점 이상은 신강, 38점 이하는 신약, 그 사이는 중화로 봅니다. "
+        f"현재는 「{band}」입니다."
+    )
+    verdict_summary = {
+        "신약": (
+            f"일간({dm_elem}) 힘이 약한 편(신약)입니다. "
+            "혼자 버티기보다 보호·학습·협력이 들어올 때 살아나기 쉽고, "
+            "관살·재성이 몰리는 시기에는 피로·책임·돈 문제가 무거워질 수 있습니다."
+        ),
+        "신강": (
+            f"일간({dm_elem}) 힘이 강한 편(신강)입니다. "
+            "스스로 밀고 나가기 쉽지만, 기운이 넘치면 고집·과로·관계 마찰이 생기기 쉽습니다. "
+            "식상·재성으로 기운을 쓰고 배출하는 것이 균형에 맞습니다."
+        ),
+        "중화": (
+            f"일간({dm_elem})이 신강·신약 사이(중화)에 가깝습니다. "
+            "원국만으로는 한쪽으로 치우치지 않아, 세운·대운에 따라 체감이 달라질 수 있습니다."
+        ),
+    }.get(verdict, "")
+
+    return {
+        "판단_요약": verdict_summary,
+        "점수_구간": band,
+        "점수_해설": score_expl,
+        "현상_특징": phen["현상_특징"],
+        "생활_조언": phen["생활_조언"],
+        "세운_읽는_법": phen["세운_읽는_법"],
+        "산출_근거": {
+            "득령": deoling_note,
+            "생조": sup_note,
+            "십신": sipsin_note,
+            "비겁인성_퍼센트": bib_pct,
+            "식재관_퍼센트": scg_pct,
+        },
+    }
+
+
+def _rate_elem_for_strength(
+    verdict: str,
+    elem: str,
+    dm_elem: str,
+    yong_elem: str,
+    huisin: List[str],
+    gisin: List[str],
+) -> str:
+    """세운 오행이 원국 강약에 유리한지 단순 등급."""
+    resource = RESOURCE_MAP[dm_elem]
+    output = GENERATE_MAP[dm_elem]
+    wealth = GENERATE_MAP[output]
+    officer = CONTROL_MAP[dm_elem]
+    hui_set = set(huisin or [])
+    gi_set = set(gisin or [])
+
+    if elem == yong_elem or elem in hui_set:
+        return "유리"
+    if elem in gi_set:
+        return "주의"
+
+    if verdict == "신약":
+        if elem in (resource, dm_elem):
+            return "유리"
+        if elem in (officer, wealth):
+            return "주의"
+        if elem == output:
+            return "보통"
+        return "보통"
+    if verdict == "신강":
+        if elem in (output, wealth):
+            return "유리"
+        if elem in (resource, dm_elem):
+            return "주의"
+        if elem == officer:
+            return "보통"
+        return "보통"
+    # 중화
+    if elem in (resource, dm_elem, output):
+        return "보통"
+    if elem in (officer, wealth):
+        return "주의"
+    return "보통"
+
+
+def _merge_elem_rates(a: str, b: str) -> str:
+    if "주의" in (a, b):
+        return "주의"
+    if a == "유리" and b == "유리":
+        return "유리"
+    if a == "유리" or b == "유리":
+        return "보통"
+    return "보통"
+
+
+def _sewoon_year_strength_line(
+    verdict: str,
+    year: int,
+    pillar: str,
+    gan_elem: str,
+    zhi_elem: str,
+    rate: str,
+    *,
+    is_center: bool,
+) -> Tuple[str, str]:
+    """(한줄, 상세) 반환."""
+    yr = f"{year}년"
+    tag = "【올해】" if is_center else yr
+    pillar_s = pillar or f"{gan_elem}/{zhi_elem}"
+
+    if rate == "유리":
+        one = f"{tag} {pillar_s} — 힘이 붙기 쉬운 해"
+        if verdict == "신약":
+            detail = (
+                f"{yr} 세운 {pillar_s}은(는) 비겁·인성·용신 쪽 기운이 살아나 "
+                f"체력·멘토·학습·협력에서 도움을 받기 쉽습니다. "
+                f"무리한 확장보다 기반을 다지기 좋은 시기로 보세요."
+            )
+        elif verdict == "신강":
+            detail = (
+                f"{yr} 세운 {pillar_s}은(는) 식상·재성 쪽으로 기운이 흘러 "
+                f"일·표현·수입·성과를 내기 좋은 해입니다. "
+                f"다만 과로·말실수만 조절하세요."
+            )
+        else:
+            detail = (
+                f"{yr} 세운 {pillar_s}은(는) 균형에 맞는 기운이 와 "
+                f"판단·협력·일 진행이 비교적 순조롭습니다."
+            )
+    elif rate == "주의":
+        one = f"{tag} {pillar_s} — 부담·소모가 큰 해"
+        if verdict == "신약":
+            detail = (
+                f"{yr} 세운 {pillar_s}은(는) 관살·재성·기신 쪽이 강해 "
+                f"책임·돈·경쟁·압박이 한꺼번에 몰릴 수 있습니다. "
+                f"건강·수면·무리한 계약을 특히 조심하세요."
+            )
+        elif verdict == "신강":
+            detail = (
+                f"{yr} 세운 {pillar_s}은(는) 인성·비겁이 또해져 "
+                f"고집·답답함·부담·과로가 쌓이기 쉽습니다. "
+                f"일을 더 벌리기보다 정리·배출·휴식이 필요합니다."
+            )
+        else:
+            detail = (
+                f"{yr} 세운 {pillar_s}은(는) 기신 쪽이 두드러져 "
+                f"갑자기 지치거나 마찰이 생기기 쉬운 해입니다. 속도를 줄이세요."
+            )
+    else:
+        one = f"{tag} {pillar_s} — 보통, 환경 따라 달라짐"
+        detail = (
+            f"{yr} 세운 {pillar_s}은(는) 강약만으로 극단적이지 않습니다. "
+            f"합충·신살·대운과 함께 보시고, 무리한 올인은 피하세요."
+        )
+    return one, detail
+
+
+def build_sewoon_strength_series(
+    yong_report: Dict[str, Any],
+    day_master: str,
+    sewoon_nearby: Sequence[Dict[str, Any]],
+    *,
+    center_year: Optional[int] = None,
+) -> List[Dict[str, Any]]:
+    """세운 ±범위 각 연도의 신강·신약 관점 해설."""
+    verdict = yong_report.get("일간_강약") or "중화"
+    score = float(yong_report.get("강약_점수") or 0)
+    dm_elem = yong_report.get("일간_오행") or gj.element_of_stem(day_master)
+    yong_elem = yong_report.get("용신_오행") or ""
+    huisin = list(yong_report.get("희신") or [])
+    gisin = list(yong_report.get("기신") or [])
+
+    out: List[Dict[str, Any]] = []
+    for item in sewoon_nearby:
+        year = int(item.get("year") or item.get("연도") or 0)
+        gan = item.get("gan") or ""
+        zhi = item.get("zhi") or ""
+        pillar = item.get("pillar") or f"{gan}{zhi}"
+        if not gan or not zhi:
+            continue
+        ge = gj.element_of_stem(gan)
+        ze = gj.element_of_branch(zhi)
+        rg = _rate_elem_for_strength(verdict, ge, dm_elem, yong_elem, huisin, gisin)
+        rz = _rate_elem_for_strength(verdict, ze, dm_elem, yong_elem, huisin, gisin)
+        rate = _merge_elem_rates(rg, rz)
+        is_center = center_year is not None and year == center_year
+        one, detail = _sewoon_year_strength_line(
+            verdict, year, pillar, ge, ze, rate, is_center=is_center
+        )
+        out.append(
+            {
+                "연도": year,
+                "간지": pillar,
+                "천간_오행": ge,
+                "지지_오행": ze,
+                "천간_등급": rg,
+                "지지_등급": rz,
+                "종합_등급": rate,
+                "한줄": one,
+                "상세": detail,
+                "기준년": is_center,
+            }
+        )
+    return out
+
+
 def _dominant_element_share(counts: Dict[str, int]) -> Tuple[str, float]:
     total = sum(counts.values()) or 1
     best_e, best_v = max(counts.items(), key=lambda kv: kv[1])
@@ -269,6 +565,17 @@ def analyze_yongsin(
     hui_line = f"희신: {', '.join(huisin)}"
     gi_line = f"기신: {', '.join(gisin)} (과다하거나 세력이 맞붙으면 조심)"
 
+    strength_detail = _build_strength_detail(
+        verdict,
+        round(score, 1),
+        dm_elem,
+        bib_pct=round(bib_r * 100, 1),
+        scg_pct=round(scg_r * 100, 1),
+        deoling_note=deoling_note,
+        sup_note=sup_note,
+        sipsin_note=sipsin_note,
+    )
+
     return {
         "일간_오행": dm_elem,
         "월지": month_zhi,
@@ -280,6 +587,7 @@ def analyze_yongsin(
         "십신_비교_설명": sipsin_note,
         "강약_점수": round(score, 1),
         "일간_강약": verdict,
+        "강약_상세": strength_detail,
         "종격_휴리스틱": jong if jong else YONG_JONG_PLACEHOLDER,
         "화격_휴리스틱": hwa if hwa else YONG_HWA_PLACEHOLDER,
         "용신_오행": yongsin_elem,
@@ -298,6 +606,7 @@ def analyze_yongsin(
         "gisin_hint": gisin,
         "notes": _uniq(yongsin_reason_parts + [deoling_note]),
         "disclaimer": "파종·대운·월령 입춘 시각에 따라 용신은 달라질 수 있습니다. 본 결과는 학습용 단순 규칙입니다.",
+        "세운_강약_해설": [],
     }
 
 
@@ -362,6 +671,17 @@ def _analyze_counts_only(
     hui_line = f"희신: {', '.join(huisin)}"
     gi_line = f"기신: {', '.join(gisin)} (과다하거나 세력이 맞붙으면 조심)"
 
+    strength_detail = _build_strength_detail(
+        verdict,
+        round(score, 1),
+        dm_elem,
+        bib_pct=round(bib_proxy * 100, 1),
+        scg_pct=round((1 - bib_proxy) * 100, 1),
+        deoling_note=deoling_note,
+        sup_note=sup_note,
+        sipsin_note=sipsin_note,
+    )
+
     return {
         "일간_오행": dm_elem,
         "월지": month_zhi,
@@ -373,6 +693,7 @@ def _analyze_counts_only(
         "십신_비교_설명": sipsin_note,
         "강약_점수": round(score, 1),
         "일간_강약": verdict,
+        "강약_상세": strength_detail,
         "종격_휴리스틱": jong if jong else YONG_JONG_PLACEHOLDER,
         "화격_휴리스틱": YONG_HWA_PLACEHOLDER,
         "용신_오행": yongsin_elem,
@@ -387,6 +708,7 @@ def _analyze_counts_only(
         "gisin_hint": gisin,
         "notes": _uniq(yongsin_reason_parts),
         "disclaimer": "파종·대운·월령 입춘 시각에 따라 용신은 달라질 수 있습니다. 본 결과는 학습용 단순 규칙입니다.",
+        "세운_강약_해설": [],
     }
 
 
@@ -396,7 +718,15 @@ def suggest_useful_gods(
     month_zhi: str,
     *,
     pillars: Optional[dict] = None,
+    sewoon_nearby: Optional[Sequence[Dict[str, Any]]] = None,
+    sewoon_center_year: Optional[int] = None,
 ) -> Dict[str, Any]:
     if pillars is None:
-        return _analyze_counts_only(counts, day_master, month_zhi)
-    return analyze_yongsin(pillars, day_master, counts)
+        rep = _analyze_counts_only(counts, day_master, month_zhi)
+    else:
+        rep = analyze_yongsin(pillars, day_master, counts)
+    if sewoon_nearby:
+        rep["세운_강약_해설"] = build_sewoon_strength_series(
+            rep, day_master, sewoon_nearby, center_year=sewoon_center_year
+        )
+    return rep

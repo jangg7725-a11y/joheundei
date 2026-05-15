@@ -1545,7 +1545,14 @@ def build_report(
         daewoon_cycles=daewoon_block["cycles"],
     )
 
-    yong_block = ys.suggest_useful_gods(counts, dm, pillars["month"]["zhi"], pillars=pillars)
+    yong_block = ys.suggest_useful_gods(
+        counts,
+        dm,
+        pillars["month"]["zhi"],
+        pillars=pillars,
+        sewoon_nearby=sewoon_nearby,
+        sewoon_center_year=center,
+    )
     sinsal_block = sn.analyze_sinsal(dm, pillars, gender=gender)
 
     categories = _build_life_categories(

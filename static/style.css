@@ -461,6 +461,127 @@ body {
   margin: 0 0 0.75rem;
 }
 
+/* ── 신강·신약 상세 ── */
+.strength-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.strength-verdict {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.strength-score {
+  font-size: 0.9rem;
+  color: var(--text);
+}
+
+.strength-band {
+  font-size: 0.78rem;
+  color: var(--muted);
+  flex: 1 1 100%;
+}
+
+.strength-lead {
+  font-size: 0.9rem;
+  color: var(--text);
+  line-height: 1.55;
+  margin: 0 0 0.85rem;
+}
+
+.strength-score-note {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--line);
+}
+
+.strength-subtitle {
+  margin: 0 0 0.45rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--gold);
+}
+
+.strength-box {
+  margin: 0.75rem 0;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+
+.strength-box-tip {
+  border-color: rgba(212, 175, 55, 0.22);
+}
+
+.strength-list {
+  margin: 0;
+  padding-left: 1.15rem;
+  font-size: 0.84rem;
+  color: var(--text);
+  line-height: 1.55;
+}
+
+.strength-list li {
+  margin-bottom: 0.35rem;
+}
+
+.strength-sewoon-block {
+  margin-top: 1rem;
+}
+
+.strength-sewoon-table-wrap {
+  overflow-x: auto;
+  margin-top: 0.5rem;
+}
+
+.strength-sewoon-table td,
+.strength-sewoon-table th {
+  font-size: 0.78rem;
+  vertical-align: top;
+}
+
+.strength-detail-cell {
+  min-width: 12rem;
+  max-width: 22rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.strength-badge {
+  display: inline-block;
+  padding: 0.12rem 0.45rem;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+}
+
+.strength-badge.strength-good {
+  background: rgba(90, 180, 120, 0.2);
+  color: #8fd4a8;
+}
+
+.strength-badge.strength-warn {
+  background: rgba(232, 93, 111, 0.18);
+  color: #f0a0ab;
+}
+
+.strength-row-current {
+  background: var(--gold-glow);
+}
+
+.strength-row-current td {
+  color: var(--text);
+}
+
 .chart-pillars {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
