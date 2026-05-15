@@ -102,6 +102,116 @@ body {
   grid-column: 1 / -1;
 }
 
+/* ── 사주 프로필 탭 ── */
+.profile-manager {
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.profile-tabs-wrap {
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  margin-bottom: 0.55rem;
+}
+
+.profile-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.profile-tab {
+  padding: 0.4rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+  max-width: 8.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-tab:hover {
+  color: var(--text);
+  border-color: rgba(212, 175, 55, 0.35);
+}
+
+.profile-tab.active {
+  background: linear-gradient(180deg, rgba(212, 175, 55, 0.25), rgba(212, 175, 55, 0.08));
+  color: var(--gold);
+  border-color: rgba(212, 175, 55, 0.45);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+.profile-tab-add {
+  flex-shrink: 0;
+  width: 2.1rem;
+  border-radius: 8px;
+  border: 1px dashed rgba(212, 175, 55, 0.45);
+  background: rgba(0, 0, 0, 0.15);
+  color: var(--gold);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.profile-tab-add:hover {
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.profile-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 0.35rem;
+}
+
+.profile-save-btn,
+.profile-del-btn {
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.profile-save-btn:hover {
+  border-color: rgba(212, 175, 55, 0.45);
+  color: var(--gold);
+}
+
+.profile-del-btn {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.profile-del-btn:hover:not(:disabled) {
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.profile-del-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.profile-hint {
+  margin: 0 !important;
+  font-size: 0.72rem !important;
+  line-height: 1.45;
+}
+
 .label-row {
   display: block;
   margin-bottom: 0.4rem;

@@ -265,15 +265,234 @@
 
   syncCalendarUI();
 
+  /* ── 사주 프로필 저장 (localStorage) ───────────────────────── */
+  const PROFILE_STORAGE_KEY = "joheundei_saju_profiles_v1";
+  const profileTabsEl = document.getElementById("profile-tabs");
+  const profileAddBtn = document.getElementById("profile-add-btn");
+  const profileSaveBtn = document.getElementById("profile-save-btn");
+  const profileDelBtn = document.getElementById("profile-del-btn");
+
+  function newProfileId() {
+    return "p_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function defaultProfileData() {
+    const y = new Date().getFullYear();
+    return {
+      user_name: "",
+      calendar: "solar",
+      year: y,
+      month: 1,
+      day: 1,
+      hour: 12,
+      minute: 0,
+      gender: "male",
+      lunar_leap: false,
+      sewoon_year: "",
+      partner_day_pillar: "",
+      ya_jasi: false,
+    };
+  }
+
+  function readFormProfileData() {
+    const fd = new FormData(form);
+    const calendar = calendarInput.value;
+    const lunarLeapSeg = document.querySelector(".seg-leap .seg-btn.active");
+    const leapOn = calendar === "lunar" && lunarLeapSeg && lunarLeapSeg.dataset.leap === "1";
+    const yaJasiEl = document.getElementById("ya_jasi");
+    return {
+      user_name: (document.getElementById("user_name").value || "").trim(),
+      calendar,
+      year: Number(fd.get("year")) || defaultProfileData().year,
+      month: Number(fd.get("month")) || 1,
+      day: Number(fd.get("day")) || 1,
+      hour: Number(fd.get("hour")) ?? 12,
+      minute: Number(fd.get("minute")) ?? 0,
+      gender: document.getElementById("gender").value || "male",
+      lunar_leap: leapOn,
+      sewoon_year: (fd.get("sewoon_year") || "").toString().trim(),
+      partner_day_pillar: (fd.get("partner_day_pillar") || "").toString().trim(),
+      ya_jasi: !!(yaJasiEl && yaJasiEl.checked),
+    };
+  }
+
+  function applyFormProfileData(data) {
+    if (!data) return;
+    const d = { ...defaultProfileData(), ...data };
+    document.getElementById("user_name").value = d.user_name || "";
+    document.getElementById("year").value = d.year;
+    document.getElementById("month").value = d.month;
+    document.getElementById("day").value = d.day;
+    document.getElementById("hour").value = d.hour;
+    document.getElementById("minute").value = d.minute;
+    document.getElementById("sewoon_year").value = d.sewoon_year || "";
+    document.getElementById("partner_day_pillar").value = d.partner_day_pillar || "";
+    const yaJasiEl = document.getElementById("ya_jasi");
+    if (yaJasiEl) yaJasiEl.checked = !!d.ya_jasi;
+
+    const cal = d.calendar === "lunar" ? "lunar" : "solar";
+    calendarInput.value = cal;
+    document.querySelectorAll(".seg-calendar .seg-btn").forEach((b) => {
+      const on = (b.dataset.calendar || "solar") === cal;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+
+    const g = d.gender === "female" ? "female" : "male";
+    document.getElementById("gender").value = g;
+    document.querySelectorAll(".seg-gender .seg-btn").forEach((b) => {
+      const on = (b.dataset.gender || "male") === g;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+
+    const leap = d.lunar_leap ? "1" : "0";
+    document.getElementById("lunar_leap_val").value = leap;
+    document.querySelectorAll(".seg-leap .seg-btn").forEach((b) => {
+      const on = (b.dataset.leap || "0") === leap;
+      b.classList.toggle("active", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    if (lunarLeapCheck) lunarLeapCheck.checked = leap === "1";
+    syncCalendarUI();
+  }
+
+  function loadProfileStore() {
+    try {
+      const raw = localStorage.getItem(PROFILE_STORAGE_KEY);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.profiles) || !parsed.profiles.length) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveProfileStore(store) {
+    localStorage.setItem(PROFILE_STORAGE_KEY, JSON.stringify(store));
+  }
+
+  let profileStore = loadProfileStore();
+  if (!profileStore) {
+    profileStore = {
+      activeId: newProfileId(),
+      profiles: [
+        {
+          id: newProfileId(),
+          label: "본인",
+          data: defaultProfileData(),
+        },
+      ],
+    };
+    profileStore.activeId = profileStore.profiles[0].id;
+    saveProfileStore(profileStore);
+  }
+
+  function getActiveProfile() {
+    return profileStore.profiles.find((p) => p.id === profileStore.activeId) || profileStore.profiles[0];
+  }
+
+  function profileTabLabel(p) {
+    const name = (p.data && p.data.user_name) || p.label || "프로필";
+    return name.length > 12 ? name.slice(0, 11) + "…" : name;
+  }
+
+  function renderProfileTabs() {
+    if (!profileTabsEl) return;
+    profileTabsEl.innerHTML = "";
+    profileStore.profiles.forEach((p) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "profile-tab" + (p.id === profileStore.activeId ? " active" : "");
+      btn.setAttribute("role", "tab");
+      btn.setAttribute("aria-selected", p.id === profileStore.activeId ? "true" : "false");
+      btn.dataset.profileId = p.id;
+      btn.textContent = profileTabLabel(p);
+      btn.title = (p.data && p.data.user_name) || p.label || "";
+      btn.addEventListener("click", () => switchProfile(p.id));
+      profileTabsEl.appendChild(btn);
+    });
+    if (profileDelBtn) {
+      profileDelBtn.disabled = profileStore.profiles.length <= 1;
+    }
+  }
+
+  function persistActiveProfileFromForm() {
+    const p = getActiveProfile();
+    if (!p) return;
+    p.data = readFormProfileData();
+    const nm = (p.data.user_name || "").trim();
+    if (nm) p.label = nm;
+    saveProfileStore(profileStore);
+    renderProfileTabs();
+  }
+
+  function switchProfile(id) {
+    if (id === profileStore.activeId) return;
+    persistActiveProfileFromForm();
+    profileStore.activeId = id;
+    saveProfileStore(profileStore);
+    const p = getActiveProfile();
+    applyFormProfileData(p.data);
+    renderProfileTabs();
+    statusEl.textContent = `「${profileTabLabel(p)}」 프로필로 전환했습니다.`;
+    statusEl.classList.remove("error");
+  }
+
+  function addProfile() {
+    persistActiveProfileFromForm();
+    const n = profileStore.profiles.length + 1;
+    const p = {
+      id: newProfileId(),
+      label: `프로필 ${n}`,
+      data: defaultProfileData(),
+    };
+    profileStore.profiles.push(p);
+    profileStore.activeId = p.id;
+    saveProfileStore(profileStore);
+    applyFormProfileData(p.data);
+    renderProfileTabs();
+    statusEl.textContent = `새 프로필 「${p.label}」을(를) 추가했습니다.`;
+    statusEl.classList.remove("error");
+    document.getElementById("user_name").focus();
+  }
+
+  function deleteActiveProfile() {
+    if (profileStore.profiles.length <= 1) {
+      statusEl.textContent = "마지막 프로필은 삭제할 수 없습니다.";
+      statusEl.classList.add("error");
+      return;
+    }
+    const cur = getActiveProfile();
+    const name = profileTabLabel(cur);
+    if (!window.confirm(`「${name}」 프로필을 삭제할까요?`)) return;
+    profileStore.profiles = profileStore.profiles.filter((p) => p.id !== profileStore.activeId);
+    profileStore.activeId = profileStore.profiles[0].id;
+    saveProfileStore(profileStore);
+    applyFormProfileData(getActiveProfile().data);
+    renderProfileTabs();
+    statusEl.textContent = `「${name}」 프로필을 삭제했습니다.`;
+    statusEl.classList.remove("error");
+  }
+
+  if (profileAddBtn) profileAddBtn.addEventListener("click", addProfile);
+  if (profileSaveBtn) {
+    profileSaveBtn.addEventListener("click", () => {
+      persistActiveProfileFromForm();
+      statusEl.textContent = `「${profileTabLabel(getActiveProfile())}」 저장 완료`;
+      statusEl.classList.remove("error");
+    });
+  }
+  if (profileDelBtn) profileDelBtn.addEventListener("click", deleteActiveProfile);
+
+  applyFormProfileData(getActiveProfile().data);
+  renderProfileTabs();
+
   let latestReport = null;
   let lastSajuBody = null;
   /** @type {"daewoon"|"sewoon"|"wolwoon"|"ilwoon"} */
   let tab3Subtab = "daewoon";
-
-  const defaultYear = new Date().getFullYear();
-  document.getElementById("year").value = defaultYear;
-  document.getElementById("month").value = 1;
-  document.getElementById("day").value = 1;
 
   const panels = [0, 1, 2, 3, 4, 5].map((i) => document.getElementById(`panel-${i}`));
   const tabBtns = [0, 1, 2, 3, 4, 5].map((i) => document.getElementById(`tab-${i}`));
@@ -1822,6 +2041,7 @@
     if (yaJasiEl && yaJasiEl.checked) body.ya_jasi = true;
 
     if (lunarLeapCheck) lunarLeapCheck.checked = leapOn;
+    persistActiveProfileFromForm();
 
     try {
       const res = await fetch("/api/saju", {

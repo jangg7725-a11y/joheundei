@@ -16,6 +16,19 @@
   <main class="layout">
     <section class="card panel" aria-labelledby="panel-input-heading">
       <h2 id="panel-input-heading">출생 정보 입력</h2>
+
+      <div class="profile-manager" aria-label="저장된 사주 프로필">
+        <div class="profile-tabs-wrap">
+          <div class="profile-tabs" id="profile-tabs" role="tablist" aria-label="사주 프로필 선택"></div>
+          <button type="button" class="profile-tab-add" id="profile-add-btn" title="새 프로필 추가">+</button>
+        </div>
+        <div class="profile-toolbar">
+          <button type="button" class="btn profile-save-btn" id="profile-save-btn">현재 프로필 저장</button>
+          <button type="button" class="btn profile-del-btn" id="profile-del-btn" title="선택한 프로필 삭제">삭제</button>
+        </div>
+        <p class="panel-note profile-hint">본인·가족·지인 등 여러 명의 생년월일시를 프로필로 저장해 두고 탭으로 바꿔 가며 분석할 수 있습니다. (브라우저에만 저장)</p>
+      </div>
+
       <form id="saju-form" class="form-saju">
         <label class="field field-full">
           <span>이름 <small class="hint">(표시용, 선택)</small></span>
