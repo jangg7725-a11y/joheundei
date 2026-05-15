@@ -262,14 +262,11 @@ def _stem_union_notes(dm: str, sg: str, pillars: dict) -> Tuple[List[str], bool,
             continue
         elem = CHEON_GAN_HAP_RESULT[fs]
         sip = sp.classify_sipsin(dm, pg)
-        hap_lines.append(
-            f"{GAN_LABEL[pk]} {pg}와 세운 천간 {sg}: 천간합 → 화기 성향 {elem} · 원글자 십신 {sip}"
-        )
+        hap_lines.append(cph._sewoon_cheongan_hap_note(pk, sg, pg, elem, sip))
         if sip in ("편재", "정재"):
             wealth_hap = True
         if sip in ("정관", "편관"):
             guan_hap = True
-            hap_lines[-1] += " · 관운·직장 인연 신호로 함께 봅니다."
     return hap_lines, wealth_hap, guan_hap
 
 
@@ -278,7 +275,10 @@ def _stem_clash_notes(sg: str, pillars: dict) -> List[str]:
     for pk in PILLAR_KEYS:
         pg = pillars[pk]["gan"]
         if stem_chong(sg, pg):
-            lines.append(f"{GAN_LABEL[pk]} {pg}와 세운 천간 {sg}: 천간충·극렬 변동 신호.")
+            lines.append(
+                f"올해 천간 {sg}이 원국 {GAN_LABEL[pk]} {pg}과 부딪칩니다(천간충). "
+                f"갑작스러운 결정·말실수·관계 긴장을 조심하세요."
+            )
     return lines
 
 
@@ -678,7 +678,9 @@ def analyze_sewoon_year(
     main_hidden = gj.jijanggan_ordered(sz)[0]
     sip_sz_approx = sp.classify_sipsin(day_master, main_hidden)
 
-    inj_rows = cph.analyze_sewoon_injection(pillars, pillar_full, sewoon_year=solar_year)
+    inj_rows = cph.analyze_sewoon_injection(
+        pillars, pillar_full, sewoon_year=solar_year, day_master=day_master
+    )
 
     # --- 지지별 충·파·해·형·합·복음 ---
     br_chong: List[Dict[str, str]] = []
@@ -701,7 +703,7 @@ def analyze_sewoon_year(
                     "글자": f"{sz}{nz}",
                     "육친궁": yuk_short,
                     "신체": body,
-                    "해석": f"{lab}({nz})와 세운 지지 {sz}가 충하여 {yuk_short}·{body} 축 요동.",
+                    "해석": cph._sewoon_chong_note(pk, sz, nz),
                 }
             )
         if branch_po(sz, nz):
@@ -712,7 +714,7 @@ def analyze_sewoon_year(
                     "글자": f"{sz}×{nz}",
                     "육친궁": yuk_short,
                     "신체": body,
-                    "해석": f"{lab} 파형 무너짐이 생길 수 있습니다.",
+                    "해석": cph._sewoon_po_note(pk, sz, nz),
                 }
             )
         if branch_hai(sz, nz):
@@ -723,7 +725,7 @@ def analyze_sewoon_year(
                     "글자": f"{sz}×{nz}",
                     "육친궁": yuk_short,
                     "신체": body,
-                    "해석": f"{lab} 육해로 은근한 시기·건강 피로.",
+                    "해석": cph._sewoon_hai_note(pk, sz, nz),
                 }
             )
         xt = _xing_pair_label(sz, nz)
@@ -747,15 +749,15 @@ def analyze_sewoon_year(
                     "유형": "육합",
                     "글자": f"{sz}{nz}",
                     "육친궁": yuk_short,
-                    "해석": f"{lab} 육합 인연으로 끌림이 생깁니다.",
+                    "해석": cph._sewoon_liuhe_note(pk, sz, nz),
                 }
             )
 
         if sz == nz:
-            fuyin_lines.append(f"{lab}({nz})와 세운 지지 {sz} 복음: 같은 글자 반복으로 {yuk_short}·{body} 과제 재등장.")
+            fuyin_lines.append(f"{lab}({nz})와 올해 지지 {sz}: {cph._fuyin_zhi_repeat_note(pk, sz)}")
 
         if pillar_full == nat_pillar[pk]:
-            fuyin_lines.append(f"{lab} 전체 간지 복음({pillar_full}): 해당 주 테마가 크게 되풀이됩니다.")
+            fuyin_lines.append(cph._fuyin_sewoon_note(pk, lab, solar_year))
 
     san_he_lines = _san_he_notes(zhis, sz)
 

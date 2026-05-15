@@ -104,6 +104,111 @@ def _sewoon_hai_note(pillar_key: str, sew_zhi: str, nat_zhi: str) -> str:
         f"몸은 {body} 쪽 만성 피로·소화 불편을 먼저 신호로 느끼는 경우가 많습니다."
     )
 
+
+def _sewoon_liuhe_note(pillar_key: str, sew_zhi: str, nat_zhi: str) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, "")
+    return (
+        f"올해 지지 {sew_zhi}와 원국 {ZHI_LABEL.get(pillar_key, '')}({nat_zhi})가 서로 잘 맞는 조합(육합)입니다. "
+        f"{theme}에서 도움·협력·인연·만남이 늘고 일이 순조롭게 이어지기 쉽습니다. "
+        f"너무 편해서 방심하지 않도록, 약속·돈·관계는 그래도 한 번씩 확인하는 것이 좋습니다."
+    )
+
+
+def _sewoon_cheongan_hap_note(
+    pillar_key: str,
+    sew_gan: str,
+    nat_gan: str,
+    elem: str,
+    sipsin_label: str,
+) -> str:
+    theme = _PILLAR_PLAIN.get(pillar_key, "")
+    sip_hint = {
+        "비견": "형제·동료·경쟁",
+        "겁재": "지출·동업·경쟁",
+        "식신": "표현·기술·자녀",
+        "상관": "말·창작·변화",
+        "편재": "부수입·사업",
+        "정재": "월급·안정 수입",
+        "편관": "압박·이동·규칙",
+        "정관": "직장·책임·명예",
+        "편인": "학습·이단적 생각",
+        "정인": "어머니·보호·자격",
+    }.get(sipsin_label, sipsin_label or "해당 주제")
+    return (
+        f"올해 천간 {sew_gan}이 원국 {GAN_LABEL.get(pillar_key, '')} {nat_gan}과 합쳐집니다(천간합). "
+        f"{theme}에서 「{sip_hint}」 쪽 일이 한데 묶여 진행되기 쉽고, 합화 기운은 {elem} 방향으로 흐릅니다. "
+        f"혼자 밀기보다 같이 하는 일·계약·관계에서 성과가 나오기 쉬운 신호입니다."
+    )
+
+
+def _native_chong_note(k1: str, k2: str) -> str:
+    t1, t2 = _PILLAR_PLAIN.get(k1, ""), _PILLAR_PLAIN.get(k2, "")
+    if "day" in (k1, k2):
+        return (
+            f"원국 안에서 두 지지가 서로 정면으로 부딪칩니다(충). "
+            f"배우자·가정·건강({t1}·{t2}) 쪽에서 갈등·이사·환경 변화가 반복되기 쉽습니다."
+        )
+    if "month" in (k1, k2):
+        return (
+            f"원국 안에서 두 지지가 충입니다. "
+            f"직장·부모·사회생활({t1}·{t2}) 자리에서 마찰·이직·급한 변화가 생기기 쉽습니다."
+        )
+    return (
+        f"원국 안에서 두 지지가 충입니다. "
+        f"{t1}·{t2} 관련 환경·인연에서 예기치 않은 변동을 조심하세요."
+    )
+
+
+def _native_hai_note(k1: str, k2: str) -> str:
+    if "day" in (k1, k2):
+        return (
+            "원국 안에서 두 지지가 해(害)입니다. "
+            "배우자·가정·일상에서 서운함·오해·말다툼이 쌓이기 쉬우니, 오해는 바로 풀어두는 것이 좋습니다."
+        )
+    if "month" in (k1, k2):
+        return (
+            "원국 안에서 두 지지가 해입니다. "
+            "직장·상사·부모 문제가 겉으로 드러나지 않고 은근히 신경 쓰이는 형태가 많습니다."
+        )
+    return (
+        "원국 안에서 두 지지가 해입니다. "
+        "대외·자녀·말년 쪽에서 작은 방해·질투·근심이 쌓일 수 있습니다."
+    )
+
+
+def _native_po_note(k1: str, k2: str) -> str:
+    if "day" in (k1, k2):
+        return (
+            "원국 안에서 두 지지가 파(破)입니다. "
+            "결혼·계약·신뢰·가정 안정이 한 번 깨졌다가 다시 잡히는 패턴이 나오기 쉽습니다."
+        )
+    if "month" in (k1, k2):
+        return (
+            "원국 안에서 두 지지가 파입니다. "
+            "직장·수입·사업 구조가 갑자기 바뀌거나 약속이 깨지는 일을 조심하세요."
+        )
+    return (
+        "원국 안에서 두 지지가 파입니다. "
+        "계획·환경·말년 준비가 중간에 틀어지지 않도록 백업을 두는 것이 좋습니다."
+    )
+
+
+def _native_liuhe_note(k1: str, k2: str, za: str, zb: str) -> str:
+    t1, t2 = _PILLAR_PLAIN.get(k1, ""), _PILLAR_PLAIN.get(k2, "")
+    return (
+        f"원국 안에서 {za}와 {zb}가 육합(六合)으로 맞습니다. "
+        f"{t1}·{t2} 쪽 인연이 자연스럽게 이어지고, 서로 도움이 되는 관계가 만들어지기 쉽습니다."
+    )
+
+
+def _native_cheongan_hap_note(k1: str, k2: str, elem: str) -> str:
+    t1, t2 = _PILLAR_PLAIN.get(k1, ""), _PILLAR_PLAIN.get(k2, "")
+    return (
+        f"원국 천간이 천간합으로 묶입니다. "
+        f"{t1}·{t2} 주제가 {elem} 기운 쪽으로 한데 흘러, 협력·인연·제도 안에서 끌려 들어가기 쉽습니다."
+    )
+
+
 CHEON_GAN_HAP_RESULT = {
     frozenset(("甲", "己")): "토",
     frozenset(("乙", "庚")): "금",
@@ -149,29 +254,15 @@ def _strength(keys_involved: Iterable[str]) -> str:
 
 
 def _chong_position_note(k1: str, k2: str) -> str:
-    roles = (ZHI_YUKCHIN_SHORT[k1], ZHI_YUKCHIN_SHORT[k2])
-    base = "지충으로 긴장·이동·관계 균열 신호가 생깁니다."
-    if k1 == "day" or k2 == "day":
-        return f"일지 충 포함 → 배우자·내실 쪽 {base}"
-    if k1 == "month" or k2 == "month":
-        return f"월지 충 포함 → 직업·부모·사회 자리 {base}"
-    return f"년·시 충 → 조상·환경 또는 자녀·말년 축에서 {base}"
+    return _native_chong_note(k1, k2)
 
 
 def _hai_position_note(k1: str, k2: str) -> str:
-    if k1 == "day" or k2 == "day":
-        return "육해가 일지를 건드려 배우자·내실에 배신감·오해 누적형 스트레스가 나타나기 쉽습니다."
-    if k1 == "month" or k2 == "month":
-        return "월지 육해로 직장·상사·부모 문제가 은근히 끼치는 형태입니다."
-    return "년·시 육해로 대외·자녀 축에 근심·방해 요인이 생기기 쉽습니다."
+    return _native_hai_note(k1, k2)
 
 
 def _po_position_note(k1: str, k2: str) -> str:
-    if k1 == "day" or k2 == "day":
-        return "일지 파로 계약·결혼·신뢰 관계가 깨지기 쉬운 패턴입니다."
-    if k1 == "month" or k2 == "month":
-        return "월지 파로 일터·수입 구조가 급히 무너지거나 바뀌는 일이 잦을 수 있습니다."
-    return "파가 년·시에 걸려 환경·말년 계획이 예기치 않게 삭는 경우를 경계합니다."
+    return _native_po_note(k1, k2)
 
 
 def _xing_note(kind_zh: str, k1: str, k2: str) -> str:
@@ -310,7 +401,7 @@ def analyze_native_he(pillars: dict) -> List[Dict[str, str]]:
                 glyphs,
                 where,
                 strength,
-                f"합화 성향이 {elem} 기운으로 모입니다 — 인연·협력·제도 안으로 끌려드는 힘.",
+                _native_cheongan_hap_note(k1, k2, elem),
             )
         )
 
@@ -330,7 +421,7 @@ def analyze_native_he(pillars: dict) -> List[Dict[str, str]]:
                 glyphs,
                 where,
                 strength,
-                f"육합으로 인연·유대가 생기며 지지 오행({e1}/{e2})이 서로 끌어당깁니다.",
+                _native_liuhe_note(k1, k2, za, zb),
             )
         )
 
@@ -430,17 +521,20 @@ def analyze_sewoon_injection(
     sewoon_pillar: str,
     *,
     sewoon_year: Optional[int] = None,
+    day_master: Optional[str] = None,
 ) -> List[Dict[str, str]]:
-    """세운 간지와 원국 지지 충·파·해."""
+    """세운 간지·천간과 원국의 충·파·해·육합·천간합."""
     if len(sewoon_pillar) < 2:
         return []
-    sz = sewoon_pillar[1]
+    sg, sz = sewoon_pillar[0], sewoon_pillar[1]
+    dm = day_master or pillars.get("day", {}).get("gan", "")
     yr_note = f"{sewoon_year}년 세운 " if sewoon_year else "세운 "
     out: List[Dict[str, str]] = []
 
     ch_set = _chong_set()
     po_set = _po_set()
     hai_set = _hai_set()
+    he_set = _liu_he_set()
 
     for k in PILLAR_KEYS:
         nz = pillars[k]["zhi"]
@@ -477,6 +571,41 @@ def analyze_sewoon_injection(
                     _sewoon_hai_note(k, sz, nz),
                 )
             )
+        if pair in he_set:
+            out.append(
+                _relation_row(
+                    "세운육합",
+                    f"{sz}{nz}",
+                    f"{yr_note}지지 {sz}와 {pos_lbl}({nz}) 육합",
+                    "중",
+                    _sewoon_liuhe_note(k, sz, nz),
+                )
+            )
+
+    if dm and sg:
+        try:
+            from . import sipsin as sp
+
+            for k in PILLAR_KEYS:
+                pg = pillars[k]["gan"]
+                if pg == dm:
+                    continue
+                fs = frozenset((sg, pg))
+                if fs not in CHEON_GAN_HAP_RESULT:
+                    continue
+                elem = CHEON_GAN_HAP_RESULT[fs]
+                sip = sp.classify_sipsin(dm, pg)
+                out.append(
+                    _relation_row(
+                        "세운천간합",
+                        f"{sg}{pg}",
+                        f"{yr_note}천간 {sg}와 {GAN_LABEL[k]} {pg} 합",
+                        "중",
+                        _sewoon_cheongan_hap_note(k, sg, pg, elem, sip),
+                    )
+                )
+        except ImportError:
+            pass
 
     return out
 
@@ -503,7 +632,12 @@ def analyze_relations_full(
         ),
         "세운_대입": []
         if not sewoon_pillar
-        else analyze_sewoon_injection(pillars, sewoon_pillar, sewoon_year=sewoon_year),
+        else analyze_sewoon_injection(
+            pillars,
+            sewoon_pillar,
+            sewoon_year=sewoon_year,
+            day_master=pillars.get("day", {}).get("gan"),
+        ),
     }
 
     flat: List[Dict[str, str]] = []
