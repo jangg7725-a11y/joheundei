@@ -474,6 +474,154 @@ body {
   margin-bottom: 0.85rem !important;
 }
 
+/* ── 지장간 · 십신 상세 ── */
+.jj-section {
+  margin-top: 1rem;
+}
+
+.jj-intro {
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border-left: 3px solid var(--gold-dim);
+}
+
+.jj-intro-list {
+  margin: 0.45rem 0 0 1.1rem;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.jj-intro-list li {
+  margin-bottom: 0.25rem;
+}
+
+.jj-pillar-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: 0.75rem;
+}
+
+.jj-pillar-card {
+  padding: 0.7rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.jj-pillar-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.jj-pillar-label {
+  font-weight: 700;
+  color: var(--gold);
+  font-size: 0.85rem;
+}
+
+.jj-pillar-zhi {
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.jj-pillar-zhi-kr {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.jj-surface {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--text);
+}
+
+.jj-surface-lab {
+  color: var(--gold-dim);
+  font-weight: 600;
+  margin-right: 0.35rem;
+}
+
+.jj-hidden-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 0.45rem;
+}
+
+.jj-hidden-row {
+  display: grid;
+  grid-template-columns: 2.8rem auto 1fr;
+  gap: 0.25rem 0.4rem;
+  align-items: start;
+  font-size: 0.8rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.18);
+}
+
+.jj-slot {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #a78bfa;
+  grid-row: span 2;
+  align-self: center;
+}
+
+.jj-gan {
+  font-weight: 700;
+}
+
+.jj-gan-kr {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.jj-arrow {
+  display: none;
+}
+
+.jj-sip {
+  grid-column: 2 / -1;
+  color: var(--text);
+}
+
+.jj-yuk {
+  color: var(--gold-dim);
+  font-weight: 500;
+}
+
+.jj-slot-note {
+  grid-column: 2 / -1;
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.jj-pillar-role {
+  margin: 0.35rem 0 0;
+  font-size: 0.76rem;
+  line-height: 1.5;
+  color: var(--muted);
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  padding-top: 0.4rem;
+}
+
+@media (max-width: 520px) {
+  .jj-hidden-row {
+    grid-template-columns: 2.5rem 1fr;
+  }
+  .jj-slot {
+    grid-row: auto;
+  }
+}
+
 /* 십이운성 궁별 안내(원국 박스 아래) */
 .sibi-guide-block {
   margin-top: 0.75rem;

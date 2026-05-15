@@ -8,8 +8,10 @@
   const lunarLeapCheck = document.getElementById("lunar_leap");
 
   const PILLAR_KEYS = ["year", "month", "day", "hour"];
-  /** 원국 화면: 전통 열람 순서(시→일→월→년, 좌에서 우로). */
+  /** 원국 카드: 시→일→월→년 (좌→우). */
   const PILLAR_KEYS_WONGUK_ORDER = ["hour", "day", "month", "year"];
+  /** 표·지장간 등 세로 나열: 년→월→일→시 (위→아래). */
+  const PILLAR_KEYS_COL_ORDER = ["year", "month", "day", "hour"];
   const LABELS = {
     year: "年柱 · 년주",
     month: "月柱 · 월주",
@@ -1000,6 +1002,89 @@
     return box;
   }
 
+  const JJ_PILLAR_ROLE = {
+    year: "년지(年支)는 가문·조상·유년기 환경의 속기운을 봅니다. 겉으로 드러나지 않은 가문의 성향이나 초년 분위기가 여기서 읽힙니다.",
+    month: "월지(月支)는 부모·형제·성장 환경·사회에 나아가는 방식과 연결됩니다. 직장·학업의 초기 뿌리도 월지 지장간에서 단서를 찾습니다.",
+    day: "일지(日支)는 본인의 내면·배우자궁·성인 이후 삶의 핵심 반응 패턴입니다. 천간 일간이 ‘겉’, 일지 지장간이 ‘속’에 가깝습니다.",
+    hour: "시지(時支)는 자녀·말년·행동 결과·노후의 흐름을 보조합니다. 천간 시간과 합쳐 ‘무엇을 하며 어떻게 드러내는지’를 짚습니다.",
+  };
+
+  const JJ_SLOT_NOTE = {
+    정기: "정기(正氣) — 그 지지 안에서 가장 강하게 작용하는 본기(本氣)입니다.",
+    중기: "중기(中氣) — 정기를 보조하며 상황에 따라 중간 강도로 드러납니다.",
+    여기: "여기(餘氣) — 잔기·이전 계절의 기운이 남은 층으로, 약하지만 트리거되면 발동합니다.",
+  };
+
+  function jjYukchinTag(arr) {
+    if (!arr || !arr.length) return "";
+    return ` <span class="jj-yuk">(${arr.map(escapeHtml).join(" · ")})</span>`;
+  }
+
+  function renderJijangganSection(r) {
+    const wrap = el("div", "jj-section");
+    const dm = r.day_master || "";
+    const dmKr = r.day_master_kr || "";
+    const intro = el("div", "jj-intro panel-note");
+    intro.innerHTML = `
+      <p><strong>지장간(支藏干)</strong>은 지지(子·丑·寅…) 안에 숨어 있는 천간입니다.
+      명식에서는 <strong>일간 ${escapeHtml(dm)}(${escapeHtml(dmKr)})</strong>을 기준으로,
+      각 지장간도 십신·육친으로 분류합니다.</p>
+      <ul class="jj-intro-list">
+        <li><strong>천간 십신</strong> — 겉으로 드러나는 성향·사회적 역할(표면).</li>
+        <li><strong>지장간 십신</strong> — 속마음·잠재력·가족·인연 궁에서 작용하는 기운(내면·잠재).</li>
+        <li>같은 지지라도 <strong>정기 → 중기 → 여기</strong> 순으로 힘의 크기가 달라집니다(정기가 가장 큼).</li>
+        <li>대운·세운의 천간·지지가 지장간을 충·합·형하면, 숨어 있던 십신이 갑자기 드러나기도 합니다.</li>
+      </ul>`;
+    wrap.appendChild(intro);
+
+    const list = el("div", "jj-pillar-list");
+    PILLAR_KEYS_COL_ORDER.forEach((k) => {
+      const block = r.jijanggan && r.jijanggan[k];
+      if (!block) return;
+      const hidden = block.hidden || [];
+      const spRows = r.sipsin_hidden && r.sipsin_hidden[k] ? r.sipsin_hidden[k] : [];
+      const stemSip = (r.sipsin_stems && r.sipsin_stems[k]) || {};
+      const ganStem = stemSip.gan || (r.pillars && r.pillars[k] && r.pillars[k].gan) || "";
+      const card = el("article", "jj-pillar-card");
+      const head = el("div", "jj-pillar-head");
+      head.innerHTML = `<span class="jj-pillar-label">${LABELS[k]}</span>
+        <span class="jj-pillar-zhi han-inline ${ohClass(block.zhi)}">${escapeHtml(block.zhi)}</span>
+        <span class="jj-pillar-zhi-kr">${escapeHtml(block.zhi_kr || "")}</span>`;
+      card.appendChild(head);
+
+      const surface = el("p", "jj-surface");
+      surface.innerHTML = `<span class="jj-surface-lab">천간(표면)</span>
+        ${escapeHtml(ganStem)}
+        → <strong>${escapeHtml(stemSip.sipsin || "—")}</strong>
+        ${jjYukchinTag(stemSip.yukchin)}`;
+      card.appendChild(surface);
+
+      const rows = el("div", "jj-hidden-rows");
+      hidden.forEach((h, idx) => {
+        const sp = spRows[idx] || spRows.find((x) => x.gan === h.gan) || {};
+        const row = el("div", "jj-hidden-row");
+        const slot = h.slot || "";
+        row.innerHTML = `
+          <span class="jj-slot">${escapeHtml(slot)}</span>
+          <span class="jj-gan han-inline ${ohClass(h.gan)}">${escapeHtml(h.gan)}</span>
+          <span class="jj-gan-kr">(${escapeHtml(h.kr || "")}·${escapeHtml(h.element || "")})</span>
+          <span class="jj-arrow">→</span>
+          <span class="jj-sip"><strong>${escapeHtml(sp.sipsin || "—")}</strong>${jjYukchinTag(sp.yukchin)}</span>
+          <span class="jj-slot-note">${escapeHtml(JJ_SLOT_NOTE[slot] || "")}</span>`;
+        rows.appendChild(row);
+      });
+      card.appendChild(rows);
+
+      const role = el("p", "jj-pillar-role");
+      role.textContent = JJ_PILLAR_ROLE[k] || "";
+      card.appendChild(role);
+
+      list.appendChild(card);
+    });
+    wrap.appendChild(list);
+    return wrap;
+  }
+
   function renderTab0(r) {
     const root = panels[0];
     root.innerHTML = "";
@@ -1049,7 +1134,7 @@
       )
     );
     const guideGrid = el("div", "sibi-guide-grid");
-    PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
+    PILLAR_KEYS_COL_ORDER.forEach((k) => {
       const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
       const card = el("div", "sibi-guide-card");
       const head = el("div", "sibi-guide-card-head");
@@ -1067,6 +1152,9 @@
 
     const sec2 = el("div", "panel-section");
     sec2.appendChild(el("h3", null, "천간 · 지지 · 十神 · 十二運"));
+    sec2.appendChild(
+      el("p", "panel-note", "아래 표·지장간은 위에서 아래로 년주 → 월주 → 일주 → 시주 순입니다.")
+    );
     const tw = el("div", "table-wrap");
     const tb = document.createElement("table");
     tb.className = "data-table";
@@ -1074,7 +1162,7 @@
       "<thead><tr><th>주柱</th><th>천간干</th><th>지지支</th><th>십신十神</th><th>십이運星</th><th>運星 의미</th></tr></thead><tbody></tbody>";
     const body = tb.querySelector("tbody");
     const yong = r.yongsin || {};
-    PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
+    PILLAR_KEYS_COL_ORDER.forEach((k) => {
       const p = pillars[k];
       const sip = r.sipsin_stems[k] || {};
       const sb = r.sibiunsung[k] || {};
@@ -1107,23 +1195,10 @@
     tw.appendChild(tb);
     sec2.appendChild(tw);
 
-    const jj = el("div", "panel-section");
-    jj.appendChild(el("h3", null, "지장간 支藏干 · 십신"));
+    sec2.appendChild(el("h3", null, "지장간 支藏干 · 십신"));
     if (r.jijanggan) {
-      PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
-        const block = r.jijanggan[k];
-        if (!block) return;
-        const hid = block.hidden.map((h) => `${h.gan}(${h.element})`).join(", ");
-        const sp = r.sipsin_hidden[k] || [];
-        const spTxt = sp
-          .map((x) =>
-            `${x.gan}:${x.sipsin}${x.yukchin && x.yukchin.length ? "(" + x.yukchin.join("/") + ")" : ""}`
-          )
-          .join(" · ");
-        jj.appendChild(el("p", "panel-note", `${LABELS[k]} 지지 ${block.zhi} → ${hid} / ${spTxt}`));
-      });
+      sec2.appendChild(renderJijangganSection(r));
     }
-    sec2.appendChild(jj);
     root.appendChild(sec2);
 
     const sec3 = el("div", "panel-section");

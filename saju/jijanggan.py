@@ -13,10 +13,16 @@ def hidden_stems(zhi: str) -> List[str]:
 
 
 def pillar_hidden_detail(zhi: str) -> List[dict]:
-    result = []
-    for gan in hidden_stems(zhi):
+    """정기→중기→여기 순으로 지장간과 슬롯명을 함께 반환."""
+    triple = gj.JIJANGGAN_DETAIL.get(zhi, {})
+    result: List[dict] = []
+    for slot in ("정기", "중기", "여기"):
+        gan = triple.get(slot)
+        if not gan:
+            continue
         result.append(
             {
+                "slot": slot,
                 "gan": gan,
                 "element": gj.element_of_stem(gan),
                 "kr": gj.STEM_KR[gj.stem_index(gan)],
