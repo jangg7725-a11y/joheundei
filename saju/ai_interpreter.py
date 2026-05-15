@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Claude(Anthropic) 기반 사주 맞춤 스토리텔링 해설.
+사주 맞춤 스토리텔링 해설 — Gemini(무료 한도) 또는 Claude.
 
-환경 변수:
-  ANTHROPIC_API_KEY — 필수(운영)
-  ANTHROPIC_MODEL — 기본 claude-sonnet-4-20250514
+환경 변수 (둘 중 하나):
+  GEMINI_API_KEY — Google AI Studio 키 (권장·무료 한도)
+  GEMINI_MODEL — 기본 gemini-2.0-flash
+  ANTHROPIC_API_KEY — Anthropic (유료)
   SAJU_AI_PREMIUM=1 — 일일 제한 해제
 """
 
@@ -23,8 +24,36 @@ try:
 except ImportError:  # pragma: no cover
     Anthropic = None  # type: ignore[misc, assignment]
 
-DEFAULT_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+try:
+    import google.generativeai as genai
+except ImportError:  # pragma: no cover
+    genai = None  # type: ignore[assignment]
+
+DEFAULT_ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash")
 MAX_TOKENS = int(os.getenv("SAJU_AI_MAX_TOKENS", "8192"))
+
+
+def active_provider() -> Optional[str]:
+    """gemini | anthropic | None"""
+    if os.getenv("GEMINI_API_KEY", "").strip():
+        return "gemini"
+    if os.getenv("ANTHROPIC_API_KEY", "").strip():
+        return "anthropic"
+    return None
+
+
+def active_model_name() -> str:
+    p = active_provider()
+    if p == "gemini":
+        return DEFAULT_GEMINI_MODEL
+    if p == "anthropic":
+        return DEFAULT_ANTHROPIC_MODEL
+    return ""
+
+
+# 하위 호환
+DEFAULT_MODEL = DEFAULT_ANTHROPIC_MODEL
 
 COMMON_RULES = """
 공통 규칙 (반드시 준수):
@@ -72,13 +101,29 @@ def normalize_tab(tab: str) -> str:
     return TAB_ALIASES[key]
 
 
-def _client() -> Any:
+def _anthropic_client() -> Any:
     if Anthropic is None:
         raise RuntimeError("anthropic 패키지가 설치되지 않았습니다. pip install anthropic")
     api_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
         raise RuntimeError("ANTHROPIC_API_KEY 환경 변수를 설정해 주세요.")
     return Anthropic(api_key=api_key)
+
+
+def _gemini_model(system: str) -> Any:
+    if genai is None:
+        raise RuntimeError(
+            "google-generativeai 패키지가 없습니다. pip install google-generativeai"
+        )
+    api_key = os.getenv("GEMINI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY 환경 변수를 설정해 주세요.")
+    genai.configure(api_key=api_key)
+    return genai.GenerativeModel(
+        DEFAULT_GEMINI_MODEL,
+        system_instruction=system,
+        generation_config={"max_output_tokens": MAX_TOKENS, "temperature": 0.75},
+    )
 
 
 def _compact(obj: Any, *, limit: int = 12000) -> str:
@@ -115,32 +160,55 @@ def _parse_sections(raw: str) -> List[Dict[str, str]]:
     return [{"id": "full", "title": "맞춤 해설", "content": text}]
 
 
-def _call_claude(system: str, user: str) -> str:
-    client = _client()
-    msg = client.messages.create(
-        model=DEFAULT_MODEL,
-        max_tokens=MAX_TOKENS,
-        system=system,
-        messages=[{"role": "user", "content": user}],
+def _call_llm(system: str, user: str) -> str:
+    provider = active_provider()
+    if provider == "gemini":
+        model = _gemini_model(system)
+        resp = model.generate_content(user)
+        return str(getattr(resp, "text", None) or "")
+    if provider == "anthropic":
+        client = _anthropic_client()
+        msg = client.messages.create(
+            model=DEFAULT_ANTHROPIC_MODEL,
+            max_tokens=MAX_TOKENS,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+        )
+        parts: List[str] = []
+        for block in msg.content:
+            if getattr(block, "type", None) == "text":
+                parts.append(getattr(block, "text", "") or "")
+        return "".join(parts)
+    raise RuntimeError(
+        "AI API 키가 없습니다. PowerShell에서 GEMINI_API_KEY 또는 ANTHROPIC_API_KEY를 설정하세요."
     )
-    parts: List[str] = []
-    for block in msg.content:
-        if getattr(block, "type", None) == "text":
-            parts.append(getattr(block, "text", "") or "")
-    return "".join(parts)
 
 
-def _stream_claude(system: str, user: str) -> Iterator[str]:
-    client = _client()
-    with client.messages.stream(
-        model=DEFAULT_MODEL,
-        max_tokens=MAX_TOKENS,
-        system=system,
-        messages=[{"role": "user", "content": user}],
-    ) as stream:
-        for text in stream.text_stream:
+def _stream_llm(system: str, user: str) -> Iterator[str]:
+    provider = active_provider()
+    if provider == "gemini":
+        model = _gemini_model(system)
+        resp = model.generate_content(user, stream=True)
+        for chunk in resp:
+            text = getattr(chunk, "text", None)
             if text:
                 yield text
+        return
+    if provider == "anthropic":
+        client = _anthropic_client()
+        with client.messages.stream(
+            model=DEFAULT_ANTHROPIC_MODEL,
+            max_tokens=MAX_TOKENS,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+        ) as stream:
+            for text in stream.text_stream:
+                if text:
+                    yield text
+        return
+    raise RuntimeError(
+        "AI API 키가 없습니다. PowerShell에서 GEMINI_API_KEY 또는 ANTHROPIC_API_KEY를 설정하세요."
+    )
 
 
 def _base_context(saju_data: Dict[str, Any], user_name: Optional[str] = None) -> str:
@@ -340,7 +408,7 @@ def _run_interpret(
         f"【이 사람 기본 정보】\n{_base_context(saju_data, user_name)}\n\n"
         f"【계산 데이터】\n{_compact(data_payload)}\n"
     )
-    raw = _call_claude(system, user)
+    raw = _call_llm(system, user)
     sections = _parse_sections(raw)
     body = {"sections": sections, "raw": raw}
     ai_cache.set_cached(cache_key, tab_n, body)
@@ -531,7 +599,7 @@ def stream_interpret_tab(
 
     buf: List[str] = []
     try:
-        for chunk in _stream_claude(COMMON_RULES, user):
+        for chunk in _stream_llm(COMMON_RULES, user):
             buf.append(chunk)
             yield {"type": "delta", "text": chunk}
     except Exception as e:

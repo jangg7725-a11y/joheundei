@@ -153,7 +153,10 @@
     const st = panelState.get(tabKey);
     if (!st || !st.block) return;
     if (!aiEnabled) {
-      setStatus(st.block, "AI 해설을 사용하려면 서버에 ANTHROPIC_API_KEY를 설정해 주세요.");
+      setStatus(
+        st.block,
+        "AI 해설: PowerShell에서 GEMINI_API_KEY(또는 ANTHROPIC_API_KEY) 설정 후 서버를 다시 시작하세요."
+      );
       return;
     }
     if (st.loading) return;

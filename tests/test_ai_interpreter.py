@@ -62,8 +62,9 @@ def test_interpret_wonkuk_mock(sample_report, monkeypatch):
         ensure_ascii=False,
     )
 
-    monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
-    monkeypatch.setattr(ai, "_call_claude", lambda _s, _u: fake)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-gemini-key")
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.setattr(ai, "_call_llm", lambda _s, _u: fake)
 
     cache_key = ai_cache.chart_cache_key(sample_report)
     ai_cache.delete_cached(cache_key, "wonkuk")

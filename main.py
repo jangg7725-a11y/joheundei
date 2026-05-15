@@ -481,11 +481,12 @@ async def api_ai_config() -> dict[str, Any]:
     """클라이언트용 AI 설정."""
     import os
 
-    has_key = bool(os.getenv("ANTHROPIC_API_KEY", "").strip())
+    provider = ai.active_provider()
     return {
         "ok": True,
-        "enabled": has_key,
-        "model": ai.DEFAULT_MODEL,
+        "enabled": provider is not None,
+        "provider": provider or "",
+        "model": ai.active_model_name(),
         "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
     }
 
