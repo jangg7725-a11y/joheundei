@@ -2559,16 +2559,6 @@
     root.appendChild(mkTable(`吉神 (${good.length})`, good, ""));
     root.appendChild(mkTable(`凶煞 (${bad.length})`, bad, ""));
 
-    const keys = Object.keys(sinsal).filter((k) => k !== "신살_목록" && !k.startsWith("_"));
-    const extra = el("div", "panel-section");
-    extra.appendChild(el("h3", null, "요약 한 줄"));
-    keys.forEach((name) => {
-      const arr = sinsal[name];
-      if (!Array.isArray(arr) || !arr.length || typeof arr[0] === "object") return;
-      extra.appendChild(el("p", "panel-note", `${name}: ${arr.join(" · ")}`));
-    });
-    root.appendChild(extra);
-
     const unteimSp = (r["원국_스토리텔링"] || {})["unteim_서사"] || {};
     if (unteimSp["신살_심리"]) {
       appendUnteimSection(root, "🔮 신살 심층 심리 분석", unteimSp["신살_심리"]);

@@ -272,31 +272,126 @@ def _jie_transition_note(solar_year: int, slot_1_to_12: int) -> str:
     )
 
 
-def _month_story_one_liner(
+def _gi_elements(yong: Optional[Dict[str, Any]]) -> List[str]:
+    if not yong:
+        return []
+    raw = yong.get("기신_오행")
+    if isinstance(raw, str) and raw.strip():
+        return [x.strip() for x in raw.replace("·", "/").split("/") if x.strip()]
+    gl = yong.get("기신") or []
+    return [str(x) for x in gl if x]
+
+
+def _month_story_dynamic(
+    *,
+    slot_1_to_12: int,
+    mon_zhi: str,
     five_tier: str,
     severe_overlap: bool,
     san_done: bool,
     kong: bool,
     sip_mg: str,
     flags: Dict[str, bool],
+    nat_rel: Dict[str, List[Dict[str, str]]],
+    yong: Optional[Dict[str, Any]] = None,
 ) -> str:
+    """절월·용신·원국 관계에 따라 월별 문장을 분기한다."""
+    slot = max(1, min(12, int(slot_1_to_12)))
+    mel = gj.element_of_branch(mon_zhi)
+    yong_el = str((yong or {}).get("용신_오행") or "").strip()
+    gi_els = _gi_elements(yong)
+
     if severe_overlap:
         return (
-            "이달은 숨 고르기가 필요한 달입니다. 새 일을 시작하기보다 기존 관계·건강을 점검하고 방어적으로 가져가세요."
+            "이달은 숨 고르기가 필요한 달입니다. 새 일을 시작하기보다 "
+            "기존 관계·건강을 점검하고 방어적으로 가져가세요."
         )
+
     if san_done:
-        return "기운이 한데 모이는 달입니다. 협력과 성과를 넓히되 과욕만 줄이면 속도를 낼 수 있습니다."
+        pool = [
+            "기운이 한데 모이는 달입니다. 협력과 성과를 넓히되 과욕만 줄이면 속도를 낼 수 있습니다.",
+            f"{mon_zhi}월에 합·삼합 기운이 모여 협업·네트워크에서 성과가 나기 쉽습니다.",
+            f"절월 {slot}·{mon_zhi}에 모인 기운을 활용해 공동 프로젝트를 밀어보세요.",
+        ]
+        return pool[(slot - 1) % len(pool)]
+
+    chung = nat_rel.get("충") or []
+    if chung:
+        row = chung[0]
+        gz = str(row.get("글자", "")).replace("×", "")
+        pos = row.get("위치", "")
+        sip_hint = f" {sip_mg} 궁" if sip_mg else ""
+        pool = [
+            f"{gz}충이 발동하는 달입니다.{sip_hint} 관련 변화·이동에 주의하세요.",
+            f"월운 {mon_zhi}와 원국 {pos} 축이 충입니다. 결정은 한 박자 늦추고 몸부터 챙기세요.",
+            f"충 기운이 드는 {slot}절월입니다. 이동·계약·관계 갈등을 미리 조율하세요.",
+        ]
+        return pool[(slot - 1) % len(pool)]
+
+    if yong_el and mel == yong_el:
+        pool = [
+            f"용신 {yong_el} 기운이 들어오는 달입니다. 새로운 시작과 도전에 좋습니다.",
+            f"{yong_el} 기운이 살아나는 달입니다. 미뤄둔 일을 한 걸음 진행하기 좋습니다.",
+            f"용신 {yong_el}과 절월 {mon_zhi}({slot}월)이 맞물려 실행력이 붙기 쉬운 달입니다.",
+        ]
+        return pool[(slot - 1) % len(pool)]
+
+    for ge in gi_els:
+        if ge == mel:
+            pool = [
+                f"기신 {mel} 기운이 강해지는 달입니다. 중요한 결정은 다음 달로 미루세요.",
+                f"{mel} 기운이 부담으로 올 수 있는 달입니다. 지출·갈등·무리한 확장을 줄이세요.",
+                f"기신 {mel}과 맞닿는 {mon_zhi}월입니다. 방어·정리·휴식을 우선하세요.",
+            ]
+            return pool[(slot - 1) % len(pool)]
+
     if kong:
-        return "허전함이 드러나기 쉬운 달입니다. 약속·문서는 재확인하고 무리한 확장은 미루는 편이 안전합니다."
+        return (
+            "공망 기운이 드는 달입니다. 약속·문서는 재확인하고 "
+            "허무함을 정리·휴식의 기회로 쓰세요."
+        )
+
     if five_tier in ("대길", "길"):
-        return "순풍에 가까운 흐름입니다. 준비된 일은 밀고, 사람과의 약속은 신뢰를 쌓는 방향으로 가져가 보세요."
+        pool = [
+            "순풍에 가까운 흐름입니다. 준비된 일은 밀고, 약속은 신뢰를 쌓는 방향으로 가세요.",
+            f"{mel} 기운이 순조로운 달입니다. 작은 성과를 기록해 두면 후반 추진이 쉬워집니다.",
+            f"절월 {slot}·{mon_zhi}는 기회 달입니다. 과욕만 줄이면 속도를 낼 수 있습니다.",
+        ]
+        return pool[(slot - 1) % len(pool)]
+
     if five_tier in ("대흉", "흉"):
-        return "변수가 튀기 쉬운 달입니다. 결정은 한 박자 늦추고 몸의 신호를 우선 반영하세요."
-    if sip_mg in ("식신", "상관"):
-        return "표현·창작 에너지가 살아나는 달입니다. 말과 글로 조율하면 관계 윤활을 동시에 챙길 수 있습니다."
+        pool = [
+            "변수가 튀기 쉬운 달입니다. 결정은 한 박자 늦추고 몸의 신호를 우선 반영하세요.",
+            f"{mel} 기운이 불안정할 수 있는 달입니다. 방어·점검 중심으로 가져가세요.",
+            f"흉 기운이 부각되는 {mon_zhi}월입니다. 확장보다 버퍼·건강을 두껍게 유지하세요.",
+        ]
+        return pool[(slot - 1) % len(pool)]
+
+    he = nat_rel.get("육합") or []
+    if he:
+        gz = str(he[0].get("글자", ""))
+        return f"육합 {gz} 기운이 살아나는 달입니다. 협력·인연에서 문이 열릴 수 있습니다."
+
     if flags.get("세운월운_복음"):
-        return "같은 기운이 겹쳐 과열될 수 있는 달입니다. 속도 조절과 휴식 루틴을 고정해 두세요."
-    return "무난한 리듬의 달입니다. 급한 일만 줄이면 일상 균형을 유지하기 좋습니다."
+        return (
+            f"세운·월운이 같은 {mon_zhi}로 겹치는 달입니다. "
+            "과열을 줄이고 휴식 루틴을 고정해 두세요."
+        )
+
+    if sip_mg in ("식신", "상관"):
+        pool = [
+            "표현·창작 에너지가 살아나는 달입니다. 말과 글로 관계 윤활을 챙기세요.",
+            f"식상 기운이 살아나는 {mon_zhi}월입니다. 배움·콘텐츠·소통에 시간을 쓰면 좋습니다.",
+        ]
+        return pool[(slot - 1) % len(pool)]
+
+    neutral_pool = [
+        "큰 변화 없이 꾸준히 가는 달입니다. 일상 리듬을 유지하는 것이 중요합니다.",
+        f"{mel} 기운이 은은한 달입니다. 급한 일만 줄이면 균형을 지키기 좋습니다.",
+        f"절월 {slot}·{mon_zhi} 흐름은 안정적입니다. 작은 정리·점검이 다음 달을 돕습니다.",
+        f"{mel} 기운으로 루틴을 다지기 좋은 달입니다. 무리한 확장은 보류하세요.",
+    ]
+    return neutral_pool[(slot - 1) % len(neutral_pool)]
 
 
 def _month_action_guidelines(five_tier: str, severe: bool, kong: bool) -> Dict[str, Any]:
@@ -464,6 +559,7 @@ def analyze_wolwoon_month(
     slot_1_to_12: int,
     *,
     sewoon_zhi_override: Optional[str] = None,
+    yong: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     단일 절월(slot 1~12) 월운 분석.
@@ -540,7 +636,18 @@ def analyze_wolwoon_month(
         icons.append("⚠️")
 
     five_name, five_score = _month_five_tier(luck, energy, nat_rel)
-    story = _month_story_one_liner(five_name, severe_overlap, san_done, kong, sip_mg, flags)
+    story = _month_story_dynamic(
+        slot_1_to_12=slot_1_to_12,
+        mon_zhi=mon_zhi,
+        five_tier=five_name,
+        severe_overlap=severe_overlap,
+        san_done=san_done,
+        kong=kong,
+        sip_mg=sip_mg,
+        flags=flags,
+        nat_rel=nat_rel,
+        yong=yong,
+    )
     actions = _month_action_guidelines(five_name, severe_overlap, kong)
     health_pack = _month_health_pack(mon_zhi, solar_year, slot_1_to_12, body_line)
     wealth_tim = _month_wealth_timing(day_master, mon_gan, energy, severe_overlap, sip_mg)
@@ -629,8 +736,12 @@ def wolwoon_year_pack(
     *,
     gender: str = "남",
     counts: Optional[Dict[str, int]] = None,
+    yong: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
-    months = [analyze_wolwoon_month(day_master, pillars, solar_year, s) for s in range(1, 13)]
+    months = [
+        analyze_wolwoon_month(day_master, pillars, solar_year, s, yong=yong)
+        for s in range(1, 13)
+    ]
     se_pack = sw.analyze_sewoon_year(day_master, pillars, gender, solar_year, counts=counts)
     sw_name, sw_score = _sewoon_year_five(se_pack)
 

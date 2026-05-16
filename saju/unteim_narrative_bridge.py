@@ -6,7 +6,7 @@ from __future__ import annotations
 import hashlib
 import random
 from datetime import date
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from . import emotion_db_bridge as emb
 from . import ganji as gj
@@ -93,13 +93,11 @@ def _pack_money(day_master: str, counts: Dict[str, int], yong: Dict[str, Any]) -
     gkey = _map_key(db, "key_map", day_master) or day_master
     o_slots = _slots_from_entry((db.get("oheng_money") or {}).get(okey), rng)
     g_slots = _slots_from_entry((db.get("daymaster_money") or {}).get(gkey), rng)
-    flow_cases = db.get("money_flow_cases") or {}
-    flow_line = ""
-    if isinstance(flow_cases, dict):
-        case_key = rng.choice(list(flow_cases.keys())) if flow_cases else ""
-        if case_key:
-            flow_line = nl.pick_from_pool((flow_cases.get(case_key) or {}).get("lines_pool"), rng)
-    lines = [v for v in (o_slots.get("advice"), g_slots.get("core_theme"), flow_line) if v]
+    advice = str(o_slots.get("advice") or "").strip()
+    if "분석 기간에 마감을 정하세요" in advice:
+        advice = str(o_slots.get("core_theme") or g_slots.get("money_trait") or "").strip()
+    lines = [v for v in (advice, g_slots.get("money_trait"), o_slots.get("strength")) if v]
+    lines = [ln for ln in lines if ln and "분석 기간에 마감을 정하세요" not in str(ln)]
     return {
         "오행_재물": o_slots,
         "일간_재물": g_slots,
@@ -216,47 +214,68 @@ def _pack_twelve_narrative(
     return _join_text(parts)
 
 
-def _pack_hap_chung_narrative(rel_full: Optional[Dict[str, Any]], day_master: str) -> str:
+def _pair_from_glyphs(glyphs: str) -> Optional[Tuple[str, str]]:
+    g = str(glyphs or "").strip()
+    if len(g) >= 2:
+        return tuple(sorted((g[0], g[1])))
+    return None
+
+
+def _lookup_hap_item(items: List[Any], zhi_pair: Tuple[str, str]) -> Optional[Dict[str, Any]]:
+    for it in items:
+        if not isinstance(it, dict):
+            continue
+        pair = it.get("pair") or []
+        if not isinstance(pair, list) or len(pair) < 2:
+            continue
+        if tuple(sorted((str(pair[0]), str(pair[1])))) == zhi_pair:
+            return it
+    return None
+
+
+def _pack_hap_chung_narrative(
+    rel_full: Optional[Dict[str, Any]],
+    day_master: str,
+    pillars: Optional[dict] = None,
+) -> str:
     db = nl.load_narrative_db("hap_chung_pattern_db")
     if not db or not rel_full:
         return ""
-    rng = _rng("hap", day_master)
+    native_zhis: set = set()
+    if pillars:
+        native_zhis = {
+            str(pillars[k]["zhi"]) for k in ("year", "month", "day", "hour") if k in pillars
+        }
+    rng = _rng("hap", day_master, tuple(sorted(native_zhis)))
     parts: List[str] = []
-    for rel_key, label in (
-        ("원국_충", "충"),
-        ("원국_합", "합"),
-        ("원국_형", "형"),
-        ("원국_파", "파"),
-        ("원국_해", "해"),
-    ):
+    bucket_map = {
+        "원국_충": ("chung", "충"),
+        "원국_합": ("hap", "합"),
+        "원국_형": ("hyeong", "형"),
+        "원국_파": ("pa", "파"),
+        "원국_해": ("hae", "해"),
+    }
+    for rel_key, (bucket, label) in bucket_map.items():
         rows = rel_full.get(rel_key) or []
         if not rows:
             continue
-        bucket = {
-            "원국_충": "chung",
-            "원국_합": "hap",
-            "원국_형": "hyeong",
-            "원국_파": "pa",
-            "원국_해": "hae",
-        }.get(rel_key, "chung")
         items = (db.get(bucket) or {}).get("items") or []
         if not isinstance(items, list):
             continue
-        row = rows[0] if isinstance(rows[0], dict) else {}
-        gz = str(row.get("글자", ""))
-        picked = None
-        for it in items:
-            if not isinstance(it, dict):
+        for row in rows:
+            if not isinstance(row, dict):
                 continue
-            pair = it.get("pair") or []
-            if gz and len(gz) >= 2 and all(ch in gz for ch in pair if isinstance(pair, list)):
-                picked = it
-                break
-        if not picked and items:
-            picked = rng.choice([x for x in items if isinstance(x, dict)] or [{}])
-        if picked:
+            zpair = _pair_from_glyphs(str(row.get("글자", "")))
+            if not zpair:
+                continue
+            if native_zhis and (zpair[0] not in native_zhis or zpair[1] not in native_zhis):
+                continue
+            picked = _lookup_hap_item(items, zpair)
+            if not picked:
+                continue
             parts.append(
-                f"【{label} · {picked.get('label_ko', gz)}】{picked.get('core_dynamic', '')}\n"
+                f"【{label} · {picked.get('label_ko', row.get('글자', ''))}】"
+                f"{picked.get('core_dynamic', '')}\n"
                 f"{nl.pick_from_pool(picked.get('relation_pattern'), rng)}"
             )
     return _join_text(parts)
@@ -389,10 +408,19 @@ def _pack_daymaster_psychology(day_master: str) -> Dict[str, Any]:
     entry = (db.get("daymaster") or {}).get(gkey) or {}
     slots = entry.get("slots") if isinstance(entry.get("slots"), dict) else entry
     if isinstance(slots, dict):
-        picked = {k: nl.pick_from_pool(v, rng) for k, v in slots.items() if v}
+        picked: Dict[str, str] = {}
+        for k, v in slots.items():
+            if not v:
+                continue
+            val = nl.pick_from_pool(v, rng)
+            if val:
+                picked[k] = val
         lines = [picked.get("surface"), picked.get("inner"), picked.get("advice")]
         lines = [x for x in lines if x]
-        return {"슬롯": picked, "한줄_보강": lines[0] if lines else ""}
+        out: Dict[str, Any] = {"한줄_보강": lines[0] if lines else ""}
+        if picked:
+            out["슬롯"] = picked
+        return out
     return {"한줄_보강": nl.pick_from_pool(entry.get("lines_pool"), rng)}
 
 
@@ -439,7 +467,7 @@ def build_unteim_timeline_supplement(
         ov = overlays.get(ok) or {}
         hint = nl.pick_from_pool(ov.get("hint_pool"), rng) if isinstance(ov, dict) else ""
         story = str(row.get("세운_총평_한줄") or row.get("이해_총평_한마디") or "").strip()
-        parts = [p for p in (hint, story[:120] if story else "") if p]
+        parts = [p for p in (hint, story) if p]
         by_year[str(yi)] = {
             "세운_서사": _join_text(parts),
             "오버레이": ok,
@@ -465,7 +493,7 @@ def build_unteim_timeline_supplement(
         dm_entry = dm_tips.get(dm_key) or {}
         tip = nl.pick_from_pool(dm_entry.get("monthly_tip_pool"), rng)
         quote = str(m.get("월별_핵심스토리") or "").strip()
-        parts = [p for p in (action, tip, caution, quote[:100] if quote else "") if p]
+        parts = [p for p in (action, tip, caution, quote) if p]
         by_month[str(mn)] = {
             "월운_서사": _join_text(parts[:3]),
             "실천_팁": action,
@@ -600,13 +628,16 @@ def build_unteim_story_supplement(
         "직업": career,
         "일간_심리": dm_text,
         "일간_심리_상세": dm_psy,
-        "합충_서사": _pack_hap_chung_narrative(rel_full, day_master),
+        "합충_서사": _pack_hap_chung_narrative(rel_full, day_master, pillars),
         "십이운성_서사": _pack_twelve_narrative(day_master, sibiunsung),
         "공망_서사": _pack_kongmang_narrative(pillars, day_master),
         "힐링_메시지": _pack_healing_message(day_master, yong),
         "신살_심리": _pack_shinsal_psychology(sinsal, day_master),
         "대운_세운_서사": _pack_daewoon_narrative(daewoon_cycles or (), yong, day_master),
-        "감정_서사": emotion.get("표시_텍스트") or "",
+        "감정_서사": emotion.get("표시_텍스트")
+        or (emotion.get("일간_리포트") or {}).get("핵심")
+        or emotion.get("한줄_보강")
+        or "",
         "감정_상세": emotion,
         "meta": {
             "day_master": day_master,
@@ -619,11 +650,17 @@ def build_unteim_story_supplement(
 
 def merge_wealth_with_unteim(wealth: Dict[str, Any], unteim: Dict[str, Any]) -> Dict[str, Any]:
     out = dict(wealth)
-    line = (unteim.get("재물") or {}).get("한줄_보강") or ""
-    if line:
-        base = str(out.get("버는_방식", "")).strip()
-        out["버는_방식"] = f"{base} {line}".strip() if base else line
-        out["unteim_보강"] = (unteim.get("재물") or {}).get("문장_목록") or []
+    money = unteim.get("재물") or {}
+    raw_lines = money.get("문장_목록") or []
+    lines = [
+        ln
+        for ln in raw_lines
+        if ln and "분석 기간에 마감을 정하세요" not in str(ln)
+    ]
+    if lines:
+        out["unteim_보강"] = lines
+    elif money.get("한줄_보강"):
+        out["unteim_보강"] = str(money["한줄_보강"]).strip()
     return out
 
 
@@ -646,8 +683,8 @@ def merge_wealth_boost_display(wealth: Dict[str, Any]) -> Dict[str, Any]:
     raw = out.get("unteim_보강")
     if isinstance(raw, list):
         out["unteim_보강"] = _join_text([str(x) for x in raw])
-    elif raw is None:
-        out["unteim_보강"] = ""
+    elif raw is None or (isinstance(raw, str) and not str(raw).strip()):
+        out.pop("unteim_보강", None)
     else:
         out["unteim_보강"] = str(raw).strip()
     return out
@@ -659,10 +696,4 @@ def career_boost_text(unteim: Dict[str, Any]) -> str:
 
 
 def personality_boost_text(unteim: Dict[str, Any]) -> str:
-    parts = [str(unteim.get("일간_심리") or "").strip()]
-    emo = str(unteim.get("감정_서사") or "").strip()
-    if emo:
-        first = emo.split("\n\n")[0].strip()
-        if first and first not in parts[0]:
-            parts.append(first)
-    return _join_text([p for p in parts if p])
+    return str(unteim.get("일간_심리") or "").strip()

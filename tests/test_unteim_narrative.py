@@ -43,4 +43,5 @@ def test_bridge_merge_helpers() -> None:
     w = {"버는_방식": "기존 문장."}
     u = {"재물": {"한줄_보강": "운테임 보강.", "문장_목록": ["운테임 보강."]}}
     out = unb.merge_wealth_with_unteim(w, u)
-    assert "운테임 보강" in out["버는_방식"]
+    assert out["버는_방식"] == "기존 문장."
+    assert out.get("unteim_보강")

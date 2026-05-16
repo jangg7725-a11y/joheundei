@@ -1019,14 +1019,7 @@ def _build_native_story_pack(
     personality = dict(full["성격_분석"])
     psych_boost = unb.personality_boost_text(unteim_sup)
     if psych_boost:
-        strengths = list(personality.get("장점_5") or [])
-        if strengths and psych_boost not in strengths[0]:
-            strengths[0] = f"{strengths[0]} {psych_boost}".strip()
         personality["unteim_보강"] = psych_boost
-        personality["unteim_일간심리"] = psych_boost
-    if unteim_sup.get("감정_서사"):
-        personality["unteim_감정"] = unteim_sup["감정_서사"]
-
     return {
         "사주_한줄_핵심": full["핵심_한줄"],
         "년주_해설": full["년주_해설"],
@@ -1523,7 +1516,9 @@ def build_report(
     )
     _enrich_sewoon_deep_pack(sew_deep, dm, pillars)
 
-    wol_pack = ww.wolwoon_year_pack(dm, pillars, wol_center, gender=gender, counts=counts)
+    wol_pack = ww.wolwoon_year_pack(
+        dm, pillars, wol_center, gender=gender, counts=counts, yong=yong_block
+    )
     _enrich_wolwoon_pack(wol_pack, dm, pillars)
 
     il_pack = il.ilwoon_snapshot_pack(dm, pillars)

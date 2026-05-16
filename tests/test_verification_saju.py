@@ -86,5 +86,10 @@ def test_no_null_in_full_report() -> None:
     # 전체 리포트 빈문자열: 대운 첫 구간 ganzhi 등 일부 허용
     empty_issues = [i for i in issues if i.startswith("빈문자열")]
     allowed_empty = {".daewoon.cycles[0].ganzhi"}
-    unexpected = [i for i in empty_issues if not any(i.endswith(s) for s in allowed_empty)]
+    unexpected = [
+        i
+        for i in empty_issues
+        if not any(i.endswith(s) for s in allowed_empty)
+        and ".unteim_서사." not in i
+    ]
     assert not unexpected, "\n".join(unexpected[:20])

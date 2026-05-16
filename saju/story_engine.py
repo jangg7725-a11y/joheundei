@@ -10,13 +10,28 @@ from . import ohaeng as oh
 from . import sipsin as sp
 
 
-def _min_chars(text: str, min_len: int, tail: str) -> str:
+_PAD_NEUTRAL_POOL = (
+    "생활 습관과 마음가짐을 함께 다듬으면 강점이 더 분명해지고, 무리한 비교보다 자신의 페이스를 지키는 것이 도움이 됩니다.",
+    "작은 실천이 쌓이면 성과로 이어지는 타입이므로, 급하게 결론 내리기보다 꾸준함을 우선하세요.",
+    "주변과의 호흡을 맞추면 부담이 줄고, 본인 페이스가 더 잘 살아납니다.",
+    "강점은 한 번에 드러나기보다 시간이 지나며 분명해지는 경우가 많습니다.",
+)
+
+
+def _min_chars(text: str, min_len: int, tail: str = "") -> str:
+    """짧은 문장은 성별·슬롯 태그 없이 중립 문장으로만 보강한다."""
     s = text.strip()
     if len(s) >= min_len:
         return s
     out = s
+    seed = sum(ord(c) for c in s) % len(_PAD_NEUTRAL_POOL)
+    fillers = [_PAD_NEUTRAL_POOL[seed]]
+    if tail.strip():
+        fillers.insert(0, tail.strip())
+    idx = 0
     while len(out) < min_len:
-        out = f"{out} {tail.strip()}"
+        out = f"{out} {fillers[idx % len(fillers)]}".strip()
+        idx += 1
     return out
 
 
@@ -520,41 +535,16 @@ class NativeStoryEngine:
                     "큰 결정(부동산·이직·사업)은 데이터와 주변 의견을 수렴한 뒤 확정하는 것이 후회를 줄입니다"
                 )
 
-        zlab = ("년", "월", "일", "시")
-        zpil = (self.y_pillar, self.m_pillar, self.d_pillar, self.h_pillar)
-        strengths = [
-            _min_chars(
-                s,
-                100,
-                (
-                    f"여명 기준 {zlab[i % 4]}주 {zpil[i % 4]}와 연결된 강점입니다. "
-                    if self.female
-                    else f"남명 기준 {zlab[i % 4]}주 {zpil[i % 4]}와 연결된 강점입니다. "
-                )
-                + f"{p4} 원국에서 같은 주제도 성별에 따라 다른 무게로 읽힙니다.",
-            )
-            for i, s in enumerate(strengths)
-        ]
-        weaknesses = [
-            _min_chars(
-                s,
-                100,
-                (
-                    f"여명에서 {zlab[i % 4]}주 {zpil[i % 4]} 축을 의식하면 단점 완화에 도움이 됩니다. "
-                    if self.female
-                    else f"남명에서 {zlab[i % 4]}주 {zpil[i % 4]} 축을 의식하면 단점 완화에 도움이 됩니다. "
-                ),
-            )
-            for i, s in enumerate(weaknesses)
-        ]
+        strengths = [_min_chars(s.strip(), 100) for s in strengths if s.strip()]
+        weaknesses = [_min_chars(s.strip(), 100) for s in weaknesses if s.strip()]
 
         gender_label = "여명" if self.female else "남명"
         return {
             "장점_5": strengths,
             "단점_5": weaknesses,
-            "대인관계_스타일": _min_chars(social, 80, f"{gender_label} 해석입니다."),
-            "스트레스_반응": _min_chars(stress, 80, f"{gender_label} 해석입니다."),
-            "의사결정_방식": _min_chars(decide, 80, f"{gender_label} 해석입니다."),
+            "대인관계_스타일": _min_chars(social.strip(), 80),
+            "스트레스_반응": _min_chars(stress.strip(), 80),
+            "의사결정_방식": _min_chars(decide.strip(), 80),
             "_성별": gender_label,
             "_참고_성별해석축": gender_label,
         }
@@ -591,33 +581,6 @@ class NativeStoryEngine:
 
         top5: List[Dict[str, str]] = []
         seen: set = set()
-
-        gender_tag = "여명" if self.female else "남명"
-        hub_job = f"{gender_tag}·{self.day_master}일간·{self.d_pillar}·용신{self.yong_el or '—'}"
-        hub_reason = (
-            f"동일 원국이라도 {gender_tag} 해석 축이 갈립니다. "
-            f"관성(남편·직장상사)·재성(시댁·재물)·식상(자녀·표현·독립)을 "
-            f"커리어·육아·가정 양립 설계에 연결합니다. "
-            f"이 슬롯은 {self._p4()}에서 {self.day_master} 일간이 받는 십신 균형을 직무 선택에 먼저 얹은 가이드입니다."
-            if self.female
-            else (
-                f"동일 원국이라도 {gender_tag} 해석 축이 갈립니다. "
-                f"재성(아내·재물)·관성(자녀·명예)·비겁(동료·경쟁)을 "
-                f"가장·사업·성취 축에 연결합니다. "
-                f"이 슬롯은 {self._p4()}에서 {self.day_master} 일간이 받는 십신 균형을 직무 선택에 먼저 얹은 가이드입니다."
-            )
-        )
-        top5.append(
-            {
-                "직군": hub_job,
-                "이유": _min_chars(
-                    hub_reason,
-                    100,
-                    f"{gender_tag} 직업 해석: {self.d_pillar} 일주·용신 {self.yong_el or '—'} 축입니다.",
-                ),
-            }
-        )
-        seen.add(hub_job)
 
         for job, desc in (yong_jobs.get(self.yong_el) or [])[:2]:
             if job in seen:
@@ -825,16 +788,8 @@ class NativeStoryEngine:
                 else "직장 내 전문가 포지션을 먼저 확보하고 부업·투자로 수입 다각화 후 창업을 검토하는 흐름이 안전합니다"
             )
 
-        for idx, it in enumerate(top5):
-            it["이유"] = _min_chars(
-                it.get("이유", ""),
-                100,
-                (
-                    f"여명 직업 해석: {self.d_pillar} 일간 기준입니다. "
-                    if self.female
-                    else f"남명 직업 해석: {self.d_pillar} 일간 기준입니다. "
-                ),
-            )
+        for it in top5:
+            it["이유"] = _min_chars(str(it.get("이유", "")).strip(), 100)
 
         return {
             "최적_직군_TOP5": top5[:5],
@@ -959,7 +914,7 @@ class NativeStoryEngine:
         return {
             "선천_취약_축": weak_desc[:3],
             "나이대별_주의": age_notes,
-            "장수_가능성": _min_chars(longevity, 100, f"{gender_label} {self._p4()} 기준 참고입니다."),
+            "장수_가능성": _min_chars(longevity.strip(), 100),
             "건강_유지_조언": advice,
             "_성별": gender_label,
         }

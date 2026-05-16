@@ -92,12 +92,19 @@ def get_value(file_name: str, key: str, default: Any = None) -> Any:
     return default if v is None else v
 
 
+def sanitize_narrative_text(text: str) -> str:
+    """알려진 오타·금지 폴백 문구 정리."""
+    s = str(text or "")
+    s = s.replace("즐이면", "줄이면").replace("즐이", "줄이")
+    return s.strip()
+
+
 def pick_from_pool(pool: Any, rng) -> str:
     if isinstance(pool, str) and pool.strip():
-        return pool.strip()
+        return sanitize_narrative_text(pool)
     if isinstance(pool, list) and pool:
         choice = rng.choice(pool)
-        return str(choice).strip() if choice is not None else ""
+        return sanitize_narrative_text(str(choice)) if choice is not None else ""
     return ""
 
 
