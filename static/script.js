@@ -1377,14 +1377,6 @@
     const pillars = r.pillars;
 
     const story = r["원국_스토리텔링"];
-    if (story) {
-      const storyPanel = el("div", "panel-section wonguk-story-panel");
-      appendStoryCoreCard(storyPanel, r);
-      storyPanel.appendChild(buildSibiGuideBlock(r));
-      storyPanel.appendChild(buildJijangganBlock(r));
-      appendWongukStorySections(storyPanel, story);
-      root.appendChild(storyPanel);
-    }
 
     const sec1 = el("div", "panel-section");
     sec1.appendChild(el("h3", null, "사주 원국 四柱"));
@@ -1433,7 +1425,7 @@
         "p",
         "panel-note",
         story
-          ? "아래 표는 년주 → 월주 → 일주 → 시주 순입니다. (지장간 상세는 위 원국 스토리 영역에 있습니다.)"
+          ? "아래 표는 년주 → 월주 → 일주 → 시주 순입니다. (한 줄 요약·십이운성·지장간은 표 아래에 이어집니다.)"
           : "아래 표·지장간은 위에서 아래로 년주 → 월주 → 일주 → 시주 순입니다."
       )
     );
@@ -1484,6 +1476,15 @@
       }
     }
     root.appendChild(sec2);
+
+    if (story) {
+      const storyPanel = el("div", "panel-section wonguk-story-panel");
+      appendStoryCoreCard(storyPanel, r);
+      storyPanel.appendChild(buildSibiGuideBlock(r));
+      storyPanel.appendChild(buildJijangganBlock(r));
+      appendWongukStorySections(storyPanel, story);
+      root.appendChild(storyPanel);
+    }
 
     const sec3 = el("div", "panel-section");
     sec3.appendChild(el("h3", null, "오행 五行 분포 · 표면과 지장간 구분"));
