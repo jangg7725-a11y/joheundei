@@ -24,6 +24,7 @@ from . import timeline as tl
 from . import wolwoon as ww
 from . import yongsin as ys
 from .story_engine import NativeStoryEngine
+from . import unteim_narrative_bridge as unb
 from .yongsin import CHEON_GAN_HAP_ELEM, ELEMENT_META, MONTH_COMMAND
 
 PILLAR_KEYS: Sequence[str] = ("year", "month", "day", "hour")
@@ -989,6 +990,33 @@ def _build_native_story_pack(
         rel_full=rel_full,
     )
     full = engine.build_full_story()
+    female = sp.is_female_gender(gender)
+    unteim_sup = unb.build_unteim_story_supplement(
+        day_master=day_master,
+        pillars=pillars,
+        gender=gender,
+        counts=counts,
+        yong=yong,
+        female=female,
+    )
+    wealth = _story_wealth_lifetime(day_master, pillars, yong, sip_c, sinsal, daewoon_cycles)
+    health = full["건강_평생"]
+    if unteim_sup.get("_files_loaded"):
+        wealth = unb.merge_wealth_with_unteim(wealth, unteim_sup)
+        health = unb.merge_health_with_unteim(health, unteim_sup)
+
+    career = dict(full["직업_적성"])
+    career_unteim = (unteim_sup.get("직업") or {}).get("문장_목록") or []
+    if career_unteim:
+        career["unteim_보강"] = career_unteim
+
+    personality = dict(full["성격_분석"])
+    dm_line = (unteim_sup.get("일간_심리") or {}).get("한줄_보강") or ""
+    if dm_line:
+        strengths = list(personality.get("장점_5") or [])
+        if strengths and dm_line not in strengths[0]:
+            strengths[0] = f"{strengths[0]} {dm_line}".strip()
+        personality["unteim_일간심리"] = dm_line
 
     return {
         "사주_한줄_핵심": full["핵심_한줄"],
@@ -996,11 +1024,12 @@ def _build_native_story_pack(
         "월주_해설": full["월주_해설"],
         "일주_해설": full["일주_해설"],
         "시주_해설": full["시주_해설"],
-        "성격_분석": full["성격_분석"],
+        "성격_분석": personality,
         "인생_전체_흐름": _story_life_arc(pillars, yong, sip_c, daewoon_cycles),
-        "직업_적성": full["직업_적성"],
-        "재물_패턴": _story_wealth_lifetime(day_master, pillars, yong, sip_c, sinsal, daewoon_cycles),
-        "건강_평생": full["건강_평생"],
+        "직업_적성": career,
+        "재물_패턴": wealth,
+        "건강_평생": health,
+        "unteim_서사": unteim_sup,
         "특별_포인트": _story_special_points(day_master, pillars, counts, yong, sip_c, sinsal, daewoon_cycles),
         "안내": (
             "본 분석은 오행·십신·신살·충합 규칙 기반 스토리텔링 참고용이며 "
