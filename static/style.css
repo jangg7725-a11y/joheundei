@@ -1935,6 +1935,54 @@ table.data-table .han-inline {
   margin-bottom: 0.35rem;
 }
 
+.unteim-section {
+  background: linear-gradient(
+    135deg,
+    rgba(201, 168, 76, 0.06),
+    rgba(30, 40, 80, 0.4)
+  );
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  border-left: 3px solid var(--gold);
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  margin: 0.8rem 0;
+}
+
+.unteim-title {
+  color: var(--gold);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.02em;
+}
+
+.unteim-text {
+  color: var(--text-sub);
+  font-size: 0.87rem;
+  line-height: 1.75;
+  margin: 0;
+  white-space: pre-line;
+}
+
+.unteim-heal {
+  background: linear-gradient(
+    135deg,
+    rgba(107, 207, 143, 0.08),
+    rgba(30, 40, 80, 0.4)
+  );
+  border-color: rgba(107, 207, 143, 0.3);
+  border-left-color: #6bcf8f;
+}
+
+.unteim-heal-text {
+  color: #a8e6bf;
+  font-size: 0.9rem;
+  line-height: 1.8;
+  font-style: italic;
+  margin: 0;
+  white-space: pre-line;
+}
+
 .story-section {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(201, 168, 76, 0.2);

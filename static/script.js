@@ -994,6 +994,9 @@
     if (story["성격_분석"]) {
       appendStoryListBlock(sec, "장점", story["성격_분석"]["장점_5"]);
       appendStoryListBlock(sec, "주의할 점", story["성격_분석"]["단점_5"]);
+      if (story["성격_분석"]["unteim_보강"]) {
+        appendUnteimSection(sec, "🧠 성격 심층 분석", story["성격_분석"]["unteim_보강"]);
+      }
     }
     const life = story["인생_전체_흐름"];
     if (life && typeof life === "object") {
@@ -1014,6 +1017,9 @@
       appendStoryListBlock(sec, "피할 직군", story["직업_적성"]["피해야_할_직군"]);
       const modes = story["직업_적성"]["근무형태_판정"];
       if (Array.isArray(modes)) appendStoryListBlock(sec, "근무 형태", modes);
+      if (story["직업_적성"]["unteim_보강"]) {
+        appendUnteimSection(sec, "💼 직업·적성 심층 분석", story["직업_적성"]["unteim_보강"]);
+      }
     }
     appendStoryKvBlock(sec, "재물", story["재물_패턴"], [
       ["버는_방식", "버는 방식"],
@@ -1022,6 +1028,9 @@
     ]);
     if (story["재물_패턴"]) {
       appendStoryListBlock(sec, "새는 패턴", story["재물_패턴"]["새는_패턴"]);
+      if (story["재물_패턴"]["unteim_보강"]) {
+        appendUnteimSection(sec, "💰 재물 심층 분석", story["재물_패턴"]["unteim_보강"]);
+      }
     }
     appendStoryKvBlock(sec, "건강", story["건강_평생"], [
       ["장수_가능성", "장수"],
@@ -1040,7 +1049,11 @@
         sec.appendChild(b);
       }
       appendStoryListBlock(sec, "건강 유지", story["건강_평생"]["건강_유지_조언"]);
+      if (story["건강_평생"]["unteim_보강"]) {
+        appendUnteimSection(sec, "🏥 건강 심층 분석", story["건강_평생"]["unteim_보강"]);
+      }
     }
+    appendUnteimWongukBlocks(sec, story["unteim_서사"] || {});
     const special = story["특별_포인트"];
     if (special && typeof special === "object") {
       const b = el("div", "story-block");
@@ -1271,8 +1284,71 @@
     return wrap;
   }
 
+  function unteimDisplayText(val) {
+    if (val == null || val === undefined) return "";
+    if (typeof val === "string") return val.trim();
+    if (Array.isArray(val)) {
+      return val
+        .map((x) => (x == null ? "" : String(x).trim()))
+        .filter(Boolean)
+        .join("\n\n");
+    }
+    if (typeof val === "object") {
+      if (typeof val["한줄_보강"] === "string" && val["한줄_보강"].trim()) {
+        return val["한줄_보강"].trim();
+      }
+      if (Array.isArray(val["문장_목록"])) {
+        return unteimDisplayText(val["문장_목록"]);
+      }
+      if (val["슬롯"] && typeof val["슬롯"] === "object") {
+        return Object.values(val["슬롯"])
+          .map((x) => String(x).trim())
+          .filter(Boolean)
+          .join("\n\n");
+      }
+    }
+    return String(val).trim();
+  }
+
+  function appendUnteimSection(parent, title, text, extraClass) {
+    const body = unteimDisplayText(text);
+    if (!body || !parent) return null;
+    const div = el("div", extraClass ? `unteim-section ${extraClass}` : "unteim-section");
+    const healCls = extraClass === "unteim-heal" ? "unteim-heal-text" : "unteim-text";
+    div.innerHTML = `
+      <h4 class="unteim-title">${escapeHtml(title)}</h4>
+      <p class="${healCls}">${escapeHtml(body)}</p>`;
+    parent.appendChild(div);
+    return div;
+  }
+
+  function appendUnteimWongukBlocks(panel, unteim) {
+    if (!unteim || typeof unteim !== "object" || !panel) return;
+    const loaded = Number(unteim._files_loaded) > 0;
+    const hasAny =
+      loaded ||
+      unteim["일간_심리"] ||
+      unteim["합충_서사"] ||
+      unteim["십이운성_서사"] ||
+      unteim["공망_서사"] ||
+      unteim["힐링_메시지"];
+    if (!hasAny) return;
+
+    const blocks = [
+      ["일간_심리", "🧠 심층 심리 분석", ""],
+      ["합충_서사", "⚡ 합·충·파·해 심층 해설", ""],
+      ["십이운성_서사", "🌙 십이운성 심층 해설", ""],
+      ["공망_서사", "🕳️ 공망 해설", ""],
+      ["힐링_메시지", "💚 오늘의 힐링 메시지", "unteim-heal"],
+    ];
+    blocks.forEach(([key, title, cls]) => {
+      if (unteim[key]) appendUnteimSection(panel, title, unteim[key], cls);
+    });
+  }
+
   function appendWongukStorySections(panel, story) {
     if (!story || !panel) return;
+    const unteim = story["unteim_서사"] || {};
 
     if (story["성격_분석"]) {
       const per = story["성격_분석"];
@@ -1293,6 +1369,9 @@
           </div>
         </div>`;
       panel.appendChild(perDiv);
+      if (story["성격_분석"]["unteim_보강"]) {
+        appendUnteimSection(panel, "🧠 성격 심층 분석", story["성격_분석"]["unteim_보강"]);
+      }
     }
 
     if (story["인생_전체_흐름"]) {
@@ -1328,6 +1407,9 @@
         ${top5}
         <p class="story-text">🏢 ${escapeHtml(modesText)}</p>`;
       panel.appendChild(jobDiv);
+      if (story["직업_적성"]["unteim_보강"]) {
+        appendUnteimSection(panel, "💼 직업·적성 심층 분석", story["직업_적성"]["unteim_보강"]);
+      }
     }
 
     if (story["재물_패턴"]) {
@@ -1340,6 +1422,9 @@
         <p class="story-text">📈 ${escapeHtml(w["평생_재물_흐름"] || "")}</p>
         <p class="story-highlight">${escapeHtml(w["부자_가능성_판정"] || "")}</p>`;
       panel.appendChild(wDiv);
+      if (story["재물_패턴"]["unteim_보강"]) {
+        appendUnteimSection(panel, "💰 재물 심층 분석", story["재물_패턴"]["unteim_보강"]);
+      }
     }
 
     if (story["건강_평생"]) {
@@ -1353,7 +1438,12 @@
           .map((a) => `<p class="story-text">✅ ${escapeHtml(a)}</p>`)
           .join("")}`;
       panel.appendChild(hDiv);
+      if (story["건강_평생"]["unteim_보강"]) {
+        appendUnteimSection(panel, "🏥 건강 심층 분석", story["건강_평생"]["unteim_보강"]);
+      }
     }
+
+    appendUnteimWongukBlocks(panel, unteim);
 
     if (story["특별_포인트"]) {
       const sp = story["특별_포인트"];
@@ -2329,6 +2419,13 @@
       syncSewoonDetail(wrap, deep, yBase);
     }
 
+    const unteimDw = (r["원국_스토리텔링"] || {})["unteim_서사"] || {};
+    if (unteimDw["대운_세운_서사"]) {
+      const uDw = el("div", "panel-section");
+      appendUnteimSection(uDw, "🌊 대운·세운 심층 흐름", unteimDw["대운_세운_서사"]);
+      wrap.appendChild(uDw);
+    }
+
     renderTab3WolPane(r, paneWo);
     renderTab3IlwoonPane(r, paneIl);
   }
@@ -2431,6 +2528,11 @@
       extra.appendChild(el("p", "panel-note", `${name}: ${arr.join(" · ")}`));
     });
     root.appendChild(extra);
+
+    const unteimSp = (r["원국_스토리텔링"] || {})["unteim_서사"] || {};
+    if (unteimSp["신살_심리"]) {
+      appendUnteimSection(root, "🔮 신살 심층 심리 분석", unteimSp["신살_심리"]);
+    }
   }
 
   function renderReport(data) {

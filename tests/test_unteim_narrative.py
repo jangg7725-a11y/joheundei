@@ -19,20 +19,24 @@ def test_narrative_files_present() -> None:
 
 def test_unteim_supplement_in_report() -> None:
     r = an.build_report(
-        calendar="solar",
-        year=1962,
-        month=9,
-        day=28,
-        hour=4,
-        minute=10,
-        gender="male",
+        calendar="lunar",
+        year=1966,
+        month=11,
+        day=4,
+        hour=2,
+        minute=5,
+        gender="female",
         lunar_leap=False,
     )
     story = r["원국_스토리텔링"]
     unteim = story.get("unteim_서사") or {}
     assert unteim.get("_files_loaded", 0) >= 15
     assert unteim.get("재물", {}).get("한줄_보강") or unteim.get("건강")
-    assert "unteim_보강" in story.get("재물_패턴", {}) or story["재물_패턴"].get("버는_방식")
+    assert isinstance(unteim.get("일간_심리"), str) and unteim["일간_심리"]
+    assert unteim.get("십이운성_서사") or unteim.get("합충_서사")
+    wealth_boost = story.get("재물_패턴", {}).get("unteim_보강")
+    assert wealth_boost and "None" not in str(wealth_boost)
+    assert story["성격_분석"].get("unteim_보강")
 
 
 def test_bridge_merge_helpers() -> None:

@@ -991,6 +991,7 @@ def _build_native_story_pack(
     )
     full = engine.build_full_story()
     female = sp.is_female_gender(gender)
+    sibiunsung = sb.pillar_twelve_stages(day_master, pillars)
     unteim_sup = unb.build_unteim_story_supplement(
         day_master=day_master,
         pillars=pillars,
@@ -998,25 +999,31 @@ def _build_native_story_pack(
         counts=counts,
         yong=yong,
         female=female,
+        rel_full=rel_full,
+        sinsal=sinsal,
+        sibiunsung=sibiunsung,
+        daewoon_cycles=daewoon_cycles,
     )
     wealth = _story_wealth_lifetime(day_master, pillars, yong, sip_c, sinsal, daewoon_cycles)
     health = full["건강_평생"]
     if unteim_sup.get("_files_loaded"):
         wealth = unb.merge_wealth_with_unteim(wealth, unteim_sup)
+        wealth = unb.merge_wealth_boost_display(wealth)
         health = unb.merge_health_with_unteim(health, unteim_sup)
 
     career = dict(full["직업_적성"])
-    career_unteim = (unteim_sup.get("직업") or {}).get("문장_목록") or []
-    if career_unteim:
-        career["unteim_보강"] = career_unteim
+    career_boost = unb.career_boost_text(unteim_sup)
+    if career_boost:
+        career["unteim_보강"] = career_boost
 
     personality = dict(full["성격_분석"])
-    dm_line = (unteim_sup.get("일간_심리") or {}).get("한줄_보강") or ""
-    if dm_line:
+    psych_boost = unb.personality_boost_text(unteim_sup)
+    if psych_boost:
         strengths = list(personality.get("장점_5") or [])
-        if strengths and dm_line not in strengths[0]:
-            strengths[0] = f"{strengths[0]} {dm_line}".strip()
-        personality["unteim_일간심리"] = dm_line
+        if strengths and psych_boost not in strengths[0]:
+            strengths[0] = f"{strengths[0]} {psych_boost}".strip()
+        personality["unteim_보강"] = psych_boost
+        personality["unteim_일간심리"] = psych_boost
 
     return {
         "사주_한줄_핵심": full["핵심_한줄"],
