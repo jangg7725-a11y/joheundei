@@ -665,6 +665,130 @@ def _guiren_star_names(sinsal: Dict[str, Any]) -> List[str]:
     return names
 
 
+def _pillar_quartet_korean(pillars: dict) -> str:
+    """년·월·일·시 네 기둥을 한 문장으로 묶어 고유 팔자 문자열을 만든다."""
+    yp = pillars["year"]["pillar"]
+    mp = pillars["month"]["pillar"]
+    dp = pillars["day"]["pillar"]
+    hp = pillars["hour"]["pillar"]
+    return f"{yp}년주·{mp}월주·{dp}일주·{hp}시주"
+
+
+def _min_chars(text: str, min_len: int, tail: str) -> str:
+    """스토리 문단이 최소 길이를 넘기도록 tail을 덧붙인다(tail은 한 번 이상 반복될 수 있음)."""
+    s = text.strip()
+    if len(s) >= min_len:
+        return s
+    out = s
+    while len(out) < min_len:
+        out = f"{out} {tail.strip()}"
+    return out
+
+
+def _dynamic_story_builder(
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    counts: Dict[str, int],
+    sip_c: Counter[str],
+    yong: Dict[str, Any],
+    sinsal: Dict[str, Any],
+    rel_full: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    입력된 사주의 변수를 조합해 성격·직업 등 스토리 생성에 쓰는 컨텍스트를 만든다.
+    """
+    female = sp.is_female_gender(gender)
+    yong_el = (yong.get("용신_오행") or "").strip()
+    gi_raw = yong.get("기신_오행")
+    if isinstance(gi_raw, str) and gi_raw.strip():
+        gi_el = gi_raw.strip()
+    else:
+        gl = yong.get("기신") or []
+        gi_el = "·".join(str(x) for x in gl if x) or ""
+    verdict = yong.get("일간_강약") or "중화"
+
+    DM_NATURE = {
+        "甲": ("곧게 뻗은 나무", "리더십과 개척정신", "고집과 융통성 부족"),
+        "乙": ("부드러운 넝쿨", "뛰어난 적응력과 친화력", "우유부단과 의존성"),
+        "丙": ("밝은 태양", "넘치는 긍정 에너지와 카리스마", "경솔함과 지속력 부족"),
+        "丁": ("섬세한 촛불", "깊은 감수성과 직관력", "예민함과 감정 기복"),
+        "戊": ("넓은 대지", "묵직한 신뢰감과 포용력", "변화 거부와 둔감함"),
+        "己": ("기름진 논밭", "현실적 판단력과 실용성", "소심함과 소극적 태도"),
+        "庚": ("단단한 바위", "강한 결단력과 의리", "냉정함과 타협 어려움"),
+        "辛": ("빛나는 보석", "완벽한 마무리와 미적 감각", "예민함과 자존심"),
+        "壬": ("큰 강물", "넓은 포용력과 지혜", "집중력 부족과 방랑기"),
+        "癸": ("고요한 빗물", "예리한 직관과 감수성", "불안감과 의존성"),
+    }
+    dm_meta = DM_NATURE.get(day_master, ("독특한 기운", "자신만의 강점", "자신만의 과제"))
+    dm_image, dm_strength, dm_weakness = dm_meta
+
+    sorted_elems = sorted(counts.items(), key=lambda x: x[1], reverse=True)
+    top_elems = [e for e, v in sorted_elems if v > 0]
+    zero_elems = [e for e, v in counts.items() if v == 0]
+
+    ELEM_MEANING = {
+        "목": ("도전·성장·계획", "간·담·눈·근육"),
+        "화": ("열정·표현·직관", "심장·혈압·혈관"),
+        "토": ("안정·신뢰·포용", "위장·비장·피부"),
+        "금": ("결단·추진·원칙", "폐·대장·피부·뼈"),
+        "수": ("지혜·유연·감성", "신장·방광·부인과"),
+    }
+
+    chungs = rel_full.get("원국_충") or []
+    chung_positions: List[Tuple[str, str, str]] = []
+    for r in chungs:
+        if not isinstance(r, dict):
+            continue
+        gz = str(r.get("글자", ""))
+        pos = str(r.get("위치", ""))
+        desc = str(r.get("해석", ""))
+        if gz or pos:
+            chung_positions.append((gz, pos, desc))
+
+    ss_n = sip_c["식신"] + sip_c["상관"]
+    rex_n = sip_c["편재"] + sip_c["정재"]
+    guan_n = sip_c["정관"] + sip_c["편관"]
+    ins_n = sip_c["편인"] + sip_c["정인"]
+    bib_n = sip_c["비견"] + sip_c["겁재"]
+    geb_n = sip_c["겁재"]
+
+    y_pillar = pillars["year"]["pillar"]
+    m_pillar = pillars["month"]["pillar"]
+    d_pillar = pillars["day"]["pillar"]
+    h_pillar = pillars["hour"]["pillar"]
+
+    return {
+        "sip_c": sip_c,
+        "dm_image": dm_image,
+        "dm_strength": dm_strength,
+        "dm_weakness": dm_weakness,
+        "top_elems": top_elems,
+        "zero_elems": zero_elems,
+        "chung_positions": chung_positions,
+        "ss_n": ss_n,
+        "rex_n": rex_n,
+        "guan_n": guan_n,
+        "ins_n": ins_n,
+        "bib_n": bib_n,
+        "geb_n": geb_n,
+        "y_pillar": y_pillar,
+        "m_pillar": m_pillar,
+        "d_pillar": d_pillar,
+        "h_pillar": h_pillar,
+        "female": female,
+        "verdict": verdict,
+        "yong_el": yong_el,
+        "gi_el": gi_el,
+        "ELEM_MEANING": ELEM_MEANING,
+        "day_master": day_master,
+        "pillars": pillars,
+        "counts": counts,
+        "yong": yong,
+        "sinsal": sinsal,
+    }
+
+
 def _story_core_line(
     day_master: str,
     pillars: dict,
@@ -672,6 +796,7 @@ def _story_core_line(
     yong: Dict[str, Any],
     sip_c: Counter[str],
 ) -> str:
+    p4 = _pillar_quartet_korean(pillars)
     dom = oh.dominant_weak_elements(counts)
     top = _sorted_elems_by_count(counts)[:2]
     poetic = [_ELEM_POETIC.get(e, e) for e in top]
@@ -725,200 +850,270 @@ def _story_core_line(
 
     return (
         f"당신은 {dm_desc} 사주입니다. "
+        f"원국이 {p4}로 짜여 있어, 글자마다 다른 무게가 동시에 얹힌 팔자입니다. "
         f"이 사주는 {will_txt}이 핵심 에너지로 겹쳐 있습니다. "
-        f"이 사주는 {spouse_txt} "
-        f"당신은 {wealth_txt} "
-        f"일간은 {day_master}({dm_el})을 타고난 축이며, 팔자에는 {heap} 오행 기운이 두드러집니다. "
-        f"{tail}"
+        f"{spouse_txt} "
+        f"{wealth_txt} "
+        f"일간은 {day_master}({dm_el})을 타고난 축이며, 오행 분포에서는 {heap} 기운이 두드러집니다. "
+        f"용신 판정은 {verdict} 쪽으로 잡히고, {tail}"
     ).strip()
 
 
-def _story_personality(
-    gender: str,
-    sip_c: Counter[str],
-    yong: Dict[str, Any],
-    sinsal: Dict[str, Any],
-    rel_full: Dict[str, Any],
-) -> Dict[str, Any]:
-    female = sp.is_female_gender(gender)
-    bib = sip_c["비견"] + sip_c["겁재"]
-    ins = sip_c["편인"] + sip_c["정인"]
-    ss = sip_c["식신"] + sip_c["상관"]
-    rex = sip_c["편재"] + sip_c["정재"]
-    guan = sip_c["정관"] + sip_c["편관"]
+def _story_personality_dynamic(ctx: Dict[str, Any]) -> Dict[str, Any]:
+    """ctx = _dynamic_story_builder 결과. 십신·일간·충·오행을 묶어 성격 스토리를 만든다."""
+    sip_c = ctx["sip_c"]
+    dm_image = ctx["dm_image"]
+    dm_strength = ctx["dm_strength"]
+    dm_weakness = ctx["dm_weakness"]
+    ss_n = ctx["ss_n"]
+    rex_n = ctx["rex_n"]
+    guan_n = ctx["guan_n"]
+    ins_n = ctx["ins_n"]
+    bib_n = ctx["bib_n"]
+    geb_n = ctx["geb_n"]
+    verdict = ctx["verdict"]
+    female = ctx["female"]
+    zero_elems = ctx["zero_elems"]
+    ELEM_MEANING = ctx["ELEM_MEANING"]
+    y_p = ctx["y_pillar"]
+    m_p = ctx["m_pillar"]
+    d_p = ctx["d_pillar"]
+    h_p = ctx["h_pillar"]
+    dm = ctx["day_master"]
 
     strengths: List[str] = []
-    if bib >= 3:
+    if ss_n >= 4:
         strengths.append(
-            "당신은 독립적 판단과 선을 지키는 투지가 있어, 위기에서도 스스로 버티는 힘이 큽니다. "
-            "이 사주는 비견·겁재 기운이 받쳐 줄 때 책임감이 더 선명하게 드러납니다."
+            f"{d_p} 일주를 중심으로 식신·상관이 {ss_n}개나 모여 "
+            f"말하고 만들고 가르치는 일에서 남다른 능력을 발휘합니다. "
+            f"{h_p} 시주와 맞물려 표현 에너지가 끝까지 밀고 나가는 타입입니다."
         )
-    if ss >= 4:
+    elif ss_n >= 2:
         strengths.append(
-            "당신은 표현·기술·기획으로 무언가를 빚어내는 재능과 속도감이 있습니다. "
-            "이 사주는 식상(식신·상관)이 살아날수록 설득력과 창의성이 함께 올라갑니다."
+            f"{m_p} 월주 흐름 속에서 아이디어를 현실로 옮기는 실행력이 살아납니다. "
+            f"식상 기운이 {ss_n}개로 받쳐 주어 기획·설득에서 만족감이 크게 나타납니다. "
+            f"{y_p} 년주와 {h_p} 시주가 동시에 말하듯 표현이 살아날 때 주변 반응도 함께 커집니다."
         )
-    if rex >= 4:
+
+    if rex_n >= 4:
         strengths.append(
-            "당신은 현실 감각과 거래·숫자 감각으로 생활 전반을 구조화하는 편입니다. "
-            "이 사주는 재성(편재·정재)이 받쳐 줄 때 수입과 생활 설계가 한 번에 맞물립니다."
+            f"재성이 {rex_n}개로 강해 {y_p} 년주부터 이어진 ‘거래·숫자’ 감각이 탁월합니다. "
+            f"기회를 읽고 포착하는 속도가 빠른 편입니다. "
+            f"{m_p} 월주와 {h_p} 시주가 동시에 작동할 때 계약·협상에서 신뢰가 곧바로 수익으로 연결됩니다."
         )
-    if guan >= 3:
+    elif rex_n >= 2:
         strengths.append(
-            "당신은 책임·규범·약속을 중시해 조직과 역할 안에서 신뢰를 쌓기 쉽습니다. "
-            "이 사주는 관성(정관·편관)이 정돈될수록 사회적 평판이 따라붙는 타입입니다."
+            f"{y_p}·{m_p} 축을 따라 현실적인 판단으로 생활을 구조화하는 능력이 있습니다. "
+            f"재성 {rex_n}개가 생활의 뼈대를 잡아 줍니다. "
+            f"{d_p} 일주와 {h_p} 시주가 맞물려 작은 지출 설계까지 챙기면 체감 여유가 빠르게 따라옵니다."
         )
-    if ins >= 4:
+
+    if guan_n >= 3:
         strengths.append(
-            "당신은 배움·연구·복기 습관으로 전문성을 쌓아 올리는 인내가 있습니다. "
-            "이 사주는 인성(편인·정인)이 깊을수록 오래 가는 실력이 자산으로 남습니다."
+            f"관성이 {guan_n}개로 {h_p} 시주까지 책임과 약속을 중시하는 무게가 이어집니다. "
+            f"조직과 역할 안에서 신뢰를 빠르게 쌓는 타입입니다. "
+            f"{y_p} 년주가 깔아 준 규범 의식과 {d_p} 일주의 실행 태도가 겹치면 승진·위임 신호가 함께 옵니다."
         )
+
+    if ins_n >= 4:
+        strengths.append(
+            f"인성이 {ins_n}개로 {m_p} 월주 방향에서 배움·연구에 깊이 몰입합니다. "
+            f"전문성을 쌓는 인내력이 뛰어납니다. "
+            f"{y_p} 년주가 깔아 준 기준과 {d_p} 일주의 끈기가 겹치면 자격·논문·기술 자산이 빠르게 두꺼워집니다."
+        )
+
+    if bib_n >= 3:
+        strengths.append(
+            f"비겁이 {bib_n}개로 {d_p} 일간 {dm}의 주체성이 단단합니다. "
+            f"위기에서 스스로 버티는 생존력이 강합니다. "
+            f"{h_p} 시주가 말하듯 팀 안에서도 선을 지키는 태도가 장기적으로 존경으로 바뀝니다."
+        )
+
+    if verdict == "신강":
+        strengths.append(
+            f"일간 {dm} 기준으로 신강 판정이 나와 추진력과 자기주장이 강합니다. "
+            f"{d_p} 일주 한번 결심하면 끝까지 밀어붙이는 실행력이 큰 무기입니다. "
+            f"{m_p} 월주와 맞물려 목표를 숫자로 쪼개면 성과가 더 선명하게 드러납니다."
+        )
+    elif verdict == "신약":
+        strengths.append(
+            f"신약 구조라 섬세하고 공감 능력이 높습니다. "
+            f"{y_p} 년주 환경에서 좋은 조력자를 만날 때 {d_p} 일주의 재능이 크게 살아납니다. "
+            f"{h_p} 시주가 돕는 협업형 일에서 숨은 실력이 한꺼번에 부각되기도 합니다."
+        )
+
+    sinsal = ctx.get("sinsal") or {}
     if _has_sinsal_lines(sinsal, "문창귀인") or _has_sinsal_lines(sinsal, "학당귀인"):
         strengths.append(
-            "당신은 글·학문·자격의 기운이 받쳐 줄 때 설명력과 논리 전개가 빛납니다. "
-            "이 사주는 문창·학당 귀인이 맞물릴수록 말과 글이 사람을 끌어당깁니다."
+            f"{h_p} 시주와 맞닿은 문창·학당 귀인 신호로 글·자격·설명력이 빛납니다. "
+            f"말과 글이 사람을 끌어당기는 장점입니다. "
+            f"{y_p}·{m_p}가 깔아 준 학습 환경만 정돈해도 성과가 눈에 띄게 올라갑니다."
         )
 
-    fallback_strengths = [
-        "당신은 용신 방향으로 일과 환경을 맞출 때 강점이 가장 크게 드러나는 타입입니다. "
-        "이 사주는 흐름만 잡아주면 같은 노력으로도 체감 성과가 달라집니다.",
-        "당신은 한번 신뢰한 사람은 끝까지 지키는 의리와 책임감이 큰 자산입니다. "
-        "이 사주는 관계에서 약속을 지키는 태도가 장기 복으로 이어지기 쉽습니다.",
-        "당신은 위기 상황에서 오히려 침착해지는 역경 돌파 능력이 있습니다. "
-        "이 사주는 급한 순간일수록 판단의 중심이 잡히는 면모가 있습니다.",
-        "당신은 작은 것도 꼼꼼하게 챙기는 세심함으로 실수가 적은 편입니다. "
-        "이 사주는 디테일이 쌓여 신뢰를 만드는 구조입니다.",
-        "당신은 오랜 시간을 들여 쌓은 전문성이 나이 들수록 더 빛나는 구조입니다. "
-        "이 사주는 단기 스퍼트보다 장기 내공형 성장에 유리합니다.",
+    fallback_s = [
+        f"{dm_image} 같은 {dm} 일간의 성질이라 {dm_strength}이 있고, "
+        f"{y_p} 년주에서 시작된 인연은 오래 신뢰로 이어지기 쉽습니다. "
+        f"{m_p} 월주가 말하는 루틴만 지켜도 체력과 집중이 함께 따라옵니다.",
+        f"{m_p} 월주가 깔아 준 성장 축 위에서 오랜 시간 쌓은 전문성이 "
+        f"나이 들수록 더 빛나는 구조입니다. "
+        f"{h_p} 시주 방향의 인연도 같은 속도로 깊어지며, "
+        f"{y_p} 년주가 말하는 초기 환경이 오래 갈수록 자산이 됩니다.",
+        f"{d_p} 일주를 지탱하는 힘이라 위기에서 오히려 침착해지는 역경 돌파 능력이 있습니다. "
+        f"{y_p} 년주가 주는 뿌리 덕분에 한번 잡은 방향을 쉽게 흔들지 않습니다.",
+        f"{h_p} 시주가 말해 주듯 작은 것도 꼼꼼하게 챙기는 세심함으로 실수가 적습니다. "
+        f"{m_p} 월주와 맞물려 문서·일정 관리에서 신뢰를 빠르게 쌓습니다.",
+        f"{y_p}·{d_p}를 잇는 축에서 가까운 사람에게 깊은 의리와 따뜻함을 보여줍니다. "
+        f"말보다 행동으로 남는 배려가 {dm} 일간의 매력입니다.",
     ]
-    idx2 = 0
-    while len(strengths) < 5:
-        if idx2 < len(fallback_strengths):
-            s = fallback_strengths[idx2]
-            if s not in strengths:
-                strengths.append(s)
-            idx2 += 1
-        else:
+    for k in range(len(fallback_s)):
+        if len(strengths) >= 5:
             break
-    strengths = strengths[:5]
+        s = fallback_s[k]
+        if s not in strengths:
+            strengths.append(s)
+    strengths = list(dict.fromkeys(strengths))[:5]
+    zlab = ("년", "월", "일", "시")
+    zpil = (y_p, m_p, d_p, h_p)
+    strengths = [
+        _min_chars(
+            s,
+            100,
+            f"{zlab[i % 4]}주 {zpil[i % 4]} 글자가 이 강점을 오래 받쳐 주며, "
+            f"같은 맥락이 반복돼도 새로운 일로 전환되기 쉽습니다.",
+        )
+        for i, s in enumerate(strengths)
+    ]
 
     weaknesses: List[str] = []
-    if sip_c["상관"] >= sip_c["식신"] + 3:
+    if sip_c["상관"] >= sip_c["식신"] + 2:
         weaknesses.append(
-            "당신은 말·표현이 상대에게 도발로 비칠 수 있어 상사·가족과 마찰이 잦아질 수 있습니다. "
-            "이 사주는 상관이 식신보다 세면 ‘말 한마디’가 갈등의 씨앗이 되기 쉽습니다."
-        )
-    if guan >= 5:
-        weaknesses.append(
-            "당신은 스스로 책임을 과하게 지며 번아웃·근육 긴장·불면으로 이어지기 쉽습니다. "
-            "이 사주는 관성이 무거울수록 쉬는 날을 미리 넣지 않으면 몸이 먼저 신호를 보냅니다."
-        )
-    if ins >= 5:
-        weaknesses.append(
-            "당신은 생각이 많아지고 우려가 길어져 실행을 미루거나 우울 기복이 생기기 쉽습니다. "
-            "이 사주는 인성이 과하면 ‘준비’만 길어지고 출발선이 늦어질 수 있습니다."
-        )
-    if bib >= 6:
-        weaknesses.append(
-            "당신은 고집과 자존이 앞서 타협을 손해로 느끼게 되어 관계 비용이 커질 수 있습니다. "
-            "이 사주는 비견·겁재가 과할수록 협력보다 대립으로 읽히는 순간이 늘어납니다."
-        )
-    if rex <= 2 and guan >= 4:
-        weaknesses.append(
-            "당신은 현금·재테크 감각을 키우지 않으면 수입 대비 불안이 누적되기 쉽습니다. "
-            "이 사주는 재성이 얇고 관성이 무거울 때 ‘버는 것’보다 ‘감당’이 먼저 올라옵니다."
-        )
-    ch_day = [r for r in rel_full.get("원국_충", []) if "일지" in r.get("위치", "")]
-    if ch_day:
-        weaknesses.append(
-            "당신은 내실·배우자 축이 자주 흔들리는 패턴이라 정서적 안정 설계가 필요합니다. "
-            "이 사주는 일지 충이 걸릴수록 거처·관계 테마가 연속으로 요동칠 수 있습니다."
+            f"상관이 식신보다 세어 {m_p} 월주가 말하는 사회 규범과 마찰이 생기기 쉽습니다. "
+            f"말이 직접적이면 {h_p} 시주 쪽 인연에서 오해가 날 수 있으니 표현을 부드럽게 조절하세요."
         )
 
-    fallback_weaknesses = [
-        "당신은 기신 오행이 강해지는 시기에 같은 실수를 반복할 수 있어 주기적 점검이 필요합니다. "
-        "이 사주는 기신(부담 오행)이 들어올 때 습관·환경을 먼저 조정하면 피로가 줄어듭니다.",
-        "당신은 피로가 누적되면 감정 표현이 극단적으로 변하기 쉬워 휴식 루틴을 미리 설계하세요. "
-        "이 사주는 컨디션이 무너질수록 말투와 반응 속도가 함께 흔들리기 쉽습니다.",
-        "당신은 결정을 미루다 타이밍을 놓치거나, 반대로 너무 급하게 결정해 후회하는 패턴이 있을 수 있습니다. "
-        "이 사주는 ‘한 박자 숨 고르기’만 넣어도 선택의 질이 달라집니다.",
-        "당신은 가까운 사람에게 더 엄격한 기준을 적용하는 경향이 있어 관계의 온도 조절이 필요합니다. "
-        "이 사주는 기대치를 말로 명확히 나누면 오해가 크게 줄어듭니다.",
-        "당신은 완벽을 추구하다 시작 자체를 미루는 경우가 있으니 ‘80점으로 시작’하는 연습이 도움됩니다. "
-        "이 사주는 실행 후 다듬는 방식이 마음의 안정에 더 잘 맞습니다.",
+    if guan_n >= 5:
+        weaknesses.append(
+            f"관성이 {guan_n}개로 {d_p} 일주에 책임이 과하게 얹혀 번아웃으로 이어지기 쉽습니다. "
+            f"역할 범위를 문장으로 나누는 연습이 필요합니다."
+        )
+
+    if ins_n >= 5:
+        weaknesses.append(
+            f"인성이 {ins_n}개로 많아 {y_p}에서 배운 신념이 길어지며 실행을 미루는 패턴이 있습니다. "
+            f"'일단 시작'하는 습관이 돌파구가 됩니다."
+        )
+
+    if bib_n >= 6:
+        weaknesses.append(
+            f"비겁이 {bib_n}개로 {dm} 일간의 고집이 앞서 타협을 손해로 느끼기 쉽습니다. "
+            f"{h_p} 시주와 맞물린 경쟁에서 유연성이 더 큰 성과를 만듭니다."
+        )
+
+    if geb_n >= rex_n + 2:
+        weaknesses.append(
+            f"겁재가 재성보다 튀어 {d_p} 일주 기준으로 경쟁·충동 지출이 나타나기 쉽습니다. "
+            f"동업과 보증은 특히 신중히 결정하세요."
+        )
+
+    if len(ctx["chung_positions"]) >= 2:
+        ch0 = ctx["chung_positions"][0][0] or "충"
+        weaknesses.append(
+            f"원국에 충이 {len(ctx['chung_positions'])}개({ch0} 등) 깔려 "
+            f"{m_p}·{d_p} 사이에 내면 긴장이 상존합니다. "
+            f"정서적 안정 루틴이 삶의 질을 크게 높입니다."
+        )
+
+    if zero_elems:
+        z = zero_elems[0]
+        zm = ELEM_MEANING.get(z, ("", ""))
+        weaknesses.append(
+            f"{z}({zm[0]}) 기운이 팔자에 없어 {h_p} 시주가 채우려는 욕구이자 "
+            f"평생 보완하고 싶은 취약점이 될 수 있습니다."
+        )
+
+    gi_show = ctx["gi_el"] or "—"
+    fallback_w = [
+        f"{dm_weakness}을 {d_p} 일주 관점에서 주의하면 스스로 인식하는 것만으로도 크게 개선됩니다.",
+        f"피로가 누적되면 {h_p} 시주 쪽 감정 표현이 극단적으로 변하기 쉬워 휴식 루틴을 미리 설계하세요.",
+        f"{m_p} 월주가 말하는 대인관계에서 가까운 사람에게 더 엄격한 기준이 나가 온도 조절이 필요합니다.",
+        f"{y_p} 년주가 깔아 준 완벽 추구가 시작을 미루게 할 수 있으니 80점으로 시작하는 연습이 도움됩니다.",
+        f"기신 {gi_show} 오행이 강해지는 세운·대운에서는 {d_p} 일주가 같은 실수를 반복하기 쉬워 주기적 점검이 필요합니다.",
     ]
-    idx = 0
-    while len(weaknesses) < 5:
-        if idx < len(fallback_weaknesses):
-            w = fallback_weaknesses[idx]
-            if w not in weaknesses:
-                weaknesses.append(w)
-            idx += 1
-        else:
+    seen_w = set(weaknesses)
+    for w in fallback_w:
+        if len(weaknesses) >= 5:
             break
-    weaknesses = weaknesses[:5]
+        if w not in seen_w:
+            weaknesses.append(w)
+            seen_w.add(w)
+    weaknesses = list(dict.fromkeys(weaknesses))[:5]
 
-    if ss >= guan and ss >= rex:
+    if ss_n >= guan_n and ss_n >= rex_n:
         social = (
-            "당신은 말과 결과물로 사람을 끌어당기는 스타일이며, 칭찬보다는 피드백 욕구가 솔직하게 드러납니다. "
-            "이 사주는 식상이 관·재보다 앞설 때 ‘보여주는 일’에서 에너지가 크게 켜집니다."
+            f"{d_p} 일간 {dm}을 중심으로 말과 결과물로 사람을 끌어당기는 스타일입니다. "
+            f"{h_p} 시주가 더해 주는 솔직한 피드백 교환이 인간관계의 핵심 무기입니다."
         )
-    elif rex >= ss:
+    elif rex_n >= ss_n and rex_n >= guan_n:
         social = (
-            "당신은 실리·교환가치를 중시하는 편이라 신뢰는 약속 이행과 금전 명료함에서 생깁니다. "
-            "이 사주는 재성 기운이 받쳐 줄수록 관계도 ‘지켜지는 규칙’으로 안정됩니다."
+            f"{y_p}·{m_p}에서 읽히듯 실리와 교환가치를 중시하는 편입니다. "
+            f"신뢰는 약속 이행과 금전적 명료함에서 생기며 이해관계가 맞을 때 가장 활발합니다."
         )
-    elif guan >= ss:
+    elif guan_n >= ss_n:
         social = (
-            "당신은 역할·예의를 중시하는 편이라 선후배·직급 관계에서 거리감을 나누는 방식이 편합니다. "
-            "이 사주는 관성이 정돈될수록 예의와 질서가 곧 신뢰로 바뀌는 타입입니다."
+            f"{m_p} 월주의 관성 흐름처럼 역할과 예의를 중시합니다. "
+            f"선후배·직급 관계에서 거리감을 나누는 방식이 편하고 한번 맺은 인연은 깁니다."
         )
     else:
         social = (
-            "당신은 가까운 소수와 깊게 가는 편이며, 넓은 네트워크보다 오래된 인연을 챙깁니다. "
-            "이 사주는 인연의 ‘깊이’가 오래 갈수록 복으로 돌아오는 구조입니다."
+            f"{h_p} 시주와 맞물려 가까운 소수와 깊게 가는 타입입니다. "
+            f"넓은 네트워크보다 오래된 인연을 소중히 여기며 처음엔 조용하지만 신뢰가 쌓이면 진심을 다합니다."
         )
 
-    if guan >= 4 or sip_c["편관"] >= 3:
+    if guan_n >= 4 or sip_c["편관"] >= 3:
         stress = (
-            "당신은 압박이 오면 더 바짝 매달리다 몸과 말이 거칠어질 수 있어 수면·근육 이완이 우선입니다. "
-            "이 사주는 관살(편관 포함)이 세면 스트레스가 몸의 긴장으로 바로 전이되기 쉽습니다."
+            f"압박이 오면 {d_p} 일주가 더 바짝 매달리다 몸과 말이 거칠어질 수 있습니다. "
+            f"{m_p} 월주의 관살 무게를 줄이려면 수면과 근육 이완을 가장 먼저 챙기세요."
         )
-    elif ins >= 5:
+    elif ins_n >= 5:
         stress = (
-            "당신은 스트레스 시 혼자 삭이거나 검색·추측이 길어지며, 대화로 풀면 회복 속도가 빨라집니다. "
-            "이 사주는 인성이 깊을수록 ‘말로 꺼내기’만 해도 마음의 무게가 줄어듭니다."
+            f"스트레스 시 {y_p} 년주가 말하듯 혼자 삭이거나 생각과 검색이 길어집니다. "
+            f"대화로 털어놓으면 회복 속도가 훨씬 빨라집니다."
         )
-    elif sip_c["겁재"] >= 4:
+    elif geb_n >= 4:
         stress = (
-            "당신은 경쟁·비교 의식이 발동해 지출이나 과장된 약속으로 번아웃으로 이어질 수 있습니다. "
-            "이 사주는 겁재가 올라올수록 지갑과 말을 동시에 조심해야 합니다."
+            f"{h_p} 시주에서 경쟁·비교 의식이 발동해 지출이나 과장된 약속으로 번아웃이 올 수 있습니다. "
+            f"자신만의 기준을 세우고 비교를 줄이는 것이 핵심입니다."
+        )
+    elif ss_n >= 4:
+        stress = (
+            f"스트레스를 창작·표현·수다로 푸는 타입입니다. "
+            f"{d_p} 일주가 혼자 있는 시간을 길게 가지면 오히려 더 힘들어지니 교류를 의식적으로 늘리세요."
         )
     else:
         stress = (
-            "당신은 평소 무던해 보이다 한계선에서 감정이 터지는 편이라 ‘미리 쉬는 날’을 넣는 것이 안전합니다. "
-            "이 사주는 쌓이다 터지는 타입이라 작은 휴식을 자주 넣는 편이 큰 사고를 막습니다."
+            f"{m_p} 월주 기운처럼 평소 무던해 보이다 한계선에서 감정이 터지는 패턴입니다. "
+            f"미리 쉬는 날을 달력에 넣어두는 것이 효과적입니다."
         )
 
-    if rex >= guan and bib >= 3:
+    if rex_n >= guan_n and bib_n >= 3:
         decide = (
-            "당신은 숫자·체감 손익을 보며 빠르게 결정하고, 망설임은 짧게 가져가는 편입니다. "
-            "이 사주는 재성과 비견이 함께 설 때 실행 속도가 강점으로 붙습니다."
+            f"{y_p}·{d_p} 축을 보며 숫자와 체감 손익을 보고 빠르게 결정하는 편입니다. "
+            f"큰 결정은 하루 정도 숙고 후 확정하면 후회가 줄어듭니다."
         )
-    elif guan > rex:
+    elif guan_n > rex_n:
         decide = (
-            "당신은 규정·상사·주변 시선을 참고해 안전한 선택을 고르는 신중형입니다. "
-            "이 사주는 관성이 재성보다 앞설 때 ‘안전한 길’이 오히려 장기적으로 이득이 됩니다."
+            f"{m_p} 월주의 관성이 앞서 규정·상사·주변 시선을 참고해 안전한 선택을 고르는 신중형입니다. "
+            f"결정이 느릴 수 있지만 실수도 적습니다."
         )
-    elif ins >= ss:
+    elif ins_n >= ss_n:
         decide = (
-            "당신은 정보를 충분히 모은 뒤 결론을 내리며, 급한 결정은 불안을 남깁니다. "
-            "이 사주는 인성이 식상보다 깊을수록 확인과 검증이 결정의 질을 올립니다."
+            f"{h_p} 시주와 맞물려 정보를 충분히 모은 뒤 결론을 내리는 타입입니다. "
+            f"급한 결정은 불안을 남기므로 중요한 선택일수록 데이터를 먼저 모으세요."
         )
     else:
         decide = (
-            "당신은 직관과 경험 법칙을 섞어 결정하며, 큰 결정은 한 박자 쉬었다가 확정합니다. "
-            "이 사주는 ‘잠깐의 거리’가 후회를 크게 줄여 주는 타입입니다."
+            f"{d_p} 일간 {dm}의 직관과 경험 법칙을 섞어 결정하는 편입니다. "
+            f"첫 느낌이 정확한 경우가 많지만 큰 결정은 한 박자 쉬었다가 확정하는 것이 안전합니다."
         )
 
     return {
@@ -931,6 +1126,311 @@ def _story_personality(
     }
 
 
+def _story_career_dynamic(ctx: Dict[str, Any], yong: Dict[str, Any]) -> Dict[str, Any]:
+    """직업 적성을 일간·십신·용신·원국 기둥 문자로 동적 생성한다."""
+    sip_c = ctx["sip_c"]
+    ss_n = ctx["ss_n"]
+    rex_n = ctx["rex_n"]
+    guan_n = ctx["guan_n"]
+    ins_n = ctx["ins_n"]
+    bib_n = ctx["bib_n"]
+    verdict = ctx["verdict"]
+    yong_el = ctx["yong_el"]
+    gi_el = ctx["gi_el"]
+    female = ctx["female"]
+    y_p = ctx["y_pillar"]
+    m_p = ctx["m_pillar"]
+    d_p = ctx["d_pillar"]
+    h_p = ctx["h_pillar"]
+    dm = ctx["day_master"]
+
+    pillars = ctx["pillars"]
+    p4 = _pillar_quartet_korean(pillars)
+
+    YONG_JOB_DETAIL = {
+        "목": [
+            (
+                "교육·출판",
+                f"{p4} 원국에서 {m_p} 월주와 맞물려 새로운 것을 가르치고 키우는 교육·출판에서 목 기운이 살아납니다. "
+                f"{d_p} 일주가 말하는 설명력과 {h_p} 시주의 인내가 겹치면 커리큘럼 설계에서 두각을 나타냅니다.",
+            ),
+            (
+                "환경·농업",
+                f"{y_p} 년주 뿌리와 연결된 자연·생명 분야에서 진정한 보람을 찾습니다. "
+                f"{m_p}·{d_p}가 짚는 현장 감각이 살아날수록 장기 프로젝트에서 신뢰가 쌓입니다.",
+            ),
+            (
+                "의류·목재",
+                f"{d_p} 일주가 말하는 소재·디자인으로 결과물을 만드는 일이 잘 맞습니다. "
+                f"{h_p} 시주와 맞물려 손끝 작업·마감 품질에서 평판이 곧 매출로 이어지는 구조입니다.",
+            ),
+        ],
+        "화": [
+            (
+                "방송·미디어",
+                f"{h_p} 시주가 돕는 방송·콘텐츠에서 화 기운이 빛납니다. "
+                f"{p4} 조합 안에서 말과 장면이 동시에 살아날 때 몰입도가 크게 올라가고, "
+                f"{m_p} 월주가 깔아 준 리듬만 맞추면 협찬·출연 기회도 자연스럽게 따라옵니다.",
+            ),
+            (
+                "요식업·서비스",
+                f"{d_p} 일간 {dm}의 따뜻한 대접 에너지가 요식·서비스에 녹아듭니다. "
+                f"{y_p} 년주가 말하는 손님 응대와 {h_p} 시주의 현장 감각이 겹치면 단골이 빠르게 쌓입니다.",
+            ),
+            (
+                "미용·에너지",
+                f"{m_p} 월주와 연결된 감각·열정이 필요한 미용·에너지 분야에서 두각을 나타냅니다. "
+                f"{d_p} 일주의 섬세함이 브랜드로 남을 때 {p4} 전체 흐름도 함께 밝아집니다.",
+            ),
+        ],
+        "토": [
+            (
+                "부동산·건설",
+                f"{y_p}·{m_p}가 짚는 실질 가치 창출형 부동산·건설에 안목이 있습니다. "
+                f"{d_p} 일주의 책임감과 {h_p} 시주의 실행력이 맞물리면 계약·하자 관리에서 강점이 드러납니다.",
+            ),
+            (
+                "의료·복지",
+                f"{d_p} 일주 책임감이 생명·건강 돌봄으로 이어질 때 깊이가 납니다. "
+                f"{m_p} 월주가 말하는 규범 의식과 {y_p} 년주의 인내가 겹치면 오래 버티는 전문직으로 정착하기 쉽습니다.",
+            ),
+            (
+                "금융·보험",
+                f"{h_p} 시주와 맞물린 안정·신뢰 기반 금융·보험이 잘 맞습니다. "
+                f"{p4}에서 읽히는 신용 축이 살아날수록 고객 설득이 수월해지고 장기 수수료 구조도 유리해집니다.",
+            ),
+        ],
+        "금": [
+            (
+                "법률·군경",
+                f"{dm} 일간의 원칙성이 {m_p} 월주와 만나 법·공공 분야에서 강하게 드러납니다. "
+                f"{d_p}·{h_p}가 짚는 결단과 절차 준수가 겹치면 분쟁 조정·감사 역할에서 신뢰가 빠르게 쌓입니다.",
+            ),
+            (
+                "기계·제조",
+                f"{y_p} 년주가 말하는 정밀함과 결단이 기계·제조에서 강점이 됩니다. "
+                f"{m_p} 월주의 품질 기준과 {d_p} 일주의 끈기가 맞물리면 불량률을 줄이는 핵심 인재가 됩니다.",
+            ),
+            (
+                "의료·수술",
+                f"{d_p} 일주의 섬세함과 결단이 동시에 필요한 의료 분야에 적성이 있습니다. "
+                f"{h_p} 시주가 돕는 집중력이 살아날수록 응급·중재술처럼 판단이 곧 생명으로 연결되는 자리에서 빛납니다.",
+            ),
+        ],
+        "수": [
+            (
+                "무역·유통",
+                f"{h_p} 시주의 유연함이 무역·물류의 넓은 시야와 맞닿습니다. "
+                f"{y_p}·{m_p}가 깔아 준 정보 감각이 {d_p} 일주와 만나면 물량·현금흐름을 동시에 읽는 강점이 생깁니다.",
+            ),
+            (
+                "철학·상담",
+                f"{d_p} 일주 {dm}의 통찰이 상담·철학에서 깊이를 만듭니다. "
+                f"{p4} 전체를 놓고 보면 말 한마디가 상대의 마음을 여는 도구로 작동할 때 가장 큰 보람을 느낍니다.",
+            ),
+            (
+                "예술·엔터",
+                f"{m_p} 월주의 감수성이 예술·엔터 분야에서 빛납니다. "
+                f"{h_p} 시주와 맞물려 관객·팬과의 교감이 살아날수록 작품성과 대중성이 동시에 따라붙습니다.",
+            ),
+        ],
+    }
+
+    top5: List[Dict[str, str]] = []
+    seen_jobs: Set[str] = set()
+
+    yong_detail = list(YONG_JOB_DETAIL.get(yong_el) or [])
+    if yong_detail:
+        rot = (
+            ord(dm[0])
+            + sum(ord(c) for c in d_p)
+            + sum(ord(c) for c in h_p)
+            + sum(ord(c) for c in y_p)
+        ) % len(yong_detail)
+        yong_detail = yong_detail[rot:] + yong_detail[:rot]
+
+    for job, desc in yong_detail:
+        if len(top5) >= 2:
+            break
+        if job not in seen_jobs:
+            top5.append({"직군": job, "이유": desc})
+            seen_jobs.add(job)
+
+    if ss_n >= 4 and len(top5) < 5:
+        j = "크리에이터·강사·작가"
+        if j not in seen_jobs:
+            top5.append(
+                {
+                    "직군": j,
+                    "이유": (
+                        f"식신·상관이 {ss_n}개로 강해 {d_p}·{h_p} 팔자에서 콘텐츠·강의·글쓰기로 "
+                        f"수입을 만드는 능력이 탁월합니다. 표현하는 일에서 에너지가 살아납니다."
+                    ),
+                }
+            )
+            seen_jobs.add(j)
+    elif ss_n >= 2 and len(top5) < 5:
+        j = "기획·마케팅"
+        if j not in seen_jobs:
+            top5.append(
+                {
+                    "직군": j,
+                    "이유": (
+                        f"{m_p} 월주 흐름에서 아이디어를 현실로 연결하는 기획·마케팅에 "
+                        f"식상 {ss_n}개의 에너지가 잘 발휘됩니다."
+                    ),
+                }
+            )
+            seen_jobs.add(j)
+
+    if rex_n >= 4 and len(top5) < 5:
+        j = "영업·사업·투자"
+        if j not in seen_jobs:
+            top5.append(
+                {
+                    "직군": j,
+                    "이유": (
+                        f"재성이 {rex_n}개로 {y_p}부터 이어진 거래·협상 감각이 탁월합니다. "
+                        f"직접 수익을 만드는 구조에서 성취감이 큽니다."
+                    ),
+                }
+            )
+            seen_jobs.add(j)
+
+    if guan_n >= 4 and len(top5) < 5:
+        j = "관리직·공무원·컴플라이언스"
+        if j not in seen_jobs:
+            top5.append(
+                {
+                    "직군": j,
+                    "이유": (
+                        f"관성이 {guan_n}개로 {m_p}·{h_p}에 걸친 규정·책임 역할에 적합합니다. "
+                        f"조직에서 신뢰를 빠르게 쌓습니다."
+                    ),
+                }
+            )
+            seen_jobs.add(j)
+
+    if ins_n >= 5 and len(top5) < 5:
+        j = "연구·컨설팅·전문직"
+        if j not in seen_jobs:
+            top5.append(
+                {
+                    "직군": j,
+                    "이유": (
+                        f"인성이 {ins_n}개로 깊어 {d_p} 일주가 자료·개념 정리에 몰입합니다. "
+                        f"분석이 필요한 일에서 강점이 큽니다."
+                    ),
+                }
+            )
+            seen_jobs.add(j)
+
+    if female:
+        fallback_jobs = [
+            (
+                "교육·돌봄",
+                f"{h_p} 시주와 연결된 돌봄·교육에서 {dm} 일간의 공감이 강점으로 나타납니다.",
+            ),
+            (
+                "상담·코칭",
+                f"{d_p} 일주가 말하는 경청과 공감으로 사람의 마음을 여는 능력이 있습니다.",
+            ),
+        ]
+    else:
+        fallback_jobs = [
+            (
+                "전략·기획",
+                f"{y_p} 년주가 깔아 준 큰 그림과 {m_p} 월주의 실행 설계가 전략 기획에 맞습니다.",
+            ),
+            (
+                "현장·실무",
+                f"{d_p}·{h_p} 조합처럼 실질 결과를 만드는 현장 역할에서 능력을 발휘합니다.",
+            ),
+        ]
+
+    for job, desc in fallback_jobs:
+        if len(top5) >= 5:
+            break
+        if job not in seen_jobs:
+            top5.append({"직군": job, "이유": desc})
+            seen_jobs.add(job)
+
+    modes: List[str] = []
+    if verdict == "신강" and rex_n >= 3:
+        modes.append(
+            f"사업·독립: {dm} 일간 신강과 재성 {rex_n}개가 맞물려 "
+            f"{y_p}에서 시작한 독립 사업 신호가 강합니다. 지분·계약은 명확히 하세요."
+        )
+    if ss_n >= 4:
+        modes.append(
+            f"프리랜서·1인 기업: {d_p} 일주의 식상이 포트폴리오와 단가 협상으로 이어지면 "
+            f"수입으로 자연 전환됩니다."
+        )
+    if guan_n >= 3 or verdict == "신약":
+        modes.append(
+            f"직장인: {m_p} 월주처럼 역할이 명확한 조직에서 {h_p} 시주까지 장기 신뢰가 쌓입니다. "
+            f"안정 현금흐름이 든든한 기반이 됩니다."
+        )
+    if not modes:
+        modes.append(
+            f"{y_p}·{m_p}·{d_p}·{h_p} 원국을 보면 직장 내 전문가로 먼저 커리어를 쌓고 "
+            f"이후 소규모 독립을 검토하는 흐름이 가장 무리가 없습니다."
+        )
+
+    ELEM_JOB = {
+        "목": "목재·환경·의류",
+        "화": "방송·요식·에너지",
+        "토": "부동산·건설·농업",
+        "금": "법률·제조·금속",
+        "수": "무역·유통·관광",
+    }
+    avoid: List[str] = []
+    if gi_el:
+        avoid.append(
+            f"기신 {gi_el} 계열 ({ELEM_JOB.get(gi_el, '')}) 업종은 {d_p} 일주에겐 에너지 소진이 크고 "
+            f"성과 대비 보람이 적을 수 있습니다."
+        )
+    seen_avoid: Set[str] = set()
+    for el in yong.get("기신") or []:
+        el_s = str(el)
+        mj = (ELEMENT_META.get(el_s) or {}).get("직업")
+        if not mj or el_s in seen_avoid:
+            continue
+        seen_avoid.add(el_s)
+        avoid.append(
+            f"기신 {el_s}({mj}) 산업은 {m_p} 월주가 말하는 피로·좌절 비용이 클 수 있어 "
+            f"용신 {yong_el or '—'} 방향을 우선하세요."
+        )
+
+    zpil_j = (y_p, m_p, d_p, h_p)
+    for idx, it in enumerate(top5):
+        it["이유"] = _min_chars(
+            it.get("이유", ""),
+            100,
+            f"{zpil_j[idx % 4]} 축이 직업 만족과 연결되며, "
+            f"{p4} 원국에서 용신 {yong_el or '—'} 방향으로 키우면 에너지 효율이 좋아집니다.",
+        )
+
+    return {
+        "최적_직군_TOP5": top5[:5],
+        "피해야_할_직군": avoid
+        or [
+            f"기신 오행 계열은 {h_p} 시주가 말하듯 에너지 소진이 크니 "
+            f"용신 {yong_el or '—'} 방향을 우선 고려하세요."
+        ],
+        "사업_적합": (
+            f"재성 {rex_n}개와 신강이 맞물려 {y_p}에서 사업 추진 신호가 강합니다. "
+            f"현금흐름 구조를 먼저 설계하면 안정적으로 성장합니다."
+            if verdict == "신강" and rex_n >= 3
+            else (
+                f"{d_p} 일주는 직장 내 전문성을 쌓은 뒤 단계적으로 독립하는 흐름이 "
+                f"가장 리스크가 적습니다."
+            )
+        ),
+        "근무형태_판정": modes,
+    }
+
+
 def _story_life_arc(
     pillars: dict,
     yong: Dict[str, Any],
@@ -940,6 +1440,11 @@ def _story_life_arc(
     year_z = pillars["year"]["zhi"]
     month_z = pillars["month"]["zhi"]
     hour_z = pillars["hour"]["zhi"]
+    y_p = pillars["year"]["pillar"]
+    m_p = pillars["month"]["pillar"]
+    d_p = pillars["day"]["pillar"]
+    h_p = pillars["hour"]["pillar"]
+    p4 = _pillar_quartet_korean(pillars)
 
     def zstress(z: str) -> str:
         hits = sum(
@@ -952,31 +1457,51 @@ def _story_life_arc(
         return "다소 출발 환경에 변수가 있었을 수 있습니다." if hits else "비교적 안정적인 출발 축입니다."
 
     youth_home = (
-        f"년지({year_z})가 부모·초기 환경을 대표합니다. {zstress(year_z)} "
-        f"월령 오행은 {yong.get('월령_주기', '')} 방향과 맞물립니다."
+        f"{y_p} 년주(지지 {year_z})가 부모·초기 환경을 대표합니다. {zstress(year_z)} "
+        f"월령 오행은 {yong.get('월령_주기', '')} 방향과 맞물리며, "
+        f"같은 원국에서 {m_p}·{d_p}가 차례로 얹히면서 성장 속도가 조금씩 달라집니다."
     )
     teen = (
-        f"월지({month_z})는 학업·사회화 초기를 상징합니다. "
-        f"식상·관성 노출이 있어 표준 경로 안에서도 방향 전환 욕구가 생길 수 있습니다."
+        f"{m_p} 월주가 말하는 월지({month_z})는 학업·사회화 초기를 상징합니다. "
+        f"식상·관성 노출이 있어 표준 경로 안에서도 방향 전환 욕구가 생길 수 있습니다. "
+        f"{h_p} 시주와 맞물리면 작은 습관이 장기 실력으로 굳어지기 쉽습니다."
         if sip_c["식신"] + sip_c["상관"] >= 3 or sip_c["정관"] + sip_c["편관"] >= 3
-        else f"월지({month_z})는 학업·친구 관계에서 내향형 성장이 두드러질 수 있습니다."
+        else (
+            f"{m_p} 월주의 월지({month_z})는 학업·친구 관계에서 내향형 성장이 두드러질 수 있습니다. "
+            f"{y_p}에서 받은 가치관이 {h_p} 시주 방향까지 이어지며 자아 그림이 천천히 선명해집니다. "
+            f"{d_p} 일주가 말하는 내면 기준도 같은 시기에 함께 자랍니다."
+        )
     )
     young_adult = (
-        f"일주는 배우자·자아 확립 축입니다. 일지 {pillars['day']['zhi']}를 중심으로 연애·결혼·첫 직장 테마가 펼쳐집니다."
+        f"{d_p} 일주는 배우자·자아 확립의 핵심 글자입니다. 일지 {pillars['day']['zhi']}를 중심으로 "
+        f"연애·결혼·첫 직장 테마가 펼쳐지고, 앞선 {y_p}·{m_p}가 깔아 준 기대와도 맞물립니다. "
+        f"{h_p} 시주는 그 기대를 현실 일정과 감정 리듬으로 옮기는 역할을 합니다."
     )
     mid = (
-        "재·관 균형이 맞물리는 시기로 전성기(직급·매출)와 책임 과부하가 동시에 올 수 있습니다."
+        f"{d_p}에서 {h_p}로 이어지는 중년 축에서 재·관 균형이 맞물리면 "
+        f"전성기(직급·매출)와 책임 과부하가 동시에 올 수 있습니다. "
+        f"{p4} 원국 전체를 보면 그때의 선택이 말년 현금흐름과 가족 구조까지 이어집니다."
         if sip_c["편재"] + sip_c["정재"] >= 4 and sip_c["정관"] + sip_c["편관"] >= 3
-        else "전성기보다 방향 재설정·내실 다지기 과제가 교차하는 시기로 보입니다."
+        else (
+            f"{m_p}·{h_p} 조합을 보면 전성기보다 방향 재설정·내실 다지기 과제가 교차하는 시기로 보입니다. "
+            f"원국 글자 {y_p}가 주는 뿌리와도 연결되어 판단이 보수적으로 바뀔 수 있습니다. "
+            f"{d_p} 일주가 말하는 우선순위 조정이 곧 중년 이후 복의 방향키가 됩니다."
+        )
     )
     mature = (
-        "자산·가족 구조를 정리하며 권위와 역할을 나누는 시기입니다."
+        f"{h_p} 시주가 말하는 말년 직전, 자산·가족 구조를 정리하며 권위와 역할을 나누는 시기입니다. "
+        f"{y_p}·{m_p}가 깔아 준 뿌리와 {d_p} 일주의 책임감이 겹치면 유산·후손 테마도 함께 정리됩니다."
         if sip_c["정재"] >= 2
-        else "경험을 바탕으로 일과 삶의 우선순위를 줄이는 조정기입니다."
+        else (
+            f"{d_p} 일주의 경험을 바탕으로 일과 삶의 우선순위를 줄이는 조정기입니다. "
+            f"{y_p}에서 시작된 인연·자산 테마가 정리되며 여유가 생깁니다. "
+            f"{m_p}·{h_p}가 말하는 건강·취미 축을 새로 설계하면 만족도가 크게 올라갑니다."
+        )
     )
     elder = (
-        f"시지({hour_z})는 말년·자녀·후손 환경입니다. "
-        f"{'활동 반경은 줄어도 자아 표현은 살아 있는 편입니다.' if sip_c['식신'] + sip_c['상관'] >= 2 else '조용한 안식과 의료·여행 계획이 중요해집니다.'}"
+        f"{h_p} 시주의 시지({hour_z})는 말년·자녀·후손 환경입니다. "
+        f"{'활동 반경은 줄어도 자아 표현은 살아 있는 편입니다.' if sip_c['식신'] + sip_c['상관'] >= 2 else '조용한 안식과 의료·여행 계획이 중요해집니다.'} "
+        f"원국 {y_p}·{m_p}·{d_p}·{h_p} 전체를 돌아보면, 마지막 장은 ‘정리와 남김’의 무게가 큽니다."
     )
 
     dw0 = ""
@@ -985,180 +1510,36 @@ def _story_life_arc(
     arc_note = f"첫 대운 참고: {dw0}" if dw0 else ""
 
     return {
-        "유년기_15미만": youth_home,
-        "청소년기_15_25": teen + (" " + arc_note if arc_note else ""),
-        "청년기_25_35": young_adult,
-        "중년기_35_50": mid,
-        "장년기_50_65": mature,
-        "노년기_65이상": elder,
-    }
-
-
-def _story_career_details(day_master: str, pillars: dict, yong: Dict[str, Any], sip_c: Counter[str]) -> Dict[str, Any]:
-    meta = yong.get("용신_색상_방위_직업") or {}
-    base_jobs = (meta.get("직업") or "")
-    yong_el = yong.get("용신_오행") or ""
-    verdict = yong.get("일간_강약") or ""
-    ss_n = sip_c["식신"] + sip_c["상관"]
-    rex_n = sip_c["편재"] + sip_c["정재"]
-    guan_n = sip_c["정관"] + sip_c["편관"]
-
-    job_descriptions = {
-        "교육": (
-            "가르치고 이끄는 교육 분야에서 당신의 안정적인 에너지가 빛납니다. "
-            "이 사주는 사람을 세우는 일에서 장기적 신뢰가 자산이 됩니다."
+        "유년기_15미만": _min_chars(
+            youth_home,
+            100,
+            f"{p4} 원국에서 유년기 해석은 {y_p} 년주와 함께 읽을 때 더 선명해집니다.",
         ),
-        "방송": (
-            "표현력과 순발력이 필요한 방송·미디어 분야가 잘 맞습니다. "
-            "이 사주는 말과 장면이 동시에 살아날 때 몰입도가 크게 올라갑니다."
+        "청소년기_15_25": _min_chars(
+            teen + (" " + arc_note if arc_note else ""),
+            100,
+            f"{m_p} 월주가 말하는 청소년기 과제는 {d_p} 일주와 연결해 보면 이해가 빨라집니다.",
         ),
-        "요식업": (
-            "사람을 모으고 따뜻하게 대접하는 요식업에서 강점이 나타납니다. "
-            "이 사주는 현장의 온도와 리듬을 맞추는 감각이 수익과 연결됩니다."
+        "청년기_25_35": _min_chars(
+            young_adult,
+            100,
+            f"{p4} 전체 흐름에서 청년기는 {h_p} 시주와 함께 읽는 것이 좋습니다.",
         ),
-        "미용": (
-            "섬세함과 감각이 필요한 미용·뷰티 분야에 적성이 있습니다. "
-            "이 사주는 손끝 디테일이 브랜드로 남는 타입입니다."
+        "중년기_35_50": _min_chars(
+            mid,
+            100,
+            f"{p4} 원국이 말하는 중년기 분기는 재·관 숫자와 맞물려 결정됩니다.",
         ),
-        "부동산": (
-            "안목과 현실 감각이 필요한 부동산 분야에서 두각을 나타냅니다. "
-            "이 사주는 ‘땅·건물·흐름’을 숫자로 읽는 연습이 강점을 키웁니다."
+        "장년기_50_65": _min_chars(
+            mature,
+            100,
+            f"{d_p} 일주 기준으로 장년기는 자산·역할 나눔이 핵심입니다.",
         ),
-        "건설": (
-            "실질적인 결과물을 만드는 건설·시공 분야에 강점이 있습니다. "
-            "이 사주는 현장 실행과 마감 품질에서 신뢰가 쌓이기 쉽습니다."
+        "노년기_65이상": _min_chars(
+            elder,
+            100,
+            f"{h_p} 시주와 {y_p} 년주를 함께 보면 노년기 환경이 더 구체화됩니다.",
         ),
-        "의료": (
-            "생명과 건강을 다루는 의료·보건 분야에 깊은 적성이 있습니다. "
-            "이 사주는 책임감과 규범이 함께 받쳐 줄 때 오래 버티는 직업군입니다."
-        ),
-        "법률": (
-            "원칙과 규범을 중시하는 법률·행정 분야가 잘 맞습니다. "
-            "이 사주는 문서·논리·절차를 세우는 일에서 실력이 빛납니다."
-        ),
-        "금융": (
-            "숫자와 흐름을 읽는 금융·투자 분야에서 강점이 나타납니다. "
-            "이 사주는 리스크를 나누고 관리하는 훈련이 곧 안정으로 이어집니다."
-        ),
-        "무역": (
-            "넓은 시야와 유연성이 필요한 무역·유통에 적성이 있습니다. "
-            "이 사주는 ‘흐름’을 빨리 읽고 조정하는 역할에서 강점이 큽니다."
-        ),
-    }
-
-    def _job_desc_for_token(j: str) -> str:
-        for key, desc in job_descriptions.items():
-            if key in j:
-                return desc
-        return (
-            f"{j} 분야에서 용신 {yong_el} 오행 에너지가 자연스럽게 발휘됩니다. "
-            f"이 사주는 {j}에서 책임 범위를 명확히 할수록 성과가 따라붙습니다."
-        )
-
-    top5: List[Dict[str, str]] = []
-    job_list = [j.strip() for j in base_jobs.replace("·", ",").split(",") if j.strip()]
-    for j in job_list[:3]:
-        top5.append({"직군": j, "이유": _job_desc_for_token(j)})
-
-    if ss_n >= 4 and len(top5) < 5:
-        top5.append(
-            {
-                "직군": "크리에이터·강사",
-                "이유": (
-                    f"당신 사주에 표현력(식신·상관)이 {ss_n}개나 있어 콘텐츠·강의·글쓰기로 "
-                    "수입을 만드는 능력이 탁월합니다. "
-                    "이 사주는 결과물을 ‘보여주는 구조’로 바꿀수록 재물 신호가 살아납니다."
-                ),
-            }
-        )
-
-    if rex_n >= 4 and len(top5) < 5:
-        top5.append(
-            {
-                "직군": "영업·사업",
-                "이유": (
-                    "재성이 강해 거래와 협상에서 타고난 감각이 있습니다. "
-                    "직접 수익을 만드는 구조에서 가장 큰 만족을 얻습니다. "
-                    "이 사주는 고객·계약의 흐름만 잡아도 성과가 빠르게 따라붙습니다."
-                ),
-            }
-        )
-
-    if guan_n >= 3 and len(top5) < 5:
-        top5.append(
-            {
-                "직군": "관리자·공무원",
-                "이유": (
-                    "책임감과 원칙을 중시하는 관성이 강해 조직 관리나 공공 분야에서 신뢰를 쌓기 쉽습니다. "
-                    "이 사주는 규정과 사람 사이를 중재하는 역할에서 강점이 드러납니다."
-                ),
-            }
-        )
-
-    while len(top5) < 5:
-        top5.append(
-            {
-                "직군": "전문직·컨설턴트",
-                "이유": (
-                    "깊이 있는 전문성을 쌓아 조언과 방향을 제시하는 역할이 장기적으로 안정적인 수입을 만듭니다. "
-                    "이 사주는 ‘한 우물’이 깊어질수록 대체 불가능한 가치가 쌓입니다."
-                ),
-            }
-        )
-
-    biz_ok = verdict == "신강" and rex_n >= 3
-    freelance_ok = ss_n >= 4
-    employee_ok = guan_n >= 3 or verdict != "신강"
-
-    modes: List[str] = []
-    if employee_ok:
-        modes.append(
-            "직장인: 조직 안에서 역할이 명확할 때 장기적으로 복이 안정됩니다. "
-            "상사와의 신뢰 관계가 승진의 핵심입니다. "
-            "이 사주는 책임 범위를 문서로 정리해 두면 스트레스가 크게 줄어듭니다."
-        )
-    if freelance_ok:
-        modes.append(
-            "프리랜서: 포트폴리오와 단가 협상력을 갖추면 식상의 기운이 수입으로 자연스럽게 전환됩니다. "
-            "이 사주는 ‘샘플 하나’가 계약으로 이어지는 구조를 만들면 성장이 빨라집니다."
-        )
-    if biz_ok:
-        modes.append(
-            "사업가: 거래 구조와 지분 설계만 명확히 하면 재성이 롤업 성향으로 작동할 여지가 있습니다. "
-            "이 사주는 현금흐름을 먼저 고정한 뒤 확장하는 순서가 가장 안전합니다."
-        )
-
-    gi_ox = yong.get("기신_오행") or ""
-    if not gi_ox and yong.get("기신"):
-        gi_ox = "·".join(str(x) for x in (yong.get("기신") or []) if x)
-
-    avoid: List[str] = []
-    for el in yong.get("기신") or []:
-        mj = (ELEMENT_META.get(el) or {}).get("직업")
-        if mj:
-            avoid.append(
-                f"{el} 과열 산업({mj})은 피로·좌절 비용이 클 수 있습니다. "
-                f"이 사주는 기신 {el} 방향이 과하면 체력과 집중이 먼저 깎입니다."
-            )
-    if not avoid:
-        avoid.append(
-            f"기신 오행({gi_ox or '—'}) 계열 업종은 에너지 소진이 크고 성과 대비 보람이 적을 수 있습니다. "
-            "이 사주는 피로가 쌓일수록 판단이 흐려지기 쉬워 휴식 설계가 필요합니다."
-        )
-
-    return {
-        "최적_직군_TOP5": top5[:5],
-        "피해야_할_직군": avoid[:6],
-        "사업_적합": (
-            "재성 구조가 받쳐줄 때 사업 신호가 큽니다. 안정적 현금흐름 확보 후 단계적 창업이 가장 안전합니다. "
-            "이 사주는 ‘작게 시작해 크게 확장’하는 흐름이 무리가 적습니다."
-            if biz_ok
-            else (
-                "직장 내 전문가로 커리어를 쌓은 뒤 소규모 사업 전환을 검토하는 흐름이 무리가 적습니다. "
-                "이 사주는 내공이 쌓일수록 사업 판단의 정확도가 함께 올라갑니다."
-            )
-        ),
-        "근무형태_판정": modes,
     }
 
 
@@ -1173,24 +1554,25 @@ def _story_wealth_lifetime(
     rex_n = sip_c["편재"] + sip_c["정재"]
     geb_n = sip_c["겁재"]
     yong_el = yong.get("용신_오행", "") or ""
+    p4 = _pillar_quartet_korean(pillars)
 
     if rex_n >= 4 and geb_n <= rex_n - 1:
         earn = (
-            "당신은 기회를 포착하는 능력이 뛰어난 요행·거래형입니다. "
-            "한번 흐름을 타면 빠르게 레버리지를 활용하는 감각이 있어, 타이밍을 잘 잡으면 큰 수익을 만들 수 있습니다. "
-            "이 사주는 재성(편재·정재)이 살아날수록 ‘움직임’이 곧 수입으로 연결되는 타입입니다."
+            f"원국 {p4}에서 재성(편재·정재)이 굵게 깔려 기회를 포착하는 요행·거래형입니다. "
+            f"한번 흐름을 타면 빠르게 레버리지를 활용하는 감각이 있어, 타이밍을 잘 잡으면 큰 수익을 만들 수 있습니다. "
+            f"특히 {pillars['day']['pillar']} 일주가 말하는 ‘움직임’이 곧 수입으로 연결되는 타입입니다."
         )
     elif sip_c["식신"] + sip_c["상관"] >= rex_n:
         earn = (
-            "당신의 재물은 기술·브랜드·콘텐츠 등 지식 자산으로 불어나는 투자형·성장형입니다. "
-            "처음엔 천천히 쌓이지만 전문성이 깊어질수록 수입이 안정적으로 늘어납니다. "
-            "이 사주는 식상이 재성을 돕는 구조일수록 ‘이름’이 곧 가격이 됩니다."
+            f"{p4} 조합 안에서 식상이 재성을 돕는 흐름이면 재물은 기술·브랜드·콘텐츠 등 지식 자산으로 불어납니다. "
+            f"처음엔 천천히 쌓이지만 전문성이 깊어질수록 수입이 안정적으로 늘어납니다. "
+            f"{pillars['hour']['pillar']} 시주가 말하듯 ‘이름’이 곧 가격이 되는 구조입니다."
         )
     else:
         earn = (
-            "당신의 재물은 꾸준한 노력과 반복 매출이 중심입니다. "
-            "한방보다는 매달 안정적으로 쌓이는 구조이며, 저축 습관이 장기적으로 가장 큰 재산이 됩니다. "
-            "이 사주는 작은 현금흐름을 지키는 훈련이 복을 고정시키는 핵심입니다."
+            f"{p4} 원국을 보면 재물은 꾸준한 노력과 반복 매출이 중심입니다. "
+            f"한방보다는 매달 안정적으로 쌓이는 구조이며, 저축 습관이 장기적으로 가장 큰 재산이 됩니다. "
+            f"{pillars['month']['pillar']} 월주가 깔아 주는 생활 리듬만 지켜도 복이 고정되기 쉽습니다."
         )
 
     leak: List[str] = []
@@ -1222,13 +1604,14 @@ def _story_wealth_lifetime(
     ce_hit = bool(_cheoneul_wealth_same_pillar(sinsal, day_master, pillars))
     if geb_n >= rex_n + 3:
         rich = (
-            "보수형: 벌기보다 지키기·분산 투자가 우선인 명식입니다. "
-            "이 사주는 겁재가 재성을 압박할수록 ‘지출 설계’가 곧 재물 방어입니다."
+            f"보수형: {p4} 원국에서 벌기보다 지키기·분산 투자가 우선인 명식입니다. "
+            f"{pillars['day']['pillar']} 일주가 말하듯 겁재가 재성을 압박할수록 ‘지출 설계’가 곧 재물 방어입니다."
         )
     elif rex_n >= 4 and not geb_n > rex_n + 1:
+        mp = pillars["month"]["pillar"]
         rich = (
-            "상향 가능: 귀인·재성 결합 신호가 있어 한두 번의 큰 기회에서 자산 레벨이 올라갈 여지가 있습니다. "
-            "이 사주는 타이밍만 잡으면 단기 레버리지가 장기 자산으로 바뀌는 순간이 생깁니다."
+            f"상향 가능: {p4}에서 귀인·재성 결합 신호가 있어 한두 번의 큰 기회에서 자산 레벨이 올라갈 여지가 있습니다. "
+            f"{mp} 월주와 맞물려 타이밍만 잡으면 단기 레버리지가 장기 자산으로 바뀌는 순간이 생깁니다."
         )
         if ce_hit:
             rich += (
@@ -1236,17 +1619,20 @@ def _story_wealth_lifetime(
                 "이 사주는 기회가 올 때 과욕만 줄이면 수익 곡선이 한 단계 올라가기 쉽습니다."
             )
     else:
+        dp = pillars["day"]["pillar"]
         rich = (
-            "안정형: 꾸준히 쌓는 것이 강점입니다. 분산·저축을 기본으로 하되 용신 방향의 투자 기회를 놓치지 마세요. "
-            "이 사주는 ‘지키는 재테크’가 벌기만큼 중요한 타입입니다."
+            f"안정형: {p4} 원국을 보면 꾸준히 쌓는 것이 강점입니다. "
+            f"분산·저축을 기본으로 하되 용신 {yong_el or '—'} 방향의 투자 기회를 놓치지 마세요. "
+            f"{dp} 일주가 말하듯 ‘지키는 재테크’가 벌기만큼 중요한 타입이며, "
+            f"{pillars['hour']['pillar']} 시주와 맞물려 작은 현금흐름을 지키는 습관이 평생 자산으로 굳습니다."
         )
     return {
         "버는_방식": earn,
         "새는_패턴": leak[:3],
         "평생_재물_흐름": (
-            f"용신 {yong_el} 방향의 일과 환경을 맞출수록 재물 그래프가 완만하게 우상향합니다. "
-            "초반 대운에서 방향을 잡고, 중년 이후 안정적으로 쌓이는 구조가 될 가능성이 높습니다. "
-            "이 사주는 흐름이 맞을수록 ‘같은 노력’으로도 체감 수입이 달라지는 타입입니다."
+            f"용신 {yong_el} 방향의 일과 환경을 맞출수록 {p4} 팔자의 재물 그래프가 완만하게 우상향합니다. "
+            f"초반 대운에서 방향을 잡고, 중년 이후 안정적으로 쌓이는 구조가 될 가능성이 높습니다. "
+            f"{pillars['year']['pillar']}에서 시작된 인연·일의 뿌리가 현금흐름에도 그대로 반영됩니다."
         ),
         "부자_가능성_판정": rich,
     }
@@ -1258,6 +1644,7 @@ def _story_health_lifetime(
     sinsal: Dict[str, Any],
     rel_full: Dict[str, Any],
     yong: Dict[str, Any],
+    pillars: dict,
 ) -> Dict[str, Any]:
     dom = oh.dominant_weak_elements(counts)
     weak_e = dom.get("weak") or []
@@ -1313,14 +1700,15 @@ def _story_health_lifetime(
         ),
     }
 
+    p4 = _pillar_quartet_korean(pillars)
     longevity = (
-        "생명력은 비교적 강한 편으로 수면·혈압·정기 검진만 잘 챙겨도 건강하게 장수할 가능성이 높습니다. "
-        "이 사주는 기본 체력이 받쳐 줄 때 생활 습관이 곧 수명 그래프를 바꿉니다."
+        f"{p4} 원국을 보면 생명력은 비교적 강한 편으로 수면·혈압·정기 검진만 잘 챙겨도 건강하게 장수할 가능성이 높습니다. "
+        f"{pillars['day']['pillar']} 일주가 말하는 기본 체력이 받쳐 줄 때 생활 습관이 곧 수명 그래프를 바꿉니다."
     )
     if sip_c["편관"] + sip_c["편인"] >= 8:
         longevity = (
-            "스트레스와 급성 염증 리스크가 있어 장수 여부는 생활 습관 차이에 크게 좌우됩니다. 마음 관리가 첫 번째입니다. "
-            "이 사주는 편관·편인이 무거울수록 ‘긴장 해소 루틴’이 의료비를 줄이는 핵심입니다."
+            f"{p4}에서 편관·편인이 무겁게 겹쳐 스트레스와 급성 염증 리스크가 있어 장수 여부는 생활 습관 차이에 크게 좌우됩니다. "
+            f"{pillars['hour']['pillar']} 시주 방향의 마음 관리가 첫 번째입니다."
         )
     if _has_sinsal_lines(sinsal, "백호살") or _has_sinsal_lines(sinsal, "양인살"):
         longevity += (
@@ -1335,12 +1723,12 @@ def _story_health_lifetime(
         "나이대별_주의": age_notes,
         "장수_가능성": longevity,
         "건강_유지_조언": [
-            "충·형이 걸린 지지 장부는 유연성 운동과 해당 장기 정기 검진을 우선적으로 챙기세요. "
-            "이 사주는 몸의 ‘굳는 부위’가 먼저 신호를 보내는 타입입니다.",
+            f"원국 {p4}에서 충·형이 걸린 지지 장부는 유연성 운동과 해당 장기 정기 검진을 우선적으로 챙기세요. "
+            f"{pillars['month']['pillar']} 월주가 말하는 몸의 ‘굳는 부위’가 먼저 신호를 보내는 타입입니다.",
             "오행이 치우치면 반대 성질의 음식과 환경을 번갈아 가며 접하면 회복 속도가 빨라집니다. "
-            "이 사주는 ‘한쪽으로만 밀기’보다 번갈아 주는 방식이 면역에 유리합니다.",
+            f"{pillars['year']['pillar']} 년주 기운과 맞물려 ‘한쪽으로만 밀기’보다 번갈아 주는 방식이 면역에 유리합니다.",
             f"용신 방향({yong_el or '—'}) 계절에 야외 활동을 늘리면 면역력과 활력이 올라갑니다. "
-            "이 사주는 기운이 맞는 계절·환경에 몸을 두면 컨디션이 길게 유지됩니다.",
+            f"{pillars['hour']['pillar']} 시주가 말하듯 기운이 맞는 계절·환경에 몸을 두면 컨디션이 길게 유지됩니다.",
         ],
     }
 
@@ -1363,11 +1751,27 @@ def _story_special_points(
         special_lines.append(f"화기 용신 후보: {hwa.get('설명', '')}")
 
     guirens = _guiren_star_names(sinsal)
-    guiren_txt = f"귀인 신살 {len(guirens)}종 노출 — {', '.join(guirens[:8])}" if guirens else "두드러진 귀인 신호는 적지만 용신 방향 인연을 스스로 만들면 보완됩니다."
+    p4 = _pillar_quartet_korean(pillars)
+    if guirens:
+        guiren_txt = (
+            f"{p4} 원국에서 귀인 신살이 {len(guirens)}종 노출됩니다 — {', '.join(guirens[:8])}. "
+            f"일간 {day_master}가 말하는 인연의 질은 ‘도움 받는 타이밍’에서 갈립니다."
+        )
+    else:
+        guiren_txt = (
+            f"{p4} 조합만 놓고 보면 두드러진 귀인 표식은 적지만, "
+            f"{pillars['month']['pillar']} 월주 방향의 용신 인연을 스스로 만들면 충분히 보완됩니다."
+        )
 
-    comeback = "신약·재성 축이 용신 대운에서 살아나 역전 드라마가 가능한 편입니다."
+    comeback = (
+        f"{p4}에서 신약·재성 축이 용신 대운에서 살아나면 역전 드라마가 가능한 편입니다. "
+        f"{pillars['day']['pillar']} 일주가 버티는 방식이 곧 반등의 속도를 정합니다."
+    )
     if yong.get("일간_강약") == "신강":
-        comeback = "신강 명은 한 번 꺾인 뒤 재정비하고 들어올 때 더 크게 도약하는 패턴입니다."
+        comeback = (
+            f"신강 명은 {p4}에서 한 번 꺾인 뒤 재정비하고 들어올 때 더 크게 도약하는 패턴입니다. "
+            f"{pillars['hour']['pillar']} 시주가 말하는 후반 스퍼트가 특히 강합니다."
+        )
     if daewoon_cycles:
         sc, _ = _daewoon_tone(yong, daewoon_cycles[0])
         if sc >= 2:
@@ -1375,11 +1779,19 @@ def _story_special_points(
         elif sc <= -1:
             comeback += " 초반 대운은 시행착오를 통해 내공을 쌓는 전개일 수 있습니다."
 
-    spirit = "현실 검증과 데이터를 신뢰하는 편입니다."
+    spirit = (
+        f"{p4}를 보면 현실 검증과 데이터를 신뢰하는 편입니다. "
+        f"{pillars['year']['pillar']} 년주가 깔아 준 보수성이 판단을 지탱합니다."
+    )
     if sip_c["편인"] + sip_c["정인"] >= 6:
-        spirit = "종교·명상·철학·심리 등 무형 세계에 끌리기 쉬운 명식입니다."
+        spirit = (
+            f"{p4}에서 인성이 깊어 종교·명상·철학·심리 등 무형 세계에 끌리기 쉬운 명식입니다. "
+            f"{pillars['day']['pillar']} 일주의 내면 탐구가 오래 갈수록 힘이 됩니다."
+        )
     if pillars["day"]["zhi"] in _kong_zhis_union(pillars):
-        spirit += " 공망이 있어 허무감·영적 탐구를 함께 타고날 수 있습니다."
+        spirit += (
+            f" {pillars['day']['pillar']} 일지에 공망이 있어 허무감·영적 탐구를 함께 타고날 수 있습니다."
+        )
 
     extras: List[str] = []
     if _has_sinsal_lines(sinsal, "역마살"):
@@ -1408,16 +1820,29 @@ def _build_native_story_pack(
 ) -> Dict[str, Any]:
     sip_c = _sipsin_counts(day_master, pillars)
     rel_full = cph.analyze_relations_full(pillars)
+    ctx = _dynamic_story_builder(
+        day_master=day_master,
+        pillars=pillars,
+        gender=gender,
+        counts=counts,
+        sip_c=sip_c,
+        yong=yong,
+        sinsal=sinsal,
+        rel_full=rel_full,
+    )
 
     return {
         "사주_한줄_핵심": _story_core_line(day_master, pillars, counts, yong, sip_c),
-        "성격_분석": _story_personality(gender, sip_c, yong, sinsal, rel_full),
+        "성격_분석": _story_personality_dynamic(ctx),
         "인생_전체_흐름": _story_life_arc(pillars, yong, sip_c, daewoon_cycles),
-        "직업_적성": _story_career_details(day_master, pillars, yong, sip_c),
+        "직업_적성": _story_career_dynamic(ctx, yong),
         "재물_패턴": _story_wealth_lifetime(day_master, pillars, yong, sip_c, sinsal, daewoon_cycles),
-        "건강_평생": _story_health_lifetime(counts, sip_c, sinsal, rel_full, yong),
+        "건강_평생": _story_health_lifetime(counts, sip_c, sinsal, rel_full, yong, pillars),
         "특별_포인트": _story_special_points(day_master, pillars, counts, yong, sip_c, sinsal, daewoon_cycles),
-        "안내": "본 블록은 오행·십신·신살·충합 규칙을 바탕 한 스토리텔링 참고용이며, 실제 상담은 파종·환경과 함께 봅니다.",
+        "안내": (
+            "본 분석은 오행·십신·신살·충합 규칙 기반 스토리텔링 참고용이며 "
+            "실제 상담은 전문가와 함께 보시길 권합니다."
+        ),
     }
 
 
