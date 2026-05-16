@@ -1024,6 +1024,8 @@ def _build_native_story_pack(
             strengths[0] = f"{strengths[0]} {psych_boost}".strip()
         personality["unteim_보강"] = psych_boost
         personality["unteim_일간심리"] = psych_boost
+    if unteim_sup.get("감정_서사"):
+        personality["unteim_감정"] = unteim_sup["감정_서사"]
 
     return {
         "사주_한줄_핵심": full["핵심_한줄"],
@@ -1601,6 +1603,13 @@ def build_report(
         "narrative": _compose_narrative(raw, counts, gender_male,
                                         yong=yong_block,
                                         chung_report=chung_report),
+        "unteim_세운월운": unb.build_unteim_timeline_supplement(
+            day_master=dm,
+            counts=counts,
+            yong=yong_block,
+            sewoon_rows=sewoon_list,
+            wol_pack=wol_pack,
+        ),
     }
     return report
 

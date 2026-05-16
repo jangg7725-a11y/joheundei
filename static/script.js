@@ -1331,7 +1331,8 @@
       unteim["합충_서사"] ||
       unteim["십이운성_서사"] ||
       unteim["공망_서사"] ||
-      unteim["힐링_메시지"];
+      unteim["힐링_메시지"] ||
+      unteim["감정_서사"];
     if (!hasAny) return;
 
     const blocks = [
@@ -1340,6 +1341,7 @@
       ["십이운성_서사", "🌙 십이운성 심층 해설", ""],
       ["공망_서사", "🕳️ 공망 해설", ""],
       ["힐링_메시지", "💚 오늘의 힐링 메시지", "unteim-heal"],
+      ["감정_서사", "💬 감정·관계 심층 해설", "unteim-emotion"],
     ];
     blocks.forEach(([key, title, cls]) => {
       if (unteim[key]) appendUnteimSection(panel, title, unteim[key], cls);
@@ -1955,6 +1957,15 @@
       </div>`;
     const treeEl = detail.querySelector(".sewoon-tree");
     if (treeEl) treeEl.textContent = row["출력_트리텍스트"] || "";
+    const unteimTm = (latestReport && latestReport["unteim_세운월운"]) || {};
+    const yearNarr = (unteimTm["연도별"] || {})[yi] || (unteimTm["연도별"] || {})[String(yi)];
+    const oldUnteim = detail.querySelector(".unteim-sewoon-block");
+    if (oldUnteim) oldUnteim.remove();
+    if (yearNarr && yearNarr["세운_서사"]) {
+      const uBlock = el("div", "unteim-sewoon-block");
+      appendUnteimSection(uBlock, "🌊 세운 심층 서사", yearNarr["세운_서사"]);
+      detail.appendChild(uBlock);
+    }
     rootEl.querySelectorAll("#tab3-sewoon-table tbody tr").forEach((tr) => {
       tr.classList.toggle("sew-row-selected", Number(tr.dataset.year) === yi);
     });
@@ -2025,6 +2036,32 @@
     });
     pane.appendChild(grid);
 
+    const unteimTm = r["unteim_세운월운"] || {};
+    const wolNarr = unteimTm["월별"] || {};
+    const wolKeys = Object.keys(wolNarr).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+    if (wolKeys.length) {
+      const wolU = el("div", "panel-section unteim-wol-section");
+      const sample = wolNarr[wolKeys[Math.floor(wolKeys.length / 2)]];
+      const intro = unteimTm["현재_세운_서사"] || "";
+      if (intro) appendUnteimSection(wolU, "📅 세운 연도 흐름", intro);
+      appendUnteimSection(
+        wolU,
+        "🗓️ 월운 실천·서사 (운테임)",
+        wolKeys
+          .slice(0, 6)
+          .map((mn) => {
+            const blk = wolNarr[mn];
+            return blk && blk["월운_서사"] ? `${mn}절월: ${blk["월운_서사"]}` : "";
+          })
+          .filter(Boolean)
+          .join("\n\n")
+      );
+      if (sample && sample["실천_팁"]) {
+        appendUnteimSection(wolU, "✨ 이달 실천 팁", sample["실천_팁"]);
+      }
+      pane.appendChild(wolU);
+    }
+
     sel.addEventListener("change", async () => {
       const y = Number(sel.value);
       if (!lastSajuBody || !Number.isFinite(y)) return;
@@ -2043,6 +2080,9 @@
         latestReport["월운표"] = json.result["월운표"];
         if (Array.isArray(json.result.wolwoon)) latestReport.wolwoon = json.result.wolwoon;
         if (json.result.jeongmil) latestReport.jeongmil = json.result.jeongmil;
+        if (json.result["unteim_세운월운"]) {
+          latestReport["unteim_세운월운"] = json.result["unteim_세운월운"];
+        }
         latestReport.meta = latestReport.meta || {};
         latestReport.meta.wolwoon_center_applied =
           json.result.meta?.wolwoon_center_applied ?? y;
@@ -2762,6 +2802,26 @@
       .map(([, v]) => `<p class="gh-note">${escapeHtml(String(v))}</p>`)
       .join("");
 
+    const mx = pack["일간_매트릭스"] || {};
+    let matrixHTML = "";
+    if (mx.found) {
+      const mxBody =
+        mx["표시_텍스트"] ||
+        [mx.core_dynamic, mx.dynamic, mx.strength, mx.friction, mx.growth, mx.daily_hint]
+          .filter(Boolean)
+          .join("\n\n");
+      const mxParas = String(mxBody)
+        .split(/\n\n+/)
+        .map((p) => `<p class="gh-note">${escapeHtml(p.trim())}</p>`)
+        .join("");
+      matrixHTML = `
+<div class="gh-detail-block gh-card gh-matrix-block">
+  <h4>✨ 천간 매트릭스 궁합 (${escapeHtml(mx.label || "")})</h4>
+  <p class="gh-sub muted-small">${escapeHtml(mx.mingri_relation || "")}</p>
+  ${mxParas}
+</div>`;
+    }
+
     mount.hidden = false;
     mount.innerHTML = `
 <!-- ①  하트 게이지 -->
@@ -2822,6 +2882,7 @@
   <p class="gh-note">${escapeHtml(ig.연애_해석||ig.해설||"")}</p>
   <p class="gh-note gh-sub">${escapeHtml(ig.결혼_해석||"")}</p>
 </div>
+${matrixHTML}
 
 <!-- ⑧  십신 궁합 -->
 <div class="gh-detail-block gh-card">

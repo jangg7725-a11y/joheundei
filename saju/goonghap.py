@@ -25,6 +25,7 @@ from . import ganji as gj
 from . import ohaeng as oh
 from . import sewoon as sw
 from . import sipsin as sp
+from . import unteim_narrative_bridge as unb
 from . import wolwoon as ww
 from . import yongsin as ys
 
@@ -1074,6 +1075,9 @@ def analyze_goonghap_pair(
     )
     marriage_suit, marriage_badge = _marriage_suitability(overall_n, conflict_n, bond_n)
     heart_emoji = _heart_emoji(overall_n)
+    matrix = unb.pack_compatibility_matrix(
+        dm_a, dm_b, label_a=label_a, label_b=label_b
+    )
 
     return {
         "원국_나란히": {
@@ -1103,5 +1107,6 @@ def analyze_goonghap_pair(
         "핵심조언": advice,
         "결혼적합도": marriage_suit,
         "결혼적합도_뱃지": marriage_badge,
+        "일간_매트릭스": matrix,
         "참고": "학습·참고용 휴리스틱이며 실제 인연은 선택과 노력에 달려 있습니다.",
     }

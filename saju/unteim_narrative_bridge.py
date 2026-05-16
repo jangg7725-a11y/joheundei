@@ -8,6 +8,8 @@ import random
 from datetime import date
 from typing import Any, Dict, List, Optional, Sequence
 
+from . import emotion_db_bridge as emb
+from . import ganji as gj
 from . import narrative_loader as nl
 from . import ohaeng as oh
 
@@ -394,6 +396,173 @@ def _pack_daymaster_psychology(day_master: str) -> Dict[str, Any]:
     return {"한줄_보강": nl.pick_from_pool(entry.get("lines_pool"), rng)}
 
 
+def _sewun_overlay_key(stars: Any) -> str:
+    try:
+        s = float(stars)
+    except (TypeError, ValueError):
+        s = 3.0
+    if s >= 4:
+        return "boost"
+    if s <= 2:
+        return "double_caution"
+    if s >= 3:
+        return "buffer"
+    return "accelerate"
+
+
+def build_unteim_timeline_supplement(
+    *,
+    day_master: str,
+    counts: Dict[str, int],
+    yong: Dict[str, Any],
+    sewoon_rows: Optional[Sequence[Dict[str, Any]]] = None,
+    wol_pack: Optional[Dict[str, Any]] = None,
+) -> Dict[str, Any]:
+    """세운·월운 탭용 운테임 서사 (연도별·절월별)."""
+    dw_db = nl.load_narrative_db("daewoon_sewun_narrative_db")
+    mon_db = nl.load_narrative_db("monthly_action_guide_db")
+    overlays = (dw_db.get("sewun_overlays") or {}) if dw_db else {}
+    oheng_strat = (mon_db.get("oheng_monthly_strategy") or {}) if mon_db else {}
+    dm_tips = (mon_db.get("daymaster_monthly_tip") or {}) if mon_db else {}
+    dm_key = str(day_master).strip()[:1]
+
+    by_year: Dict[str, Dict[str, str]] = {}
+    for row in sewoon_rows or ():
+        if not isinstance(row, dict):
+            continue
+        try:
+            yi = int(row.get("연도"))
+        except (TypeError, ValueError):
+            continue
+        rng = _rng("sew_ov", day_master, yi, yong.get("용신_오행"))
+        ok = _sewun_overlay_key(row.get("별점"))
+        ov = overlays.get(ok) or {}
+        hint = nl.pick_from_pool(ov.get("hint_pool"), rng) if isinstance(ov, dict) else ""
+        story = str(row.get("세운_총평_한줄") or row.get("이해_총평_한마디") or "").strip()
+        parts = [p for p in (hint, story[:120] if story else "") if p]
+        by_year[str(yi)] = {
+            "세운_서사": _join_text(parts),
+            "오버레이": ok,
+            "라벨": str(ov.get("label_ko") or ""),
+        }
+
+    by_month: Dict[str, Dict[str, str]] = {}
+    for m in (wol_pack or {}).get("월별") or ():
+        if not isinstance(m, dict):
+            continue
+        try:
+            mn = int(m.get("절월번호"))
+        except (TypeError, ValueError):
+            continue
+        gz = str(m.get("월주간지") or "")
+        stem = gz[0] if gz else ""
+        mel = gj.element_of_stem(stem) if stem else _dominant_oheng(counts)
+        rng = _rng("wol_mon", day_master, mn, mel, wol_pack.get("세운연도"))
+        strat_key = f"{mel}_강"
+        strat = oheng_strat.get(strat_key) or {}
+        action = nl.pick_from_pool(strat.get("action_pool") or strat.get("strategy_pool"), rng)
+        caution = nl.pick_from_pool(strat.get("caution_pool"), rng)
+        dm_entry = dm_tips.get(dm_key) or {}
+        tip = nl.pick_from_pool(dm_entry.get("monthly_tip_pool"), rng)
+        quote = str(m.get("월별_핵심스토리") or "").strip()
+        parts = [p for p in (action, tip, caution, quote[:100] if quote else "") if p]
+        by_month[str(mn)] = {
+            "월운_서사": _join_text(parts[:3]),
+            "실천_팁": action,
+            "주의": caution,
+        }
+
+    cy = int((wol_pack or {}).get("세운연도") or 0)
+    year_line = ""
+    if cy and str(cy) in by_year:
+        year_line = by_year[str(cy)].get("세운_서사") or ""
+
+    return {
+        "_source": "unteim_timeline",
+        "세운연도": cy,
+        "연도별": by_year,
+        "월별": by_month,
+        "현재_세운_서사": year_line,
+    }
+
+
+_GAN_ALIAS: Dict[str, str] = {
+    "甲": "甲", "갑": "甲", "乙": "乙", "을": "乙",
+    "丙": "丙", "병": "丙", "丁": "丁", "정": "丁",
+    "戊": "戊", "무": "戊", "己": "己", "기": "己",
+    "庚": "庚", "경": "庚", "辛": "辛", "신": "辛",
+    "壬": "壬", "임": "壬", "癸": "癸", "계": "癸",
+}
+
+
+def _normalize_gan(gan: Any) -> str:
+    raw = str(gan).strip()
+    if not raw:
+        return ""
+    if raw in _GAN_ALIAS:
+        return _GAN_ALIAS[raw]
+    return raw[:1] if raw else ""
+
+
+def pack_compatibility_matrix(
+    dm_a: Any,
+    dm_b: Any,
+    *,
+    label_a: str = "A",
+    label_b: str = "B",
+) -> Dict[str, Any]:
+    """compatibility_matrix_db — 두 일간 조합 서사."""
+    db = nl.load_narrative_db("compatibility_matrix_db")
+    combos = (db.get("combinations") or {}) if db else {}
+    my_g = _normalize_gan(dm_a)
+    partner_g = _normalize_gan(dm_b)
+    if not my_g or not partner_g or not combos:
+        return {"found": False}
+
+    seed = _stable_seed("gh_matrix", my_g, partner_g, label_a, label_b)
+    rng = _rng(seed)
+    k_fwd = f"{my_g}_{partner_g}"
+    k_rev = f"{partner_g}_{my_g}"
+    entry: Optional[Dict[str, Any]] = None
+    used_rev = False
+    lookup = ""
+    if k_fwd in combos and isinstance(combos[k_fwd], dict):
+        entry = combos[k_fwd]
+        lookup = k_fwd
+    elif k_rev in combos and isinstance(combos[k_rev], dict):
+        entry = combos[k_rev]
+        lookup = k_rev
+        used_rev = True
+    if not entry:
+        return {"found": False}
+
+    slots = {
+        "found": True,
+        "lookup_key": lookup,
+        "used_reverse_lookup": used_rev,
+        "label": entry.get("label") or lookup,
+        "mingri_relation": entry.get("mingri_relation") or "",
+        "core_dynamic": entry.get("core_dynamic") or "",
+        "dynamic": nl.pick_from_pool(entry.get("dynamic_pool"), rng),
+        "strength": nl.pick_from_pool(entry.get("strength_pool"), rng),
+        "friction": nl.pick_from_pool(entry.get("friction_pool"), rng),
+        "growth": nl.pick_from_pool(entry.get("growth_pool"), rng),
+        "daily_hint": nl.pick_from_pool(entry.get("daily_hint_pool"), rng),
+    }
+    lines = [
+        f"【{slots['label']}】{slots['core_dynamic']}".strip(),
+        slots["dynamic"],
+        f"강점: {slots['strength']}" if slots["strength"] else "",
+        f"마찰·차이: {slots['friction']}" if slots["friction"] else "",
+        f"함께 성장: {slots['growth']}" if slots["growth"] else "",
+        f"일상 팁: {slots['daily_hint']}" if slots["daily_hint"] else "",
+    ]
+    slots["표시_텍스트"] = _join_text([x for x in lines if x])
+    slots["A_라벨"] = label_a
+    slots["B_라벨"] = label_b
+    return slots
+
+
 def build_unteim_story_supplement(
     *,
     day_master: str,
@@ -412,6 +581,11 @@ def build_unteim_story_supplement(
     money = _pack_money(day_master, counts, yong)
     health = _pack_health(day_master, counts)
     relation = _pack_relationship(counts, female)
+    emotion = emb.build_emotion_supplement(
+        day_master=day_master, counts=counts, rel_full=rel_full
+    )
+    if emotion.get("표시_텍스트"):
+        relation = emb.merge_relation_with_emotion(relation, emotion)
     career = _pack_career(day_master, counts)
     dm_psy = _pack_daymaster_psychology(day_master)
     dm_text = _format_daymaster_psych(dm_psy)
@@ -432,6 +606,8 @@ def build_unteim_story_supplement(
         "힐링_메시지": _pack_healing_message(day_master, yong),
         "신살_심리": _pack_shinsal_psychology(sinsal, day_master),
         "대운_세운_서사": _pack_daewoon_narrative(daewoon_cycles or (), yong, day_master),
+        "감정_서사": emotion.get("표시_텍스트") or "",
+        "감정_상세": emotion,
         "meta": {
             "day_master": day_master,
             "gender": "여" if female else "남",
@@ -483,4 +659,10 @@ def career_boost_text(unteim: Dict[str, Any]) -> str:
 
 
 def personality_boost_text(unteim: Dict[str, Any]) -> str:
-    return str(unteim.get("일간_심리") or "").strip()
+    parts = [str(unteim.get("일간_심리") or "").strip()]
+    emo = str(unteim.get("감정_서사") or "").strip()
+    if emo:
+        first = emo.split("\n\n")[0].strip()
+        if first and first not in parts[0]:
+            parts.append(first)
+    return _join_text([p for p in parts if p])

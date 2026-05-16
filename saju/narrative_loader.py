@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 _DATA_ROOT = Path(__file__).resolve().parent / "data"
 _NARRATIVE_DIR = _DATA_ROOT / "unteim_narrative"
 _UNTEIM_DATA_DIR = _DATA_ROOT / "unteim_data"
+_EMOTION_DIR = _DATA_ROOT / "unteim_emotion"
 
 
 def narrative_dir() -> Path:
@@ -21,11 +22,20 @@ def unteim_data_dir() -> Path:
     return _UNTEIM_DATA_DIR
 
 
+def emotion_dir() -> Path:
+    return _EMOTION_DIR
+
+
 def _resolve_path(file_name: str, *, subdir: str = "narrative") -> Path:
     name = file_name.strip()
     if not name.endswith(".json"):
         name = f"{name}.json"
-    base = _NARRATIVE_DIR if subdir == "narrative" else _UNTEIM_DATA_DIR
+    if subdir == "narrative":
+        base = _NARRATIVE_DIR
+    elif subdir == "emotion":
+        base = _EMOTION_DIR
+    else:
+        base = _UNTEIM_DATA_DIR
     return base / name
 
 
@@ -33,6 +43,16 @@ def _resolve_path(file_name: str, *, subdir: str = "narrative") -> Path:
 def load_narrative_db(file_name: str) -> Dict[str, Any]:
     """narrative/*.json 전체 dict 로드 (확장자 생략 가능)."""
     path = _resolve_path(file_name, subdir="narrative")
+    if not path.is_file():
+        return {}
+    data = json.loads(path.read_text(encoding="utf-8"))
+    return data if isinstance(data, dict) else {}
+
+
+@lru_cache(maxsize=16)
+def load_emotion_db(file_name: str) -> Dict[str, Any]:
+    """data/unteim_emotion/*.json (DB1~6)."""
+    path = _resolve_path(file_name, subdir="emotion")
     if not path.is_file():
         return {}
     data = json.loads(path.read_text(encoding="utf-8"))
@@ -50,6 +70,7 @@ def load_unteim_data(file_name: str) -> Any:
 
 def clear_narrative_cache() -> None:
     load_narrative_db.cache_clear()
+    load_emotion_db.cache_clear()
     load_unteim_data.cache_clear()
 
 
@@ -90,3 +111,9 @@ def list_unteim_data_files() -> List[str]:
     if not _UNTEIM_DATA_DIR.is_dir():
         return []
     return sorted(p.name for p in _UNTEIM_DATA_DIR.glob("*.json"))
+
+
+def list_emotion_files() -> List[str]:
+    if not _EMOTION_DIR.is_dir():
+        return []
+    return sorted(p.name for p in _EMOTION_DIR.glob("*.json"))
