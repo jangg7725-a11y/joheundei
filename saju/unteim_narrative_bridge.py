@@ -332,28 +332,70 @@ def _pack_healing_message(day_master: str, yong: Dict[str, Any]) -> str:
     return line.strip()
 
 
+_SHINSAL_DEEP_TARGETS = (
+    "천을귀인",
+    "문창귀인",
+    "학당귀인",
+    "복성귀인",
+    "역마살",
+    "백호살",
+    "양인살",
+    "원진살",
+    "상문살",
+)
+
+
 def _pack_shinsal_psychology(sinsal: Optional[Dict[str, Any]], day_master: str) -> str:
     db = nl.load_narrative_db("shinsal_psychology_db")
     if not db or not sinsal:
         return ""
     patterns = db.get("shinsal_patterns") or {}
-    rows = sinsal.get("신살_목록") or []
+    key_map = (db.get("engine_mapping") or {}).get("key_map") or {}
+    present = {
+        str(row.get("신살") or "").strip()
+        for row in (sinsal.get("신살_목록") or [])
+        if isinstance(row, dict) and row.get("신살")
+    }
     rng = _rng("ss_psy", day_master)
     parts: List[str] = []
-    for row in rows[:4]:
-        if not isinstance(row, dict):
+    for name in _SHINSAL_DEEP_TARGETS:
+        if name not in present:
             continue
-        name = str(row.get("신살") or "").strip()
-        if not name:
-            continue
-        entry = patterns.get(name) or patterns.get(name.replace("살", ""))
+        entry = patterns.get(name) or patterns.get(key_map.get(name.replace("살", ""), ""))
         if not entry:
+            native_row = next(
+                (
+                    r
+                    for r in (sinsal.get("신살_목록") or [])
+                    if isinstance(r, dict) and r.get("신살") == name
+                ),
+                None,
+            )
+            note = (native_row or {}).get("해석", "")
+            parts.append(
+                f"【{name}】\n"
+                f"- 핵심 특성: {note[:60] or name + ' 기운이 원국에 있습니다.'}\n"
+                f"- 생활 패턴: 원국에 반복되는 {name} 테마를 의식하세요.\n"
+                f"- 긍정 활용법: 신호를 알아차리고 방향을 조절하면 도움이 됩니다.\n"
+                f"- 주의사항: 과하면 극단으로 치우칠 수 있으니 균형을 유지하세요."
+            )
             continue
         prof = entry.get("psychological_profile") or {}
+        beh = prof.get("behavior_pattern") or []
+        life_lines = [nl.pick_from_pool(beh, rng)]
+        if isinstance(beh, list) and len(beh) > 1:
+            alt = nl.pick_from_pool([b for b in beh if b != life_lines[0]], rng)
+            if alt:
+                life_lines.append(alt)
+        strength = entry.get("strength_context") or []
+        pos = nl.pick_from_pool(strength, rng) if strength else ""
+        caution = entry.get("caution") or nl.pick_from_pool(entry.get("friction_context"), rng)
         parts.append(
-            f"【{name}】{entry.get('core_theme', '')}\n"
-            f"{prof.get('dominant_trait', '')}\n"
-            f"{nl.pick_from_pool(prof.get('behavior_pattern'), rng)}"
+            f"【{name}】\n"
+            f"- 핵심 특성: {entry.get('core_theme', prof.get('dominant_trait', ''))}\n"
+            f"- 생활 패턴: {' '.join(life_lines)}\n"
+            f"- 긍정 활용법: {pos}\n"
+            f"- 주의사항: {caution}"
         )
     return _join_text(parts)
 

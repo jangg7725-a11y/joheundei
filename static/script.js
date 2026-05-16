@@ -1348,9 +1348,13 @@
     });
   }
 
-  function appendWongukStorySections(panel, story) {
+  function appendWongukUnteimOnly(panel, story) {
     if (!story || !panel) return;
-    const unteim = story["unteim_서사"] || {};
+    appendUnteimWongukBlocks(panel, story["unteim_서사"] || {});
+  }
+
+  function appendJonghapLifeSections(panel, story) {
+    if (!story || !panel) return;
 
     if (story["성격_분석"]) {
       const per = story["성격_분석"];
@@ -1444,8 +1448,6 @@
         appendUnteimSection(panel, "🏥 건강 심층 분석", story["건강_평생"]["unteim_보강"]);
       }
     }
-
-    appendUnteimWongukBlocks(panel, unteim);
 
     if (story["특별_포인트"]) {
       const sp = story["특별_포인트"];
@@ -1574,7 +1576,7 @@
       appendStoryCoreCard(storyPanel, r);
       storyPanel.appendChild(buildSibiGuideBlock(r));
       storyPanel.appendChild(buildJijangganBlock(r));
-      appendWongukStorySections(storyPanel, story);
+      appendWongukUnteimOnly(storyPanel, story);
       root.appendChild(storyPanel);
     }
 
@@ -2041,24 +2043,32 @@
     const wolKeys = Object.keys(wolNarr).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
     if (wolKeys.length) {
       const wolU = el("div", "panel-section unteim-wol-section");
-      const sample = wolNarr[wolKeys[Math.floor(wolKeys.length / 2)]];
       const intro = unteimTm["현재_세운_서사"] || "";
       if (intro) appendUnteimSection(wolU, "📅 세운 연도 흐름", intro);
-      appendUnteimSection(
-        wolU,
-        "🗓️ 월운 실천·서사 (운테임)",
-        wolKeys
-          .slice(0, 6)
-          .map((mn) => {
-            const blk = wolNarr[mn];
-            return blk && blk["월운_서사"] ? `${mn}절월: ${blk["월운_서사"]}` : "";
-          })
-          .filter(Boolean)
-          .join("\n\n")
-      );
-      if (sample && sample["실천_팁"]) {
-        appendUnteimSection(wolU, "✨ 이달 실천 팁", sample["실천_팁"]);
-      }
+      wolU.appendChild(el("h4", "unteim-title", "🗓️ 월운 실천·서사 (절월별)"));
+      const monthMap = {};
+      (pack["월별"] || []).forEach((m) => {
+        if (m && m["절월번호"] != null) monthMap[m["절월번호"]] = m;
+      });
+      wolKeys.forEach((mn) => {
+        const blk = wolNarr[mn];
+        const meta = monthMap[mn] || {};
+        const gz = meta["월주간지"] || "";
+        const range = meta["구간_양력"] || "";
+        const hdr = el("div", "wolwoon-month-header");
+        hdr.textContent = `${mn}절월 (${gz}) ${range}`;
+        wolU.appendChild(hdr);
+        if (blk && blk["월운_서사"]) {
+          const p = el("p", "unteim-text");
+          p.textContent = blk["월운_서사"];
+          wolU.appendChild(p);
+        }
+        if (blk && blk["실천_팁"]) {
+          const tip = el("p", "unteim-text wolwoon-month-tip");
+          tip.textContent = `✨ 실천: ${blk["실천_팁"]}`;
+          wolU.appendChild(tip);
+        }
+      });
       pane.appendChild(wolU);
     }
 
@@ -2470,57 +2480,82 @@
     renderTab3IlwoonPane(r, paneIl);
   }
 
+  function renderJonghapCategory(sec, title, block, r, opts = {}) {
+    if (!block) return;
+    const node = renderCategoryCompact(title, block);
+    if (node) sec.appendChild(node);
+    if (opts.silhouette) sec.appendChild(renderBodySilhouette(r));
+  }
+
   function renderTab4(r) {
     const root = panels[4];
     root.innerHTML = "";
     const story = r["원국_스토리텔링"];
-    if (story) renderNativeStoryFull(root, story);
-
     const cat = r["분석_카테고리"];
-    if (!cat) {
-      if (!story) root.appendChild(el("p", "panel-note", "분석 데이터가 없습니다."));
+    if (!story && !cat) {
+      root.appendChild(el("p", "panel-note", "분석 데이터가 없습니다."));
       return;
     }
 
-    const groups = [
-      ["연애 · 桃花·宮合", ["1_연애_궁합"]],
-      ["職業 · 財帛", ["2_직업_사회운", "3_재물운"]],
-      ["健康 · 事故·官災", ["4_건강", "5_사고_관재"]],
-      ["橫財 · 損財", ["6_횡재운", "7_손재운"]],
-      ["離別 · 喪服·憂患", ["9_이별_별리", "8_상복_우환"]],
-    ];
+    const secHero = el("div", "panel-section story-pack");
+    secHero.appendChild(el("h3", null, "종합 · 생활 해석"));
+    if (story && story["사주_한줄_핵심"]) {
+      const card = el("div", "story-card story-card--hero");
+      const p = el("p", "story-main");
+      p.textContent = story["사주_한줄_핵심"];
+      card.appendChild(p);
+      secHero.appendChild(card);
+    }
+    root.appendChild(secHero);
 
-    groups.forEach(([title, keys]) => {
-      const sec = el("div", "panel-section");
-      sec.appendChild(el("h3", null, title));
-      keys.forEach((k) => {
-        const block = cat[k];
-        const subTitle =
-          {
-            "1_연애_궁합": "연애/궁합",
-            "2_직업_사회운": "직업/사회",
-            "3_재물운": "재물",
-            "4_건강": "건강",
-            "5_사고_관재": "사고/관재",
-            "6_횡재운": "횡재",
-            "7_손재운": "손재",
-            "8_상복_우환": "상복/우환",
-            "9_이별_별리": "이별/별리",
-          }[k] || k;
-        const node = renderCategoryCompact(subTitle, block);
-        if (node) sec.appendChild(node);
-        if (k === "4_건강") sec.appendChild(renderBodySilhouette(r));
-      });
-      root.appendChild(sec);
-    });
+    if (story) {
+      const secLife = el("div", "panel-section");
+      secLife.appendChild(el("h3", null, "성격 · 인생 · 직업 · 재물 · 건강"));
+      appendJonghapLifeSections(secLife, story);
+      root.appendChild(secLife);
+    }
+
+    if (!cat) return;
+
+    const catLove = el("div", "panel-section");
+    catLove.appendChild(el("h3", null, "연애 · 궁합"));
+    renderJonghapCategory(catLove, "연애 · 궁합", cat["1_연애_궁합"], r);
+    root.appendChild(catLove);
+
+    const catJob = el("div", "panel-section");
+    catJob.appendChild(el("h3", null, "직업 · 재물"));
+    renderJonghapCategory(catJob, "직업 · 적성", cat["2_직업_사회운"], r);
+    renderJonghapCategory(catJob, "재물 패턴", cat["3_재물운"], r);
+    root.appendChild(catJob);
+
+    const catHealth = el("div", "panel-section");
+    catHealth.appendChild(el("h3", null, "건강 · 사고"));
+    renderJonghapCategory(catHealth, "건강", cat["4_건강"], r, { silhouette: true });
+    renderJonghapCategory(catHealth, "사고 · 관재", cat["5_사고_관재"], r);
+    root.appendChild(catHealth);
+
+    const catMoney = el("div", "panel-section");
+    catMoney.appendChild(el("h3", null, "횡재 · 손재"));
+    renderJonghapCategory(catMoney, "횡재", cat["6_횡재운"], r);
+    renderJonghapCategory(catMoney, "손재", cat["7_손재운"], r);
+    root.appendChild(catMoney);
+
+    const catSep = el("div", "panel-section");
+    catSep.appendChild(el("h3", null, "이별 · 상복 · 우환"));
+    renderJonghapCategory(catSep, "이별 · 거리", cat["9_이별_별리"], r);
+    renderJonghapCategory(catSep, "상복 · 우환", cat["8_상복_우환"], r);
+    root.appendChild(catSep);
 
     const flow = cat["10_전체_운세_흐름"];
     if (flow) {
-      const sec = el("div", "panel-section");
-      sec.appendChild(el("h3", null, "運勢 흐름 (대운·세운)"));
-      const node = renderCategoryCompact("전체", flow);
-      if (node) sec.appendChild(node);
-      root.appendChild(sec);
+      const secFlow = el("div", "panel-section");
+      secFlow.appendChild(el("h3", null, "운세 흐름 (대운 요약)"));
+      renderJonghapCategory(secFlow, "전체 흐름", flow, r);
+      const unteimDw = (story || {})["unteim_서사"] || {};
+      if (unteimDw["대운_세운_서사"]) {
+        appendUnteimSection(secFlow, "🌊 대운·세운 심층 흐름", unteimDw["대운_세운_서사"]);
+      }
+      root.appendChild(secFlow);
     }
   }
 
@@ -2556,8 +2591,38 @@
       return box;
     };
 
-    root.appendChild(mkTable(`吉神 (${good.length})`, good, ""));
-    root.appendChild(mkTable(`凶煞 (${bad.length})`, bad, ""));
+    const mkPeriodSection = (title, pack) => {
+      if (!pack || !Array.isArray(pack["발동_목록"])) return null;
+      const box = el("div", "panel-section period-sinsal-section");
+      box.appendChild(el("h3", null, title));
+      const gz = pack["간지"] || "";
+      if (gz) box.appendChild(el("p", "panel-note", `${gz} 기준`));
+      const list = pack["발동_목록"];
+      if (!list.length) {
+        box.appendChild(el("p", "panel-note", "이 시기에 두드러지게 발동하는 신살이 없습니다."));
+        return box;
+      }
+      const ul = document.createElement("ul");
+      ul.className = "meta-list period-sinsal-list";
+      list.forEach((row) => {
+        const li = document.createElement("li");
+        const overlap = row["중첩"] ? " ⚠️ 이중 발동" : "";
+        li.textContent = `${row["신살"]} (${row["글자"]}) — ${row["해석"] || ""}${overlap}`;
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
+      return box;
+    };
+
+    root.appendChild(mkTable(`원국 신살 · 吉神 (${good.length})`, good, ""));
+    root.appendChild(mkTable(`원국 신살 · 凶煞 (${bad.length})`, bad, ""));
+
+    const sewPs = mkPeriodSection("세운 신살 (올해 들어온 신살)", sinsal["세운_신살"]);
+    if (sewPs) root.appendChild(sewPs);
+    const wolPs = mkPeriodSection("월운 신살 (이달 들어온 신살)", sinsal["월운_신살"]);
+    if (wolPs) root.appendChild(wolPs);
+    const ilPs = mkPeriodSection("일운 신살 (오늘 들어온 신살)", sinsal["일운_신살"]);
+    if (ilPs) root.appendChild(ilPs);
 
     const unteimSp = (r["원국_스토리텔링"] || {})["unteim_서사"] || {};
     if (unteimSp["신살_심리"]) {

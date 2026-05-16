@@ -503,3 +503,134 @@ def analyze_sinsal(
         by_name.setdefault(r["신살"], []).append(_fmt(r))
 
     return {"신살_목록": rows, **by_name}
+
+
+_PERIOD_STAR_RULES = (
+    ("천을귀인", "길", lambda dm, yz, yg, g, z: z in _cheoneul(dm), "귀인·도움 손길이 들어옵니다."),
+    ("문창귀인", "길", lambda dm, yz, yg, g, z: z in _munchang(dm), "학문·시험·표현력이 살아납니다."),
+    ("학당귀인", "길", lambda dm, yz, yg, g, z: z in _hakdang(dm), "배움·자격·전문성에 유리합니다."),
+    ("복성귀인", "길", lambda dm, yz, yg, g, z: z in _bokseong(dm), "복록·인연·완충 기운이 붙습니다."),
+    ("역마살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[0], "이동·전환·외부 활동이 늘기 쉽습니다."),
+    ("도화살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[1], "이성·매력·대인 접촉이 활발해집니다."),
+    ("백호살", "흉", lambda dm, yz, yg, g, z: z == _baekho_zhi(yz), "급성·외상·수술·교통 리스크를 의식하세요."),
+    ("양인살", "흉", lambda dm, yz, yg, g, z: z == _yangin_branch(dm), "결단력은 강하나 충동·외상·수술 주의가 필요합니다."),
+    ("원진살", "흉", None, "반복 갈등·거리두기 이슈가 생기기 쉽습니다."),
+    ("상문살", "흉", lambda dm, yz, yg, g, z: z == gj.BRANCHES[(_BRANCH_IDX[yz] + 2) % 12], "조문·상가·가족 건강을 챙기세요."),
+)
+
+
+def _period_sinsal_rows(
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    period_gan: str,
+    period_zhi: str,
+    *,
+    scope: str,
+) -> List[Dict[str, Any]]:
+    zhis = _collect_zhis(pillars)
+    gans = _collect_gans(pillars)
+    native_zhi = set(zhis.values())
+    native_names = {r.get("신살") for r in (analyze_sinsal(day_master, pillars, gender=gender).get("신살_목록") or []) if isinstance(r, dict)}
+    yz = zhis["year"]
+    yg = gans["year"]
+    hits: List[Dict[str, Any]] = []
+    for name, luck, rule, note in _PERIOD_STAR_RULES:
+        if name == "원진살":
+            wj = _wonjin_zhi(yz, yg, gender)
+            fired = bool(wj and period_zhi == wj)
+        else:
+            fired = bool(rule and rule(day_master, yz, yg, period_gan, period_zhi))
+        if not fired:
+            continue
+        overlap = period_zhi in native_zhi and name in native_names
+        row: Dict[str, Any] = {
+            "신살": name,
+            "길흉": luck,
+            "글자": period_zhi,
+            "위치": scope,
+            "해석": note,
+            "중첩": overlap,
+        }
+        if overlap:
+            row["해석"] = f"{note} ⚠️ 원국과 중첩 — {scope}에 특히 강하게 작용"
+        hits.append(row)
+    yr = _yangin_branch(day_master)
+    if period_gan and yr and period_gan == day_master and "양인살" in native_names:
+        hits.append(
+            {
+                "신살": "양인 천간",
+                "길흉": "중",
+                "글자": period_gan,
+                "위치": scope,
+                "해석": "결단력이 강하나 충동·날카로운 말·행동을 조절하세요.",
+                "중첩": True,
+            }
+        )
+    elif period_gan and _stem_yang(period_gan) and yr and period_zhi == yr:
+        if not any(r.get("신살") == "양인살" for r in hits):
+            hits.append(
+                {
+                    "신살": "양인 천간",
+                    "길흉": "중",
+                    "글자": period_gan,
+                    "위치": scope,
+                    "해석": "결단력이 강하나 충동·날카로운 말·행동을 조절하세요.",
+                    "중첩": False,
+                }
+            )
+    return hits
+
+
+def period_sinsal_pack(
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    period_gan: str,
+    period_zhi: str,
+    *,
+    scope: str,
+) -> Dict[str, Any]:
+    rows = _period_sinsal_rows(day_master, pillars, gender, period_gan, period_zhi, scope=scope)
+    return {
+        "간지": f"{period_gan}{period_zhi}",
+        "범위": scope,
+        "발동_목록": rows,
+        "중첩_목록": [r for r in rows if r.get("중첩")],
+    }
+
+
+def sewoon_sinsal(
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    sewoon_gan: str,
+    sewoon_zhi: str,
+) -> Dict[str, Any]:
+    return period_sinsal_pack(
+        day_master, pillars, gender, sewoon_gan, sewoon_zhi, scope="세운"
+    )
+
+
+def wolwoon_sinsal(
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    month_gan: str,
+    month_zhi: str,
+) -> Dict[str, Any]:
+    return period_sinsal_pack(
+        day_master, pillars, gender, month_gan, month_zhi, scope="월운"
+    )
+
+
+def ilwoon_sinsal(
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    day_gan: str,
+    day_zhi: str,
+) -> Dict[str, Any]:
+    return period_sinsal_pack(
+        day_master, pillars, gender, day_gan, day_zhi, scope="일운"
+    )

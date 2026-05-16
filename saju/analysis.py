@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import re
 from collections import Counter
 from datetime import date, datetime, timedelta
 from itertools import combinations
@@ -47,6 +48,192 @@ _AD = "✅ 조언"
 
 def _cat(summary: str, evidence: List[str], caution: List[str], advice: List[str]) -> Dict[str, Any]:
     return {_SK: summary, _EV: evidence, _WR: caution, _AD: advice}
+
+
+def _compress_evidence_line(line: str) -> str:
+    s = str(line or "").strip()
+    if not s:
+        return ""
+    if ":" in s:
+        head, tail = s.split(":", 1)
+        head = head.strip()
+        m = re.search(r"\(([^)]+)\)", tail)
+        if m:
+            return f"{head}({m.group(1)})"
+        short = re.sub(r"\s+", " ", tail.strip())[:28]
+        return f"{head} · {short}" if short else head
+    m = re.match(r"^(\d{4})년\s+", s)
+    if m:
+        return s[:42] + ("…" if len(s) > 44 else "")
+    return s[:50] + ("…" if len(s) > 52 else "")
+
+
+def _compress_evidence(ev: Sequence[str], max_items: int = 4) -> List[str]:
+    out: List[str] = []
+    for line in ev:
+        k = _compress_evidence_line(line)
+        if k and k not in out:
+            out.append(k)
+        if len(out) >= max_items:
+            break
+    return out or ["특이 신호 적음"]
+
+
+def _split_year_evidence(ev: Sequence[str], current_year: int) -> Tuple[List[str], List[str]]:
+    future: List[str] = []
+    past: List[str] = []
+    for line in ev:
+        m = re.search(r"(\d{4})년", str(line))
+        if m and int(m.group(1)) < current_year:
+            past.append(str(line))
+        else:
+            future.append(str(line))
+    return future, past
+
+
+def _wonjin_glyph(sinsal: Dict[str, Any]) -> str:
+    for row in sinsal.get("신살_목록") or []:
+        if isinstance(row, dict) and row.get("신살") == "원진살":
+            return str(row.get("글자") or "").strip()
+    return ""
+
+
+def _narr_love(
+    *,
+    female: bool,
+    officer_n: int,
+    rex_n: int,
+    peach: bool,
+    wonjin: bool,
+    day_branch_stress: bool,
+    wonjin_zhi: str,
+) -> str:
+    parts: List[str] = []
+    if female:
+        if officer_n == 0:
+            parts.append("관성이 약해 남편 인연보다 커리어와 독립이 더 잘 맞는 구조입니다.")
+        else:
+            parts.append("관성이 살아 있어 직장·배우자성 축과 연애가 함께 움직이기 쉽습니다.")
+    else:
+        if rex_n >= 2:
+            parts.append("재성이 살아 있어 배우자·연인 인연과 재물·사업이 한 축으로 이어지기 쉽습니다.")
+        else:
+            parts.append("재성 노출이 적으면 연애보다 성취·자기 확립을 먼저 챙기는 흐름이 자연스럽습니다.")
+    if peach:
+        parts.append("도화 기운이 있어 인기와 이성 인연이 붙지만, 속도 조절이 관계 안정에 중요합니다.")
+    if wonjin:
+        z = f"({wonjin_zhi})" if wonjin_zhi else ""
+        parts.append(f"원진살{z}이 있어 가까운 관계에서 반복되는 갈등 패턴을 주의하세요.")
+    if day_branch_stress:
+        parts.append("일지에 충·파·해가 있으면 배우자·동거 축에서 변동·긴장을 함께 봐야 합니다.")
+    return " ".join(parts) if parts else "연애·궁합은 일지와 도화·관성(또는 재성) 균형으로 읽습니다."
+
+
+def _narr_career(*, yong_el: str, officer_n: int, ss_n: int, yeolma: bool) -> str:
+    parts: List[str] = []
+    if yong_el:
+        parts.append(f"용신 {yong_el} 방향 일·환경을 맞추면 사회운 피로가 줄고 성과가 붙기 쉽습니다.")
+    if ss_n >= 3:
+        parts.append("식상이 강해 말·글·기획·콘텐츠·교육처럼 표현과 결과물이 드러나는 길이 유리합니다.")
+    if officer_n >= 3:
+        parts.append("관성이 많으면 조직·규정·책임 역할에서 신뢰를 쌓되, 부담 과다는 경계가 필요합니다.")
+    if yeolma:
+        parts.append("역마살이 있어 이동·전환·해외·직무 변경 변수가 커리어의 큰 축이 될 수 있습니다.")
+    return " ".join(parts) if parts else "직업운은 용신과 십신 균형으로 방향을 잡습니다."
+
+
+def _narr_wealth(*, rex_n: int, reb_n: int, rex_stress: bool, yong_wealth: bool) -> str:
+    parts: List[str] = []
+    if rex_n >= 2:
+        parts.append("재성이 살아 있어 일·사업·거래에서 돈이 붙는 구조이나, 관리 습관이 수익을 좌우합니다.")
+    else:
+        parts.append("재성 노출이 적으면 큰 한 방보다 꾸준한 저축·현금흐름이 안전합니다.")
+    if reb_n >= rex_n and rex_n > 0:
+        parts.append("겁재가 재성을 따라오면 동업·지출·경쟁으로 새는 패턴이 생기기 쉽습니다.")
+    if rex_stress:
+        parts.append("재성 자리에 충·파·해가 있으면 투자·보증·급확장은 특히 보수적으로 가져가는 편이 좋습니다.")
+    if yong_wealth:
+        parts.append("용신이 재성 오행과 맞아 재물을 적극 끌어올 여지가 있습니다.")
+    return " ".join(parts) if parts else "재물은 재성·겁재 비율과 충파해로 읽습니다."
+
+
+def _narr_health(
+    *,
+    strong_e: List[str],
+    weak_e: List[str],
+    day_stress: bool,
+    baekho: bool,
+    yangin: bool,
+) -> str:
+    parts: List[str] = []
+    for e in strong_e[:1]:
+        parts.append(f"{e} 기운이 과하면 {_ELEMENT_ORGAN.get(e, e)} 쪽 피로·만성 질환이 쌓이기 쉽습니다.")
+    for e in weak_e[:2]:
+        parts.append(f"{e} 기운이 약하면 {_ELEMENT_ORGAN.get(e, e)} 보완·정기 검진을 의식하는 편이 좋습니다.")
+    if day_stress:
+        parts.append("일지·월지 충이 있으면 스트레스가 몸(배우자·내실·소화)로 바로 이어질 수 있습니다.")
+    if baekho:
+        parts.append("백호살이 있으면 급성·외상·수술·교통 안전을 평소부터 챙기세요.")
+    if yangin:
+        parts.append("양인살이 있으면 칼날·금속·결단력이 강하지만 과하면 외상·수술 변수가 커질 수 있습니다.")
+    return " ".join(parts) if parts else "건강은 오행 균형과 충 지지로 취약축을 봅니다."
+
+
+def _narr_legal(*, baekho: bool, yangin: bool, goegang: bool, xing: bool) -> str:
+    parts: List[str] = []
+    if baekho:
+        parts.append("백호 기운은 급한 사고·관재·수술·교통 리스크를 키울 수 있어 절차와 안전을 우선하세요.")
+    if yangin:
+        parts.append("양인살은 충동·날카로운 결정이 관재·외상으로 이어질 수 있어 한 박자 쉬는 습관이 도움이 됩니다.")
+    if goegang:
+        parts.append("괴강살은 극단 기복·충돌이 커 관계·건강 급변을 경계해야 합니다.")
+    if xing:
+        parts.append("형살·삼형이 있으면 구설·관재·수술·부상 소인을 함께 봅니다.")
+    return " ".join(parts) if parts else "사고·관재는 백호·양인·형살 신호로 봅니다."
+
+
+def _narr_wind(*, wind_ev: Sequence[str]) -> str:
+    if wind_ev:
+        return "편재·귀인·천간합 등 기회 신호가 스치는 해에는 검증 후 단계적으로 실행하면 횡재가 실속으로 남습니다."
+    return "횡재 신호가 약하면 한 방보다 꾸준한 수입 구조가 안전합니다."
+
+
+def _narr_loss(*, loss_future: Sequence[str], loss_past: Sequence[str], cy: int) -> str:
+    if loss_future:
+        return "앞으로 겁재·재성 충이 겹치는 해에는 지출·보증·동업 분배를 특히 조심하고 현금 비중을 높이세요."
+    if loss_past:
+        return "과거에 손재·지출이 컸던 해가 있었을 수 있습니다. 앞으로는 공동지출·연대보증을 줄이는 편이 안전합니다."
+    return f"{cy}년 이후에는 지출 통제와 회계 습관이 재물 방어의 핵심입니다."
+
+
+def _narr_mour(*, sangmun: bool, jogak: bool, kong: bool) -> str:
+    parts: List[str] = []
+    if sangmun:
+        parts.append("상문살은 조문·상가·가족 건강 이슈에 민감합니다.")
+    if jogak:
+        parts.append("조객살은 애도·이별·공허 기운이 들어오기 쉬워 마음 돌봄이 필요합니다.")
+    if kong:
+        parts.append("공망이 걸리면 인연·실속이 허해 보일 수 있어 약속·문서를 명확히 하세요.")
+    return " ".join(parts) if parts else "상복·우환은 상문·조객·공망 신호로 봅니다."
+
+
+def _narr_sep(*, day_chong_years: Sequence[int], wonjin: bool, kong_day: bool) -> str:
+    parts: List[str] = []
+    if day_chong_years:
+        yrs = ", ".join(str(y) for y in day_chong_years[:4])
+        parts.append(f"일지 충이 예상되는 해({yrs})에는 거처·결혼·큰 계약을 성급히 결정하지 않는 편이 좋습니다.")
+    if wonjin:
+        parts.append("원진살이 있으면 가까운 관계에서 같은 갈등이 반복되기 쉬워 거리·규칙 합의가 필요합니다.")
+    if kong_day:
+        parts.append("일지 공망이 있으면 배우자 인연의 시차·허실을 함께 봐야 합니다.")
+    return " ".join(parts) if parts else "이별·거리는 일지 충·원진·공망으로 봅니다."
+
+
+def _narr_flow(*, yong_el: str, dw_lines: Sequence[str]) -> str:
+    head = f"대운·세운은 용신 {yong_el} 방향을 기준축으로 두고 움직이면 큰 그림이 잡힙니다." if yong_el else "대운·세운은 10년 흐름과 연도별 충·합으로 읽습니다."
+    if dw_lines:
+        return head + " " + str(dw_lines[0]).split("·")[0][:80]
+    return head
 
 
 def _wealth_element(day_master: str) -> str:
@@ -573,67 +760,106 @@ def _build_life_categories(
     flow_warn = ["대운·세운은 참고용 규칙 기반이며 실제는 월운·일진·환경이 함께 작동합니다."]
     flow_adv = ["10년 대운 방향을 용신 오행에 맞추고, 세운은 일지·재성 충 여부만 골라 관리해도 큰 그림이 잡힙니다."]
 
-    def _sum(cat_ev: List[str], fallback: str) -> str:
-        return fallback if not cat_ev else " | ".join(cat_ev[:4])
+    cy = date.today().year
+    loss_future, loss_past = _split_year_evidence(loss_ev, cy)
+    wonjin_zhi = _wonjin_glyph(sinsal)
+    yong_wealth = yong.get("용신_오행") == wealth_el
 
     out = {
         "1_연애_궁합": _cat(
-            _sum(love_ev, "연애 패턴은 원국 일지와 도화·관성 균형으로 판단합니다."),
-            love_ev[:12] or ["특이 신호가 적음"],
+            _narr_love(
+                female=female,
+                officer_n=officer_n,
+                rex_n=rex_n,
+                peach=peach,
+                wonjin=wonjin,
+                day_branch_stress=bool(day_branch_notes),
+                wonjin_zhi=wonjin_zhi,
+            ),
+            _compress_evidence(love_ev),
             love_warn,
             love_adv,
         ),
         "2_직업_사회운": _cat(
-            _sum(career_ev, "용신·관성·식상 균형으로 사회 적응 방식을 가늠합니다."),
-            career_ev[:12],
+            _narr_career(
+                yong_el=str(yong.get("용신_오행") or ""),
+                officer_n=officer_n,
+                ss_n=sip_c["식신"] + sip_c["상관"],
+                yeolma=_has_sinsal_lines(sinsal, "역마살"),
+            ),
+            _compress_evidence(career_ev),
             career_warn,
             career_adv,
         ),
         "3_재물운": _cat(
-            _sum(wealth_ev, "재성·겁재 비율과 충파해 여부로 재물 붙는 방식이 갈립니다."),
-            wealth_ev[:12],
+            _narr_wealth(
+                rex_n=rex_n,
+                reb_n=reb_n,
+                rex_stress=rex_hit_conflict,
+                yong_wealth=yong_wealth,
+            ),
+            _compress_evidence(wealth_ev),
             wealth_warn,
             wealth_adv,
         ),
         "4_건강": _cat(
-            _sum(health_ev, "오행 균형과 충 지지로 체질 취약축을 짚습니다."),
-            health_ev[:14],
+            _narr_health(
+                strong_e=list(strong_e),
+                weak_e=list(weak_e),
+                day_stress=any("일지" in r.get("위치", "") for r in rel_full["원국_충"]),
+                baekho=_has_sinsal_lines(sinsal, "백호살"),
+                yangin=_has_sinsal_lines(sinsal, "양인살"),
+            ),
+            _compress_evidence(health_ev, 5),
             health_warn,
             health_adv,
         ),
         "5_사고_관재": _cat(
-            _sum(legal_ev, "백호·양인·형살과 세운 관성 충을 함께 봅니다."),
-            legal_ev[:14],
+            _narr_legal(
+                baekho=_has_sinsal_lines(sinsal, "백호살"),
+                yangin=_has_sinsal_lines(sinsal, "양인살"),
+                goegang=_has_sinsal_lines(sinsal, "괴강살"),
+                xing=bool(rel_full["원국_형"]),
+            ),
+            _compress_evidence(legal_ev, 5),
             legal_warn,
             legal_adv,
         ),
         "6_횡재운": _cat(
-            _sum(wind_ev, "편재·귀인·세운 천간합이 맞물릴 때 기회 신호로 볼 수 있습니다."),
-            wind_ev[:12],
+            _narr_wind(wind_ev=wind_ev),
+            _compress_evidence(wind_ev),
             wind_warn,
             wind_adv,
         ),
         "7_손재운": _cat(
-            _sum(loss_ev, "겁재 세운·재성 자리 충파해를 중심으로 지출 경계를 봅니다."),
-            loss_ev[:14],
+            _narr_loss(loss_future=loss_future, loss_past=loss_past, cy=cy),
+            _compress_evidence(loss_future, 5),
             loss_warn,
             loss_adv,
         ),
         "8_상복_우환": _cat(
-            _sum(mour_ev, "상문·조객·공망 육친으로 조문·비보를 의식합니다."),
-            mour_ev[:12],
+            _narr_mour(
+                sangmun=_has_sinsal_lines(sinsal, "상문살"),
+                jogak=_has_sinsal_lines(sinsal, "조객살"),
+                kong=bool(kong_set),
+            ),
+            _compress_evidence(mour_ev),
             mour_warn,
             mour_adv,
         ),
         "9_이별_별리": _cat(
-            _sum(sep_ev, "일지 충·원진·공망으로 거리·재정 분리 이슈를 봅니다."),
-            sep_ev[:10],
+            _narr_sep(
+                day_chong_years=day_chong_years,
+                wonjin=wonjin,
+                kong_day=pillars["day"]["zhi"] in kong_set,
+            ),
+            _compress_evidence(sep_ev),
             sep_warn,
             sep_adv,
         ),
         "10_전체_운세_흐름": _cat(
-            _sum(flow_ev, "대운 간지 성향과 세운 다발 충으로 변동 해를 짚습니다."),
-            flow_ev[:14],
+            _narr_flow(yong_el=str(yong.get("용신_오행") or ""), dw_lines=dw_lines),
+            _compress_evidence(flow_ev, 5),
             flow_warn,
             flow_adv,
         ),
@@ -1406,6 +1632,17 @@ def _enrich_sewoon_deep_pack(pack: Dict[str, Any], day_master: str, pillars: dic
         row["정밀분석"] = _precision_pack_sewoon_only(day_master, pillars, sg, sz)
 
 
+def _wolwoon_month_for_date(pack: Dict[str, Any], when: date) -> Optional[Dict[str, Any]]:
+    iso = when.isoformat()
+    for m in pack.get("월별") or []:
+        rng = str(m.get("구간_양력") or "")
+        m2 = re.match(r"(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})", rng)
+        if m2 and m2.group(1) <= iso <= m2.group(2):
+            return m
+    months = pack.get("월별") or []
+    return months[0] if months else None
+
+
 def _enrich_wolwoon_pack(pack: Dict[str, Any], day_master: str, pillars: dict) -> None:
     solar_y = pack.get("세운연도")
     if not solar_y or solar_y not in jq.TERM_TWELVE_BY_YEAR:
@@ -1512,7 +1749,7 @@ def build_report(
     )
 
     sew_deep = sw.sewoon_forecast_pack(
-        dm, pillars, gender, center_year=center, span=10, counts=counts
+        dm, pillars, gender, center_year=center, span=10, counts=counts, yong=yong_block
     )
     _enrich_sewoon_deep_pack(sew_deep, dm, pillars)
 
@@ -1522,6 +1759,22 @@ def build_report(
     _enrich_wolwoon_pack(wol_pack, dm, pillars)
 
     il_pack = il.ilwoon_snapshot_pack(dm, pillars)
+    sinsal_block["세운_신살"] = sn.sewoon_sinsal(dm, pillars, gender, sew_now["gan"], sew_now["zhi"])
+    wol_cur = _wolwoon_month_for_date(wol_pack, date.today())
+    if wol_cur:
+        sinsal_block["월운_신살"] = sn.wolwoon_sinsal(
+            dm,
+            pillars,
+            gender,
+            str(wol_cur.get("월간") or ""),
+            str(wol_cur.get("월지") or ""),
+        )
+    il_today = (il_pack.get("오늘") or {}) if isinstance(il_pack, dict) else {}
+    il_gz = str(il_today.get("간지") or "")
+    if len(il_gz) >= 2:
+        sinsal_block["일운_신살"] = sn.ilwoon_sinsal(
+            dm, pillars, gender, il_gz[0], il_gz[1]
+        )
     timeline_pack = tl.build_timeline_pack(
         dm,
         pillars,

@@ -3085,3 +3085,29 @@ body.has-bottom-nav .footer {
   .gh-sewoon-two     { grid-template-columns: 1fr; }
   .gh-score-row      { grid-template-columns: 4rem 1fr 4.5rem; }
 }
+
+/* 월운 절월 구분 헤더 */
+.wolwoon-month-header {
+  margin: 1.1rem 0 0.45rem;
+  padding: 0.55rem 0 0.5rem;
+  border-top: 2px solid var(--gold, #c9a227);
+  border-bottom: 1px solid rgba(201, 162, 39, 0.35);
+  color: var(--gold, #c9a227);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.45;
+}
+.unteim-wol-section .wolwoon-month-header:first-of-type {
+  margin-top: 0.5rem;
+  border-top: none;
+  padding-top: 0.25rem;
+}
+.wolwoon-month-tip {
+  margin-bottom: 0.75rem;
+  font-size: 0.86rem;
+  opacity: 0.92;
+}
+.period-sinsal-list li {
+  line-height: 1.55;
+}

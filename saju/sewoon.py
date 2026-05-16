@@ -504,29 +504,68 @@ def _story_summary_line(
     br_chong: List[Dict[str, str]],
     fan_yin_heavy: bool,
     day_chong: bool,
+    *,
+    luck_word: str,
+    yong_el: str = "",
+    gi_els: Optional[Sequence[str]] = None,
+    events: Optional[Dict[str, bool]] = None,
 ) -> str:
-    sg_el = gj.element_of_stem(sg)
-    sz_el = gj.element_of_branch(sz)
-    core = (
-        f"{solar_year}년 {pillar_full}은 세운에 {sg_el}·{sz_el} 기운이 겹쳐 들어오며, "
-        f"원국과의 긴장도는 {'상당히 높은 편' if fan_yin_heavy else '평년 대비 한 단계 위'}입니다."
-    )
-    extras: List[str] = []
-    if day_chong:
-        extras.append(
-            f"{ZHI_LABEL['day']}{zhis['day']}과 세운 {sz}가 맞부딪혀 부부·내실·건강 이슈가 표면화하기 쉽습니다."
+    ev = events or {}
+    gi_els = list(gi_els or [])
+    gi_txt = gi_els[0] if gi_els else gj.element_of_branch(sz)
+
+    if luck_word == "길운":
+        perks: List[str] = []
+        if ev.get("재물획득"):
+            perks.append("재물·계약 유입")
+        if ev.get("취업_승진"):
+            perks.append("직장·승진 기회")
+        if ev.get("연애_결혼"):
+            perks.append("인연·관계 확장")
+        if not perks:
+            perks.append("용신 방향 정리·내실 다지기")
+        yong_part = f"{yong_el} " if yong_el else ""
+        return (
+            f"{yong_part}기운이 들어오는 해입니다. "
+            f"{'·'.join(perks[:2])} 시기로 적극적으로 움직이기 좋습니다."
         )
-    if br_chong:
+
+    if luck_word == "흉운" and br_chong:
         ch = br_chong[0]
-        extras.append(
-            f"{ch.get('글자', '')} 충으로 {ch.get('육친궁', '')} 축에서 직업·부부 갈등처럼 현실 사건이 동시에 묶여 나올 수 있습니다."
+        glyph = ch.get("글자", f"{sz}{zhis.get(ch.get('궁', 'day'), '')}")
+        palace = ch.get("육친궁", ch.get("위치", "해당 궁"))
+        cautions: List[str] = []
+        if ch.get("궁") in ("day",) or day_chong:
+            cautions.append("건강·배우자·내실")
+        if ch.get("궁") in ("month",):
+            cautions.append("직업·부모")
+        if ev.get("손재_도난"):
+            cautions.append("재물")
+        if not cautions:
+            cautions.append("일정·계약")
+        return (
+            f"{glyph}충으로 {palace}에서 변화가 생기기 쉬운 해입니다. "
+            f"{'·'.join(cautions[:2])} 주의가 필요합니다."
         )
-    if sz_el == "화":
-        extras.append("화기운이 들어와 심혈관·순환·불면 등 긴장 신호를 의식하는 편이 좋습니다.")
-    elif sz_el == "수":
-        extras.append("수기운이 들어와 신장·하체·불면 리듬 변동을 함께 봅니다.")
-    tail = " ".join(extras)
-    return (core + (" " + tail if tail else "")).strip()
+
+    if luck_word == "흉운":
+        return (
+            f"기신 {gi_txt} 기운이 강해지는 해로 "
+            f"새로운 시작보다 내실을 다지는 것이 현명합니다."
+        )
+
+    if fan_yin_heavy or day_chong:
+        bits: List[str] = []
+        if day_chong:
+            bits.append(f"일지 {zhis['day']}와 세운 {sz} 충으로 관계·건강 리듬을 조절하세요.")
+        if br_chong:
+            ch = br_chong[0]
+            bits.append(f"{ch.get('글자', '')} 충이 {ch.get('육친궁', '')} 축을 흔듭니다.")
+        if not bits:
+            bits.append("변동은 있으나 과욕만 줄이면 균형을 유지하기 쉽습니다.")
+        return " ".join(bits)
+
+    return "큰 변화 없이 안정적인 흐름입니다. 꾸준히 실력을 쌓기 좋은 해입니다."
 
 
 def _wealth_narrative_v2(
@@ -651,6 +690,7 @@ def analyze_sewoon_year(
     counts: Optional[Dict[str, int]] = None,
     native_sinsal: Optional[Dict[str, Any]] = None,
     sip_ctr: Optional[Counter[str]] = None,
+    yong: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     단일 연도 세운 심층 분석 결과(dict).
@@ -953,7 +993,22 @@ def analyze_sewoon_year(
 
     monthly_risk = _monthly_focus_risks(day_master, pillars, solar_year, sz)
     yuk_blocks = _yukchin_blocks_v2(day_master, pillars, zhis, sg, sz, sip_sg, sip_sz_approx, events)
-    story_sum = _story_summary_line(solar_year, pillar_full, sg, sz, zhis, br_chong, fan_yin_heavy, day_chong)
+    yong_el = str((yong or {}).get("용신_오행") or "")
+    gi_els = list((yong or {}).get("기신") or [])
+    story_sum = _story_summary_line(
+        solar_year,
+        pillar_full,
+        sg,
+        sz,
+        zhis,
+        br_chong,
+        fan_yin_heavy,
+        day_chong,
+        luck_word=luck_word,
+        yong_el=yong_el,
+        gi_els=gi_els,
+        events=events,
+    )
     health_detail = _health_detail_pack(
         day_master=day_master,
         br_chong=br_chong,
@@ -1048,6 +1103,7 @@ def sewoon_forecast_pack(
     center_year: Optional[int] = None,
     span: int = 10,
     counts: Optional[Dict[str, int]] = None,
+    yong: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """
     기준 연도 ±span 세운 심층표 (기본 21년).
@@ -1072,6 +1128,7 @@ def sewoon_forecast_pack(
                 counts=counts,
                 native_sinsal=native_sinsal,
                 sip_ctr=sip_ctr,
+                yong=yong,
             )
         )
 

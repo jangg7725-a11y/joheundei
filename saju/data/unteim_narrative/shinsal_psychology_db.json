@@ -375,6 +375,91 @@
       "caution": "빠른 절단이 해결책처럼 느껴질 때, 한 번 더 '이것이 최선인가'를 확인하는 것이 나중의 후회를 줄인다."
     },
 
+    "학당귀인": {
+      "shinsal_id": "학당귀인",
+      "label_ko": "학당귀인",
+      "category": "guishin",
+      "core_theme": "배움·전문성·자격으로 성장하는 구조입니다.",
+      "psychological_profile": {
+        "dominant_trait": "지식 축적과 반복 연습에 에너지가 붙습니다.",
+        "behavior_pattern": [
+          "새로운 분야를 배울 때 집중력이 올라가고, 자격·시험·연수에 잘 맞습니다.",
+          "익힌 것을 정리해 가르치거나 문서화할 때 만족감이 큽니다."
+        ]
+      },
+      "strength_context": ["교육·연구·자격·전문직에서 강점이 드러납니다."],
+      "friction_context": ["완벽한 준비만 기다리다 실행이 늦어질 때"],
+      "caution": "배움만 늘리기보다 작은 결과물로 바깥에보내는 리듬이 필요합니다."
+    },
+
+    "복성귀인": {
+      "shinsal_id": "복성귀인",
+      "label_ko": "복성귀인",
+      "category": "guishin",
+      "core_theme": "복록·인연·완충이 들어오는 구조입니다.",
+      "psychological_profile": {
+        "dominant_trait": "주변의 도움과 여유를 통해 회복하는 편입니다.",
+        "behavior_pattern": [
+          "위기 때 뜻밖의 귀인·지원이 들어오는 경험이 있습니다.",
+          "먹는 것·휴식·관계의 온기로 기운을 채웁니다."
+        ]
+      },
+      "strength_context": ["협업·복지·서비스·돌봄 영역에서 신뢰가 쌓입니다."],
+      "friction_context": ["편안함에만 기대어 도전을 미룰 때"],
+      "caution": "복이 스스로 찾아오기만 하길 바라지 말고 감사·나눔의 루틴을 유지하세요."
+    },
+
+    "양인살": {
+      "shinsal_id": "양인살",
+      "label_ko": "양인살",
+      "category": "hyungsal",
+      "core_theme": "칼날 같은 결단력과 극단 기복이 함께하는 구조입니다.",
+      "psychological_profile": {
+        "dominant_trait": "강한 추진·단호함이 한쪽으로는 외상·충돌 소인이 됩니다.",
+        "behavior_pattern": [
+          "결정이 빠르고 밀어붙이는 힘이 있어 수술·금속·날카로운 일에 맞기도 합니다.",
+          "억울함·분노가 쌓이면 말과 행동이 날카로워집니다."
+        ]
+      },
+      "strength_context": ["위기 돌파·수술·결단이 필요한 순간에 힘이 됩니다."],
+      "friction_context": ["충동적 말다툼·교통·외상·과격한 운동"],
+      "caution": "한 박자 쉬고 몸·말·계약을 동시에 점검하세요."
+    },
+
+    "원진살": {
+      "shinsal_id": "원진살",
+      "label_ko": "원진살",
+      "category": "hyungsal",
+      "core_theme": "가까운 관계에서 반복되는 원망·각질이 생기기 쉬운 구조입니다.",
+      "psychological_profile": {
+        "dominant_trait": "친밀한 관계일수록 같은 갈등 패턴이 되풀이됩니다.",
+        "behavior_pattern": [
+          "서운함을 오래 품고, 작은 일로 큰 싸움이 될 수 있습니다.",
+          "거리두기·이별 논의가 반복되기 쉽습니다."
+        ]
+      },
+      "strength_context": ["경계·규칙을 분명히 하면 관계가 오래 갑니다."],
+      "friction_context": ["부부·동료·가족 사이의 반복 갈등"],
+      "caution": "감정이 올라올 때는 결론보다 규칙·재정 합의를 먼저 적으세요."
+    },
+
+    "상문살": {
+      "shinsal_id": "상문살",
+      "label_ko": "상문살",
+      "category": "hyungsal",
+      "core_theme": "상가·조문·비보와 연결되기 쉬운 구조입니다.",
+      "psychological_profile": {
+        "dominant_trait": "가족·윗사람 건강·상실 이슈에 민감합니다.",
+        "behavior_pattern": [
+          "주변의 애도·이별 소식에 마음이 크게 흔들립니다.",
+          "건강 검진·보험·비상 연락망을 챙기는 편이 안전합니다."
+        ]
+      },
+      "strength_context": ["돌봄·상담·장례·의료 보조 분야에서 공감력이 큽니다."],
+      "friction_context": ["가족 건강 악화·조문 이벤트가 잇따를 때"],
+      "caution": "가족 건강 체크와 마음 여유를 미리 확보하세요."
+    },
+
     "천라지망": {
       "shinsal_id": "천라지망",
       "label_ko": "천라지망",
