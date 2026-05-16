@@ -1169,6 +1169,43 @@
     return ` <span class="jj-yuk">(${arr.map(escapeHtml).join(" · ")})</span>`;
   }
 
+  /** 십이운성 궁별 카드 묶음 — 원국 탭에서 성격 섹션 위로 올릴 때 재사용 */
+  function buildSibiGuideBlock(r) {
+    const sibiGuide = el("div", "sibi-guide-block");
+    sibiGuide.appendChild(el("h4", "sibi-guide-heading", "십이운성 · 궁(연·월·일·시)별 이해"));
+    sibiGuide.appendChild(
+      el(
+        "p",
+        "panel-note sibi-guide-intro",
+        "아래는 일간 기준으로 각 주의 지지에 붙은 운성을, 어느 「궁」에서 볼 때 쓰는지와 함께 풀어 쓴 참고 해석입니다. 파종·세팅에 따라 세부는 달라질 수 있습니다."
+      )
+    );
+    const guideGrid = el("div", "sibi-guide-grid");
+    PILLAR_KEYS_COL_ORDER.forEach((k) => {
+      const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
+      const card = el("div", "sibi-guide-card");
+      const head = el("div", "sibi-guide-card-head");
+      head.innerHTML = `<span class="sibi-guide-ju">${escapeHtml(sb["주"] || LABELS[k])}</span><span class="sibi-guide-stage han-inline">${escapeHtml(sb.stage || "")}</span>`;
+      card.appendChild(head);
+      const body = el("p", "sibi-guide-body");
+      body.textContent = sb["해설_통합"] || sb["해설통합"] || "";
+      card.appendChild(body);
+      guideGrid.appendChild(card);
+    });
+    sibiGuide.appendChild(guideGrid);
+    return sibiGuide;
+  }
+
+  /** 지장간 제목 + 상세 — 원국 탭에서 성격 섹션 위로 올릴 때 재사용 */
+  function buildJijangganBlock(r) {
+    const wrap = el("div", "jj-section-outer");
+    wrap.appendChild(el("h3", null, "지장간 支藏干 · 십신"));
+    if (r.jijanggan) {
+      wrap.appendChild(renderJijangganSection(r));
+    }
+    return wrap;
+  }
+
   function renderJijangganSection(r) {
     const wrap = el("div", "jj-section");
     const dm = r.day_master || "";
@@ -1343,6 +1380,8 @@
     if (story) {
       const storyPanel = el("div", "panel-section wonguk-story-panel");
       appendStoryCoreCard(storyPanel, r);
+      storyPanel.appendChild(buildSibiGuideBlock(r));
+      storyPanel.appendChild(buildJijangganBlock(r));
       appendWongukStorySections(storyPanel, story);
       root.appendChild(storyPanel);
     }
@@ -1381,36 +1420,22 @@
     });
     sec1.appendChild(chart);
 
-    const sibiGuide = el("div", "sibi-guide-block");
-    sibiGuide.appendChild(el("h4", "sibi-guide-heading", "십이운성 · 궁(연·월·일·시)별 이해"));
-    sibiGuide.appendChild(
-      el(
-        "p",
-        "panel-note sibi-guide-intro",
-        "아래는 일간 기준으로 각 주의 지지에 붙은 운성을, 어느 「궁」에서 볼 때 쓰는지와 함께 풀어 쓴 참고 해석입니다. 파종·세팅에 따라 세부는 달라질 수 있습니다."
-      )
-    );
-    const guideGrid = el("div", "sibi-guide-grid");
-    PILLAR_KEYS_COL_ORDER.forEach((k) => {
-      const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
-      const card = el("div", "sibi-guide-card");
-      const head = el("div", "sibi-guide-card-head");
-      head.innerHTML = `<span class="sibi-guide-ju">${escapeHtml(sb["주"] || LABELS[k])}</span><span class="sibi-guide-stage han-inline">${escapeHtml(sb.stage || "")}</span>`;
-      card.appendChild(head);
-      const body = el("p", "sibi-guide-body");
-      body.textContent = sb["해설_통합"] || sb["해설통합"] || "";
-      card.appendChild(body);
-      guideGrid.appendChild(card);
-    });
-    sibiGuide.appendChild(guideGrid);
-    sec1.appendChild(sibiGuide);
+    if (!story) {
+      sec1.appendChild(buildSibiGuideBlock(r));
+    }
 
     root.appendChild(sec1);
 
     const sec2 = el("div", "panel-section");
     sec2.appendChild(el("h3", null, "천간 · 지지 · 十神 · 十二運"));
     sec2.appendChild(
-      el("p", "panel-note", "아래 표·지장간은 위에서 아래로 년주 → 월주 → 일주 → 시주 순입니다.")
+      el(
+        "p",
+        "panel-note",
+        story
+          ? "아래 표는 년주 → 월주 → 일주 → 시주 순입니다. (지장간 상세는 위 원국 스토리 영역에 있습니다.)"
+          : "아래 표·지장간은 위에서 아래로 년주 → 월주 → 일주 → 시주 순입니다."
+      )
     );
     const tw = el("div", "table-wrap");
     const tb = document.createElement("table");
@@ -1452,9 +1477,11 @@
     tw.appendChild(tb);
     sec2.appendChild(tw);
 
-    sec2.appendChild(el("h3", null, "지장간 支藏干 · 십신"));
-    if (r.jijanggan) {
-      sec2.appendChild(renderJijangganSection(r));
+    if (!story) {
+      sec2.appendChild(el("h3", null, "지장간 支藏干 · 십신"));
+      if (r.jijanggan) {
+        sec2.appendChild(renderJijangganSection(r));
+      }
     }
     root.appendChild(sec2);
 

@@ -1925,6 +1925,15 @@ table.data-table .han-inline {
   margin-bottom: 0.5rem;
 }
 
+/* 원국 스토리 패널 안: 십이운성 → 지장간 → 성격 순 */
+.wonguk-story-panel .jj-section-outer {
+  margin-top: 1rem;
+}
+
+.wonguk-story-panel .jj-section-outer > h3 {
+  margin-bottom: 0.35rem;
+}
+
 .story-section {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(201, 168, 76, 0.2);
