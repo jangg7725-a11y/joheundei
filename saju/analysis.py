@@ -1643,7 +1643,14 @@ def _wolwoon_month_for_date(pack: Dict[str, Any], when: date) -> Optional[Dict[s
     return months[0] if months else None
 
 
-def _enrich_wolwoon_pack(pack: Dict[str, Any], day_master: str, pillars: dict) -> None:
+def _enrich_wolwoon_pack(
+    pack: Dict[str, Any],
+    day_master: str,
+    pillars: dict,
+    *,
+    gender: str = "male",
+    sewoon_zhi: str = "",
+) -> None:
     solar_y = pack.get("세운연도")
     if not solar_y or solar_y not in jq.TERM_TWELVE_BY_YEAR:
         return
@@ -1670,6 +1677,17 @@ def _enrich_wolwoon_pack(pack: Dict[str, Any], day_master: str, pillars: dict) -
                     + ("…" if len(str(jw.get("근거", ""))) > 120 else "")
                 )
         m["정밀분석"] = prec
+        mg = str(m.get("월간") or "")
+        mz = str(m.get("월지") or "")
+        if mg and mz and sewoon_zhi:
+            m["월운_신살"] = sn.wolwoon_sinsal(
+                day_master,
+                pillars,
+                gender,
+                mg,
+                mz,
+                sewoon_zhi=sewoon_zhi,
+            )
 
 
 def build_report(
@@ -1756,18 +1774,23 @@ def build_report(
     wol_pack = ww.wolwoon_year_pack(
         dm, pillars, wol_center, gender=gender, counts=counts, yong=yong_block
     )
-    _enrich_wolwoon_pack(wol_pack, dm, pillars)
+    _enrich_wolwoon_pack(
+        wol_pack, dm, pillars, gender=gender, sewoon_zhi=sew_now["zhi"]
+    )
 
     il_pack = il.ilwoon_snapshot_pack(dm, pillars)
     sinsal_block["세운_신살"] = sn.sewoon_sinsal(dm, pillars, gender, sew_now["gan"], sew_now["zhi"])
     wol_cur = _wolwoon_month_for_date(wol_pack, date.today())
-    if wol_cur:
+    if wol_cur and wol_cur.get("월운_신살"):
+        sinsal_block["월운_신살"] = wol_cur["월운_신살"]
+    elif wol_cur:
         sinsal_block["월운_신살"] = sn.wolwoon_sinsal(
             dm,
             pillars,
             gender,
             str(wol_cur.get("월간") or ""),
             str(wol_cur.get("월지") or ""),
+            sewoon_zhi=sew_now["zhi"],
         )
     il_today = (il_pack.get("오늘") or {}) if isinstance(il_pack, dict) else {}
     il_gz = str(il_today.get("간지") or "")

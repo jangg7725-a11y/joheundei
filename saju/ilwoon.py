@@ -331,10 +331,7 @@ def _stem_hap_with_dm(dm: str, today_gan: str) -> bool:
 
 
 def _baekho_hit(native_year_zhi: str, today_zhi: str) -> bool:
-    bh = sn._baekho_zhi(native_year_zhi)  # type: ignore[attr-defined]
-    if not bh:
-        return False
-    return today_zhi == bh or sw.branch_chong(today_zhi, bh)
+    return sn._baekho_period_hit(native_year_zhi, today_zhi)  # type: ignore[attr-defined]
 
 
 def _kongwang_hit(native_day_pillar: str, today_zhi: str) -> bool:

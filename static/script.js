@@ -223,6 +223,16 @@
     return r.ilwoon ?? r["일운"] ?? null;
   }
 
+  function resolveWolwoonSinsal(r) {
+    const pack = resolveWolwoonPack(r);
+    const isoToday = todayISO();
+    if (pack && Array.isArray(pack["월별"])) {
+      const cur = pack["월별"].find((m) => solarRangeContains(isoToday, m["구간_양력"]));
+      if (cur && cur["월운_신살"]) return cur["월운_신살"];
+    }
+    return (r.sinsal || {})["월운_신살"];
+  }
+
   function resolveTimeline(r) {
     return r.timeline ?? r["통합_타임라인"] ?? null;
   }
@@ -2619,7 +2629,7 @@
 
     const sewPs = mkPeriodSection("세운 신살 (올해 들어온 신살)", sinsal["세운_신살"]);
     if (sewPs) root.appendChild(sewPs);
-    const wolPs = mkPeriodSection("월운 신살 (이달 들어온 신살)", sinsal["월운_신살"]);
+    const wolPs = mkPeriodSection("월운 신살 (이달 들어온 신살)", resolveWolwoonSinsal(r));
     if (wolPs) root.appendChild(wolPs);
     const ilPs = mkPeriodSection("일운 신살 (오늘 들어온 신살)", sinsal["일운_신살"]);
     if (ilPs) root.appendChild(ilPs);
