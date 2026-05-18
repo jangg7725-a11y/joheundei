@@ -8,6 +8,56 @@
   const lunarLeapCheck = document.getElementById("lunar_leap");
 
   const PILLAR_KEYS = ["year", "month", "day", "hour"];
+  const SAJU_ADMIN_SESSION_KEY = "joheundei_saju_admin";
+  let sajuYearAdmin = false;
+
+  function initSajuAdminUnlockFromUrl() {
+    try {
+      const qs = new URLSearchParams(window.location.search);
+      if (qs.get("admin") === "1") {
+        sessionStorage.setItem(SAJU_ADMIN_SESSION_KEY, "1");
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  function isSajuYearAdmin() {
+    return sajuYearAdmin;
+  }
+
+  function applySajuYearAdminFromConfig(cfg) {
+    initSajuAdminUnlockFromUrl();
+    if (sessionStorage.getItem(SAJU_ADMIN_SESSION_KEY) === "1") {
+      sajuYearAdmin = true;
+      return;
+    }
+    sajuYearAdmin = false;
+    const emails = (cfg && cfg.admin_emails ? cfg.admin_emails : [])
+      .map((e) => String(e).toLowerCase())
+      .filter(Boolean);
+    if (!emails.length) return;
+    try {
+      const raw = localStorage.getItem("joheundei_account_v1");
+      const acc = raw ? JSON.parse(raw) : null;
+      if (acc && acc.loggedIn && acc.email && emails.includes(String(acc.email).toLowerCase())) {
+        sajuYearAdmin = true;
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
+  async function refreshSajuYearAdmin() {
+    try {
+      const res = await fetch("/api/ai/config");
+      const cfg = await res.json();
+      applySajuYearAdminFromConfig(cfg);
+    } catch {
+      initSajuAdminUnlockFromUrl();
+      sajuYearAdmin = sessionStorage.getItem(SAJU_ADMIN_SESSION_KEY) === "1";
+    }
+  }
   /** 원국 카드: 시→일→월→년 (좌→우). */
   const PILLAR_KEYS_WONGUK_ORDER = ["hour", "day", "month", "year"];
   /** 표·지장간 등 세로 나열: 년→월→일→시 (위→아래). */
@@ -2267,18 +2317,24 @@
       return;
     }
     const applied = r.meta?.wolwoon_center_applied ?? pack["세운연도"];
+    const yearShown = pack["세운연도"] ?? applied;
     const selWrap = el("div", "wol-toolbar");
-    selWrap.innerHTML =
-      '<label class="wol-year-label">월운 기준 세운연도 <select id="tab3-wol-year-select" class="wol-year-select"></select></label>';
-    const sel = selWrap.querySelector("#tab3-wol-year-select");
-    const lo = Math.max(1800, applied - 15);
-    const hi = Math.min(2100, applied + 15);
-    for (let y = lo; y <= hi; y += 1) {
-      const opt = document.createElement("option");
-      opt.value = String(y);
-      opt.textContent = `${y}년`;
-      if (y === pack["세운연도"]) opt.selected = true;
-      sel.appendChild(opt);
+    let sel = null;
+    if (isSajuYearAdmin()) {
+      selWrap.innerHTML =
+        '<label class="wol-year-label">월운 기준 세운연도 <select id="tab3-wol-year-select" class="wol-year-select"></select></label>';
+      sel = selWrap.querySelector("#tab3-wol-year-select");
+      const lo = Math.max(1800, applied - 15);
+      const hi = Math.min(2100, applied + 15);
+      for (let y = lo; y <= hi; y += 1) {
+        const opt = document.createElement("option");
+        opt.value = String(y);
+        opt.textContent = `${y}년`;
+        if (y === yearShown) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    } else {
+      selWrap.innerHTML = `<p class="wol-year-static">월운 기준 세운연도 <strong>${yearShown}년</strong></p>`;
     }
     pane.appendChild(selWrap);
 
@@ -2387,36 +2443,38 @@
       pane.appendChild(wolU);
     }
 
-    sel.addEventListener("change", async () => {
-      const y = Number(sel.value);
-      if (!lastSajuBody || !Number.isFinite(y)) return;
-      try {
-        const res = await fetch("/api/saju", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ...lastSajuBody, wolwoon_center_year: y }),
-        });
-        const json = await res.json();
-        if (!res.ok) {
-          let detail = json.message ?? json.detail ?? res.statusText;
-          if (typeof detail === "object") detail = JSON.stringify(detail);
-          throw new Error(String(detail));
+    if (sel) {
+      sel.addEventListener("change", async () => {
+        const y = Number(sel.value);
+        if (!lastSajuBody || !Number.isFinite(y)) return;
+        try {
+          const res = await fetch("/api/saju", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...lastSajuBody, wolwoon_center_year: y }),
+          });
+          const json = await res.json();
+          if (!res.ok) {
+            let detail = json.message ?? json.detail ?? res.statusText;
+            if (typeof detail === "object") detail = JSON.stringify(detail);
+            throw new Error(String(detail));
+          }
+          latestReport["월운표"] = json.result["월운표"];
+          if (Array.isArray(json.result.wolwoon)) latestReport.wolwoon = json.result.wolwoon;
+          if (json.result.jeongmil) latestReport.jeongmil = json.result.jeongmil;
+          if (json.result["unteim_세운월운"]) {
+            latestReport["unteim_세운월운"] = json.result["unteim_세운월운"];
+          }
+          latestReport.meta = latestReport.meta || {};
+          latestReport.meta.wolwoon_center_applied =
+            json.result.meta?.wolwoon_center_applied ?? y;
+          renderTab3WolPane(latestReport, pane);
+        } catch (err) {
+          statusEl.textContent = err.message || String(err);
+          statusEl.classList.add("error");
         }
-        latestReport["월운표"] = json.result["월운표"];
-        if (Array.isArray(json.result.wolwoon)) latestReport.wolwoon = json.result.wolwoon;
-        if (json.result.jeongmil) latestReport.jeongmil = json.result.jeongmil;
-        if (json.result["unteim_세운월운"]) {
-          latestReport["unteim_세운월운"] = json.result["unteim_세운월운"];
-        }
-        latestReport.meta = latestReport.meta || {};
-        latestReport.meta.wolwoon_center_applied =
-          json.result.meta?.wolwoon_center_applied ?? y;
-        renderTab3WolPane(latestReport, pane);
-      } catch (err) {
-        statusEl.textContent = err.message || String(err);
-        statusEl.classList.add("error");
-      }
-    });
+      });
+    }
   }
 
   function renderTab3IlwoonPane(r, pane) {
@@ -2696,7 +2754,14 @@
       const yBase = deep["기준연도"] ?? ys[Math.floor(ys.length / 2)];
 
       const secDeep = el("div", "panel-section");
-      secDeep.appendChild(el("h3", null, "세운 심층 (기준연도 ±10년 · 21년치)"));
+      const yearAdmin = isSajuYearAdmin();
+      secDeep.appendChild(
+        el(
+          "h3",
+          null,
+          yearAdmin ? "세운 심층 (기준연도 ±10년 · 21년치)" : `세운 심층 (${yBase}년)`
+        )
+      );
       secDeep.appendChild(
         el(
           "p",
@@ -2705,82 +2770,113 @@
         )
       );
 
-      const sliderRow = el("div", "sewoon-slider-row");
-      sliderRow.innerHTML = `
+      let sliderRow = null;
+      if (yearAdmin) {
+        sliderRow = el("div", "sewoon-slider-row");
+        sliderRow.innerHTML = `
         <label class="sewoon-slider-label">연도 선택 <span id="tab3-sewoon-slider-val">${yBase}</span>년</label>
         <input type="range" id="tab3-sewoon-slider" min="${yMin}" max="${yMax}" value="${yBase}" step="1" />
       `;
-      secDeep.appendChild(sliderRow);
+        secDeep.appendChild(sliderRow);
 
-      const cardStrip = el("div", "sewoon-cards-strip");
-      cardStrip.innerHTML = `<div class="sewoon-cards-label">연도별 카드 (좌우 스와이프)</div>`;
-      const scroller = el("div", "sewoon-cards-scroller");
-      deep["연도별"].forEach((rowY) => {
+        const cardStrip = el("div", "sewoon-cards-strip");
+        cardStrip.innerHTML = `<div class="sewoon-cards-label">연도별 카드 (좌우 스와이프)</div>`;
+        const scroller = el("div", "sewoon-cards-scroller");
+        deep["연도별"].forEach((rowY) => {
+          const y = rowY["연도"];
+          const risky =
+            rowY["운세등급"] === "흉운" ||
+            sewHasChungPaHae(rowY) ||
+            (Number(rowY["별점"]) > 0 && Number(rowY["별점"]) <= 2);
+          const lucky = rowY["운세등급"] === "길운" || Number(rowY["별점"]) >= 4;
+          let cls = "sew-year-card";
+          if (risky) cls += " sew-year-card--risky";
+          if (lucky) cls += " sew-year-card--lucky";
+          const btn = el("button", cls);
+          btn.type = "button";
+          btn.dataset.year = String(y);
+          const mini = String(rowY["세운_총평_한줄"] || "").slice(0, 80);
+          btn.innerHTML = `
+          <div class="sew-year-card-top">${y}년</div>
+          <div class="sew-year-card-gz han-inline">${escapeHtml(rowY["간지"] || "")}</div>
+          <div class="sew-year-card-luck">${escapeHtml(rowY["별점_문자"] || ratingBarFromNum(rowY["별점"]))}</div>
+          <div class="sew-year-card-mini">${escapeHtml(mini)}</div>`;
+          btn.addEventListener("click", () => {
+            const sl = sliderRow.querySelector("#tab3-sewoon-slider");
+            if (sl) {
+              sl.value = String(y);
+              sl.dispatchEvent(new Event("input"));
+            }
+          });
+          scroller.appendChild(btn);
+        });
+        cardStrip.appendChild(scroller);
+        secDeep.appendChild(cardStrip);
+      } else {
+        const rowY =
+          deep["연도별"].find((x) => x["연도"] === yBase) || deep["연도별"][0];
         const y = rowY["연도"];
         const risky =
           rowY["운세등급"] === "흉운" ||
           sewHasChungPaHae(rowY) ||
           (Number(rowY["별점"]) > 0 && Number(rowY["별점"]) <= 2);
         const lucky = rowY["운세등급"] === "길운" || Number(rowY["별점"]) >= 4;
-        let cls = "sew-year-card";
+        let cls = "sew-year-card sew-year-card--selected";
         if (risky) cls += " sew-year-card--risky";
         if (lucky) cls += " sew-year-card--lucky";
-        const btn = el("button", cls);
-        btn.type = "button";
-        btn.dataset.year = String(y);
+        const singleWrap = el("div", "sewoon-single-year-wrap");
+        const card = el("div", cls);
+        card.dataset.year = String(y);
         const mini = String(rowY["세운_총평_한줄"] || "").slice(0, 80);
-        btn.innerHTML = `
+        card.innerHTML = `
           <div class="sew-year-card-top">${y}년</div>
           <div class="sew-year-card-gz han-inline">${escapeHtml(rowY["간지"] || "")}</div>
           <div class="sew-year-card-luck">${escapeHtml(rowY["별점_문자"] || ratingBarFromNum(rowY["별점"]))}</div>
           <div class="sew-year-card-mini">${escapeHtml(mini)}</div>`;
-        btn.addEventListener("click", () => {
-          const sl = sliderRow.querySelector("#tab3-sewoon-slider");
-          if (sl) {
-            sl.value = String(y);
-            sl.dispatchEvent(new Event("input"));
-          }
-        });
-        scroller.appendChild(btn);
-      });
-      cardStrip.appendChild(scroller);
-      secDeep.appendChild(cardStrip);
+        singleWrap.appendChild(card);
+        secDeep.appendChild(singleWrap);
+      }
 
       const detailMount = el("div", "sewoon-detail card-like");
       detailMount.id = "tab3-sewoon-detail";
       secDeep.appendChild(detailMount);
 
-      const scrollWrap = el("div", "sewoon-table-scroll table-wrap");
-      const tb2 = document.createElement("table");
-      tb2.className = "data-table sewoon-deep-table";
-      tb2.id = "tab3-sewoon-table";
-      tb2.innerHTML =
-        '<thead><tr><th>연도</th><th>간지</th><th>운세</th><th>충파해</th><th>육친 영향</th></tr></thead><tbody></tbody>';
-      const tbBody = tb2.querySelector("tbody");
-      deep["연도별"].forEach((row) => {
-        const tr = document.createElement("tr");
-        tr.dataset.year = String(row["연도"]);
-        const luckCls = sewoonLuckRowClass(row);
-        if (luckCls) tr.classList.add(luckCls);
-        if (sewHasChungPaHae(row)) tr.classList.add("sew-row-cph");
-        const hasCph = sewHasChungPaHae(row);
-        const cphNote = hasCph
-          ? `충${(row["세운_지지_충"] || []).length} 파${(row["세운_지지_파"] || []).length} 해${(row["세운_지지_해"] || []).length}`
-          : "—";
-        const icons = yukchinIconsFromSewRow(row);
-        tr.innerHTML = `<td>${row["연도"]}</td><td class="han-inline">${row["간지"] || ""}</td><td>${row["운세등급"] || ""}</td><td>${cphNote}</td><td class="yukchin-icons">${icons || "—"}</td>`;
-        tbBody.appendChild(tr);
-      });
-      scrollWrap.appendChild(tb2);
-      secDeep.appendChild(scrollWrap);
+      if (yearAdmin) {
+        const scrollWrap = el("div", "sewoon-table-scroll table-wrap");
+        const tb2 = document.createElement("table");
+        tb2.className = "data-table sewoon-deep-table";
+        tb2.id = "tab3-sewoon-table";
+        tb2.innerHTML =
+          '<thead><tr><th>연도</th><th>간지</th><th>운세</th><th>충파해</th><th>육친 영향</th></tr></thead><tbody></tbody>';
+        const tbBody = tb2.querySelector("tbody");
+        deep["연도별"].forEach((row) => {
+          const tr = document.createElement("tr");
+          tr.dataset.year = String(row["연도"]);
+          const luckCls = sewoonLuckRowClass(row);
+          if (luckCls) tr.classList.add(luckCls);
+          if (sewHasChungPaHae(row)) tr.classList.add("sew-row-cph");
+          const hasCph = sewHasChungPaHae(row);
+          const cphNote = hasCph
+            ? `충${(row["세운_지지_충"] || []).length} 파${(row["세운_지지_파"] || []).length} 해${(row["세운_지지_해"] || []).length}`
+            : "—";
+          const icons = yukchinIconsFromSewRow(row);
+          tr.innerHTML = `<td>${row["연도"]}</td><td class="han-inline">${row["간지"] || ""}</td><td>${row["운세등급"] || ""}</td><td>${cphNote}</td><td class="yukchin-icons">${icons || "—"}</td>`;
+          tbBody.appendChild(tr);
+        });
+        scrollWrap.appendChild(tb2);
+        secDeep.appendChild(scrollWrap);
+      }
+
       paneSe.appendChild(secDeep);
 
-      const slider = sliderRow.querySelector("#tab3-sewoon-slider");
-      const sliderVal = sliderRow.querySelector("#tab3-sewoon-slider-val");
-      slider.addEventListener("input", () => {
-        sliderVal.textContent = slider.value;
-        syncSewoonDetail(wrap, deep, slider.value);
-      });
+      if (yearAdmin && sliderRow) {
+        const slider = sliderRow.querySelector("#tab3-sewoon-slider");
+        const sliderVal = sliderRow.querySelector("#tab3-sewoon-slider-val");
+        slider.addEventListener("input", () => {
+          sliderVal.textContent = slider.value;
+          syncSewoonDetail(wrap, deep, slider.value);
+        });
+      }
       syncSewoonDetail(wrap, deep, yBase);
     }
 
@@ -3441,6 +3537,8 @@ ${matrixHTML}
         }
         renderGoonghapResult(json.result);
         ghStatus.textContent = "완료";
+        const ghCollapse = document.getElementById("goonghap-collapse");
+        if (ghCollapse) ghCollapse.open = true;
         const ghMount = document.getElementById("goonghap-result");
         if (ghMount) ghMount.scrollIntoView({ behavior: "smooth", block: "nearest" });
       } catch (err) {
@@ -3623,6 +3721,7 @@ ${matrixHTML}
         saveAccount({ email, password, name: name || email.split("@")[0], loggedIn: true });
         closeAuthModal();
         updateMoreMenuAuthState();
+        refreshSajuYearAdmin();
         statusEl.textContent = `회원가입 완료 — ${name || email}님 환영합니다.`;
         statusEl.classList.remove("error");
         return;
@@ -3634,10 +3733,12 @@ ${matrixHTML}
       saveAccount({ ...existing, loggedIn: true });
       closeAuthModal();
       updateMoreMenuAuthState();
+      refreshSajuYearAdmin();
       statusEl.textContent = `${existing.name || email}님, 로그인했습니다.`;
       statusEl.classList.remove("error");
     });
   }
 
   updateMoreMenuAuthState();
+  refreshSajuYearAdmin();
 })();

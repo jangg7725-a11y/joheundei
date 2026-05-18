@@ -498,12 +498,16 @@ async def api_ai_config() -> dict[str, Any]:
     """클라이언트용 AI 설정."""
     import os
 
+    admin_raw = os.getenv("SAJU_ADMIN_EMAILS", "")
+    admin_emails = [e.strip().lower() for e in admin_raw.split(",") if e.strip()]
+
     if not ai.is_ai_available():
         return {
             **ai.unavailable_response(),
             "provider": "",
             "model": "",
             "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
+            "admin_emails": admin_emails,
         }
     provider = ai.active_provider()
     return {
@@ -514,6 +518,7 @@ async def api_ai_config() -> dict[str, Any]:
         "provider": provider or "",
         "model": ai.active_model_name(),
         "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
+        "admin_emails": admin_emails,
     }
 
 
