@@ -78,6 +78,30 @@ _OPENERS: Tuple[str, ...] = (
     "풀어서 말씀드리면, ",
 )
 
+# 월운·세운월운 서사 — 앞머리 접속어 없이 본문만
+_WOLOWOON_PATH_MARKERS: Tuple[str, ...] = (
+    "월운표",
+    "wolwoon",
+    "unteim_세운월운",
+)
+
+_WOLOWOON_TEXT_KEYS: FrozenSet[str] = frozenset(
+    {
+        "월별_핵심스토리",
+        "월별_행동지침",
+        "월별_행동지침_텍스트",
+        "월별_주의사항",
+        "월별_실천팁",
+        "월운_서사",
+        "실천_팁",
+        "주의",
+        "핵심스토리",
+        "상반기_총평",
+        "하반기_총평",
+        "출력_표텍스트",
+    }
+)
+
 _CONSULTATIVE_MARKERS: Tuple[str, ...] = (
     "말씀",
     "보시",
@@ -191,6 +215,29 @@ def _has_consultative_marker(text: str) -> bool:
     return any(m in head for m in _CONSULTATIVE_MARKERS)
 
 
+def strip_voice_openers(text: str) -> str:
+    """톤 레이어가 붙인 앞머리 접속어를 제거합니다."""
+    if not text or not isinstance(text, str):
+        return text
+    t = str(text).strip()
+    if not t:
+        return text
+    changed = True
+    while changed:
+        changed = False
+        for opener in _OPENERS:
+            if t.startswith(opener):
+                t = t[len(opener) :].lstrip()
+                changed = True
+    return t
+
+
+def _is_wolwoon_voice_path(path: str, key: str) -> bool:
+    if key in _WOLOWOON_TEXT_KEYS:
+        return True
+    return any(m in path for m in _WOLOWOON_PATH_MARKERS)
+
+
 def _should_voice(key: str, value: str, path: str) -> bool:
     if not isinstance(value, str):
         return False
@@ -208,6 +255,22 @@ def _should_voice(key: str, value: str, path: str) -> bool:
     if s.startswith("http"):
         return False
     return True
+
+
+def voice_text_wolwoon(text: str) -> str:
+    """월운 전구간 — 앞머리 접속어 없이 법적 안전·말투만 최소 적용."""
+    if not text or not isinstance(text, str):
+        return text
+    t = strip_voice_openers(sanitize_legal_tone(str(text).strip()))
+    if not t or not _HANGUL_RE.search(t):
+        return text
+    for old, new in _PHRASE_REPLACEMENTS:
+        if old and new is not None:
+            t = t.replace(old, new)
+    t = strip_voice_openers(t)
+    t = sanitize_legal_tone(t)
+    t = re.sub(r"\s{2,}", " ", t)
+    return t.strip() if t else text
 
 
 def voice_text(text: str) -> str:
@@ -259,6 +322,9 @@ def apply_voice_to_value(obj: Any, path: str = "") -> Any:
             for i, v in enumerate(obj)
         ]
     if isinstance(obj, str) and _should_voice(path.rsplit(".", 1)[-1], obj, path):
+        key = path.rsplit(".", 1)[-1]
+        if _is_wolwoon_voice_path(path, key):
+            return voice_text_wolwoon(obj)
         return voice_text(obj)
     return obj
 

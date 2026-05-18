@@ -19,9 +19,28 @@ def _build(calendar: str, y: int, m: int, d: int, hour: int, gender: str) -> dic
     )
 
 
+_BANNED_WOL_OPENERS = (
+    "명리적으로 말씀드리면,",
+    "전통 명리를 바탕으로 보면,",
+    "이 사주에서는 흔히,",
+    "풀어서 말씀드리면,",
+)
+
+
 def _assert_wol_pack(report: dict, label: str) -> None:
     wol = (report.get("월운표") or {}).get("월별") or []
     assert len(wol) == 12, label
+
+    for m in wol:
+        for field in (
+            "월별_핵심스토리",
+            "월별_행동지침_텍스트",
+            "월별_실천팁",
+            "월별_주의사항",
+        ):
+            txt = str(m.get(field) or "")
+            for b in _BANNED_WOL_OPENERS:
+                assert not txt.startswith(b), f"{label} {field}: banned opener {b!r}"
 
     stories = [str(m.get("월별_핵심스토리") or "").strip() for m in wol]
     assert all(stories), f"{label}: empty story"
