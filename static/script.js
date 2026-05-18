@@ -2922,16 +2922,16 @@
     }
   }
 
-  function renderSamjaeAside(r) {
-    const aside = document.getElementById("samjae-aside");
-    if (!aside) return;
+  function renderSamjaeBar(r) {
+    const bar = document.getElementById("samjae-bar");
+    if (!bar) return;
     const sam = r.삼재 || r.samjae || {};
     if (!sam || sam["기준_연도"] == null) {
-      aside.hidden = true;
-      aside.innerHTML = "";
+      bar.hidden = true;
+      bar.innerHTML = "";
       return;
     }
-    aside.hidden = false;
+    bar.hidden = false;
     const phase = String(sam["올해_삼재_코드"] || "none");
     const badgeCls =
       phase === "deul"
@@ -2944,42 +2944,49 @@
     const birthZhi = sam["년지_띠"] || "";
     const birthKr = sam["년지_띠_한글"] || "";
     const cycle = sam["가까운_삼재_연도"] || [];
-    const cycleUl = el("ul", "samjae-cycle-list");
-    if (cycle.length) {
-      cycle.forEach((row) => {
-        const li = document.createElement("li");
-        if (Number(row["연도"]) === Number(sam["기준_연도"])) li.className = "is-current";
-        li.textContent = `${row["연도"]} ${row["간지"] || ""} · ${row["단계"] || ""}`;
-        cycleUl.appendChild(li);
-      });
-    } else {
-      const li = document.createElement("li");
-      li.textContent = "가까운 3년 주기 삼재 없음";
-      cycleUl.appendChild(li);
-    }
+    bar.innerHTML = "";
 
-    aside.innerHTML = "";
-    const h3 = el("h3", "samjae-aside-title", "올해 삼재");
-    aside.appendChild(h3);
-    const yearP = el("p", "samjae-aside-year");
+    const head = el("div", "samjae-bar-head");
+    head.appendChild(el("h3", "samjae-bar-title", "올해 삼재"));
+    const yearP = el("p", "samjae-bar-year");
     yearP.innerHTML = `${sam["기준_연도"]}년 세운 <span class="han-inline">${escapeHtml(sam["세운_간지"] || "")}</span>`;
-    aside.appendChild(yearP);
+    head.appendChild(yearP);
     const badge = el("div", `samjae-phase-badge ${badgeCls}`);
     badge.textContent = sam["올해_삼재"] || "해당 없음";
-    aside.appendChild(badge);
-    const desc = el("p", "samjae-aside-desc");
+    head.appendChild(badge);
+    bar.appendChild(head);
+
+    const body = el("div", "samjae-bar-body");
+    const desc = el("p", "samjae-bar-desc");
     desc.textContent = sam["설명"] || sam["한줄_요약"] || "";
-    aside.appendChild(desc);
+    body.appendChild(desc);
     if (sam["팁"]) {
-      const tip = el("p", "samjae-aside-tip");
+      const tip = el("p", "samjae-bar-tip");
       tip.textContent = sam["팁"];
-      aside.appendChild(tip);
+      body.appendChild(tip);
     }
-    const tri = el("p", "samjae-triplet");
-    tri.textContent = `본인 띠 ${birthZhi}(${birthKr}) 기준 삼재 주기: ${sam["들_라벨"] || ""} → ${sam["눌_라벨"] || ""} → ${sam["날_라벨"] || ""}`;
-    aside.appendChild(tri);
-    aside.appendChild(el("p", "samjae-cycle-title", "가까운 삼재 연도"));
-    aside.appendChild(cycleUl);
+    const tri = el("p", "samjae-bar-triplet");
+    tri.textContent = `본인 띠 ${birthZhi}(${birthKr}) · ${sam["들_라벨"] || ""} → ${sam["눌_라벨"] || ""} → ${sam["날_라벨"] || ""}`;
+    body.appendChild(tri);
+    bar.appendChild(body);
+
+    const cycleCol = el("div", "samjae-bar-cycle");
+    cycleCol.appendChild(el("p", "samjae-cycle-title", "가까운 삼재"));
+    const chips = el("div", "samjae-cycle-chips");
+    if (cycle.length) {
+      cycle.forEach((row) => {
+        const chip = el("span", "samjae-cycle-chip");
+        if (Number(row["연도"]) === Number(sam["기준_연도"])) chip.classList.add("is-current");
+        chip.textContent = `${row["연도"]} ${row["간지"] || ""} · ${row["단계"] || ""}`;
+        chips.appendChild(chip);
+      });
+    } else {
+      const chip = el("span", "samjae-cycle-chip");
+      chip.textContent = "가까운 3년 주기 없음";
+      chips.appendChild(chip);
+    }
+    cycleCol.appendChild(chips);
+    bar.appendChild(cycleCol);
   }
 
   function renderReport(data) {
@@ -2991,7 +2998,7 @@
       ? `${name} 님 · 일간 ${r.day_master}(${r.day_master_kr}) · ${r.eight_char_string || ""}`
       : `일간 ${r.day_master}(${r.day_master_kr}) · ${r.eight_char_string || ""}`;
 
-    renderSamjaeAside(r);
+    renderSamjaeBar(r);
     renderDashboardSummary(r);
     renderTab0(r);
     renderTab1(r);

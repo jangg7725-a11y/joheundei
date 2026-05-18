@@ -9,12 +9,13 @@ from . import ganji as gj
 from . import narrative_loader as nl
 from . import sewoon as sw
 
-# 본인 년지가 속한 삼합 → (들삼재 지지, 눌삼재 지지, 날삼재 지지)
+# 본인 년지 삼합 → (들삼재 지지, 눌삼재 지지, 날삼재 지지)
+# 해묘미(亥卯未) → 사오미(巳午未), 인오술(寅午戌) → 신유술(申酉戌) 등 민간 전통 표
 _SAMJAE_BY_BIRTH_GROUP: Dict[frozenset, Tuple[str, str, str]] = {
     frozenset({"申", "子", "辰"}): ("亥", "子", "丑"),
+    frozenset({"寅", "午", "戌"}): ("申", "酉", "戌"),
     frozenset({"巳", "酉", "丑"}): ("寅", "卯", "辰"),
-    frozenset({"寅", "午", "戌"}): ("巳", "午", "未"),
-    frozenset({"亥", "卯", "未"}): ("申", "酉", "戌"),
+    frozenset({"亥", "卯", "未"}): ("巳", "午", "未"),
 }
 
 _PHASE_LABEL = {

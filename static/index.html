@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260516-samjae" />
+  <link rel="stylesheet" href="/static/style.css?v=20260516-samjae-bar" />
 </head>
 <body>
   <header class="hero">
@@ -276,12 +276,12 @@
     </section>
 
     <section class="card results results-fluid" id="results" hidden>
-      <div class="results-layout">
-        <div class="results-main">
       <header class="results-head">
         <h2 id="results-title">분석 결과</h2>
         <p id="results-sub" class="results-sub"></p>
       </header>
+
+      <div id="samjae-bar" class="samjae-bar" hidden aria-label="올해 삼재"></div>
 
       <div id="dashboard-summary" class="dashboard-summary" hidden aria-label="오늘의 핵심 요약"></div>
 
@@ -303,9 +303,6 @@
           <div class="tab-panel" role="tabpanel" id="panel-4" hidden aria-labelledby="tab-4"></div>
           <div class="tab-panel" role="tabpanel" id="panel-5" hidden aria-labelledby="tab-5"></div>
         </div>
-      </div>
-        </div>
-        <aside id="samjae-aside" class="samjae-aside" hidden aria-label="올해 삼재"></aside>
       </div>
     </section>
   </main>
@@ -348,6 +345,6 @@
   </div>
 
   <script src="/static/ai-story.js"></script>
-  <script src="/static/script.js?v=20260516-samjae"></script>
+  <script src="/static/script.js?v=20260516-samjae-bar"></script>
 </body>
 </html>
