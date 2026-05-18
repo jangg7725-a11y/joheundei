@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import random
+from collections import Counter
 from datetime import date
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
@@ -441,13 +442,130 @@ def _pack_daewoon_narrative(
     )
 
 
+ELEMENT_FALLBACK: Dict[str, str] = {
+    "甲": "乙",
+    "乙": "甲",
+    "丙": "丁",
+    "丁": "丙",
+    "戊": "己",
+    "己": "戊",
+    "庚": "辛",
+    "辛": "庚",
+    "壬": "癸",
+    "癸": "壬",
+}
+
+_ELEMENT_EMOJI = {"목": "🌿", "화": "🔥", "토": "🌍", "금": "⚪", "수": "💧"}
+
+
+def get_daymaster_psychology(day_master: str) -> dict:
+    """daymaster_psychology_db — 10간 매핑 + 오행 폴백."""
+    db = nl.load_narrative_db("daymaster_psychology_db")
+    dm_data = (db.get("daymaster") or {}) if db else {}
+
+    if day_master in dm_data:
+        return dm_data[day_master]
+
+    fallback = ELEMENT_FALLBACK.get(day_master)
+    if fallback and fallback in dm_data:
+        return dm_data[fallback]
+
+    return {
+        "gan": day_master,
+        "label": f"{day_master}일간",
+        "element": gj.element_of_stem(day_master) if day_master else "",
+        "nature": "양" if day_master and _stem_yang(day_master) else "음",
+        "core_image": f"{day_master}일간의 독특한 에너지",
+        "identity_pool": ["자신만의 방식으로 세상을 읽습니다"],
+        "strength_pool": ["이 에너지를 잘 활용하면 강점이 됩니다"],
+        "stress_pool": ["균형을 유지하는 것이 핵심입니다"],
+    }
+
+
+def _stem_yang(gan: str) -> bool:
+    if not gan:
+        return True
+    return gj.STEM_YIN_YANG[gj.stem_index(gan)] == "양"
+
+
+def build_emotion_narrative(
+    day_master: str,
+    female: bool,
+    chungs: list,
+    counts: dict,
+    sip_c: Counter,
+) -> str:
+    """이 사주 기반 감정·관계 연결 문단."""
+    _ = counts, sip_c
+    dm_emotion = {
+        "戊": "묵직하게 쌓아두다 한번에 터뜨리는 감정 패턴",
+        "己": "혼자 삭이다 지쳐버리는 감정 패턴",
+        "甲": "직접적으로 표현하되 금방 털어버리는 패턴",
+        "乙": "유연하게 흘려보내지만 상처가 오래 남는 패턴",
+        "丙": "밝게 표현하지만 속의 불안을 숨기는 패턴",
+        "丁": "섬세하게 느끼고 오래 기억하는 패턴",
+        "庚": "냉정하게 정리하려 하지만 내면은 뜨거운 패턴",
+        "辛": "완벽하게 보이려 하지만 상처가 깊은 패턴",
+        "壬": "넓게 흘려보내지만 방향을 잃기 쉬운 패턴",
+        "癸": "깊이 느끼고 혼자 감당하려는 패턴",
+    }
+    chung_n = len(chungs or [])
+    emotion_base = dm_emotion.get(day_master, "자신만의 리듬으로 감정을 다루는 패턴")
+
+    chung_txt = ""
+    if chung_n >= 2:
+        chung_txt = (
+            f" 원국에 {chung_n}개의 충이 있어 "
+            f"감정 기복이 크고 "
+            f"특정 상황에서 강하게 반응하는 경향이 있습니다."
+        )
+
+    if female:
+        rel_txt = (
+            "관계에서 먼저 배려하고 "
+            "나중에 지쳐버리는 패턴을 주의하세요. "
+            "자신의 감정을 먼저 인식하고 "
+            "신뢰하는 한 사람에게 털어놓는 것이 "
+            "가장 빠른 회복법입니다"
+        )
+    else:
+        rel_txt = (
+            "감정을 행동으로 표현하려는 경향이 있어 "
+            "말로 표현하는 연습이 관계를 깊게 합니다. "
+            "주 1회 혼자만의 시간을 의도적으로 만드세요"
+        )
+
+    return (
+        f"당신은 {emotion_base}을 가지고 있습니다."
+        f"{chung_txt} "
+        f"{rel_txt}"
+    )
+
+
+def _pack_daymaster_psych_card(day_master: str) -> Dict[str, Any]:
+    entry = get_daymaster_psychology(day_master)
+    el = str(entry.get("element") or gj.element_of_stem(day_master))
+    nature = str(entry.get("nature") or ("양" if _stem_yang(day_master) else "음"))
+    kr = gj.STEM_KR[gj.stem_index(day_master)] if day_master else ""
+    return {
+        "gan": day_master,
+        "kr": kr,
+        "element": el,
+        "element_emoji": _ELEMENT_EMOJI.get(el, "🌐"),
+        "nature": nature,
+        "label": entry.get("label") or f"{kr}{el}",
+        "desc": entry.get("core_image") or f"{day_master}일간의 독특한 에너지",
+    }
+
+
 def _pack_daymaster_psychology(day_master: str) -> Dict[str, Any]:
     db = nl.load_narrative_db("daymaster_psychology_db")
     if not db:
-        return {}
+        entry = get_daymaster_psychology(day_master)
+        return {"한줄_보강": entry.get("core_image", "")}
     rng = _rng("dm_psy", day_master)
     gkey = _map_key(db, "key_map", day_master) or day_master
-    entry = (db.get("daymaster") or {}).get(gkey) or {}
+    entry = (db.get("daymaster") or {}).get(gkey) or get_daymaster_psychology(day_master)
     slots = entry.get("slots") if isinstance(entry.get("slots"), dict) else entry
     if isinstance(slots, dict):
         picked: Dict[str, str] = {}
@@ -659,6 +777,25 @@ def build_unteim_story_supplement(
     career = _pack_career(day_master, counts)
     dm_psy = _pack_daymaster_psychology(day_master)
     dm_text = _format_daymaster_psych(dm_psy)
+    dm_card = _pack_daymaster_psych_card(day_master)
+
+    chung_rows = (rel_full or {}).get("원국_충") or []
+    sip_c: Counter = Counter()
+    if sinsal:
+        for row in sinsal.get("신살_목록") or []:
+            if isinstance(row, dict) and row.get("신살"):
+                sip_c[str(row["신살"])] += 1
+    emotion_narr = build_emotion_narrative(
+        day_master, female, chung_rows, counts, sip_c
+    )
+
+    km_custom = (sinsal or {}).get("공망_맞춤") or {}
+    km_display = ""
+    if isinstance(km_custom, dict) and km_custom.get("해설"):
+        km_display = str(km_custom.get("해설", ""))
+        impact = str(km_custom.get("실생활_영향", "")).strip()
+        if impact:
+            km_display = f"{km_display}\n\n{impact}"
 
     available = nl.list_narrative_files()
     return {
@@ -670,13 +807,16 @@ def build_unteim_story_supplement(
         "직업": career,
         "일간_심리": dm_text,
         "일간_심리_상세": dm_psy,
+        "일간_심리_카드": dm_card,
         "합충_서사": _pack_hap_chung_narrative(rel_full, day_master, pillars),
         "십이운성_서사": _pack_twelve_narrative(day_master, sibiunsung),
-        "공망_서사": _pack_kongmang_narrative(pillars, day_master),
+        "공망_서사": km_display or _pack_kongmang_narrative(pillars, day_master),
+        "공망_맞춤": km_custom if isinstance(km_custom, dict) else {},
         "힐링_메시지": _pack_healing_message(day_master, yong),
         "신살_심리": _pack_shinsal_psychology(sinsal, day_master),
         "대운_세운_서사": _pack_daewoon_narrative(daewoon_cycles or (), yong, day_master),
-        "감정_서사": emotion.get("표시_텍스트")
+        "감정_서사": emotion_narr
+        or emotion.get("표시_텍스트")
         or (emotion.get("일간_리포트") or {}).get("핵심")
         or emotion.get("한줄_보강")
         or "",

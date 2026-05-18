@@ -1733,6 +1733,10 @@ def build_report(
     hidden_block = jj.all_hidden_for_pillars(pillars)
     sip_full = sp.full_eight_char_sipsin(dm, pillars, gender)
     hidden_sipsin = {k: sip_full["지지"][k]["hidden"] for k in ("year", "month", "day", "hour")}
+    female = not gender_male
+    hidden_block = jj.enrich_hidden_for_user(
+        hidden_block, hidden_sipsin, female=female
+    )
 
     daewoon_block = dw.compute_daewoon(ec, gender_male)
     sew_now = sw.yearly_pillar_for_solar_year(center)
@@ -1753,6 +1757,16 @@ def build_report(
         sewoon_center_year=center,
     )
     sinsal_block = sn.analyze_sinsal(dm, pillars, gender=gender)
+
+    sibi_block = sb.pillar_twelve_stages(dm, pillars)
+    rel_full_pre = cph.analyze_relations_full(pillars)
+    pillar_bottom_stories = jj.build_pillar_bottom_stories(
+        pillars,
+        sipsin_stems=sip_full["천간"],
+        sibiunsung=sibi_block,
+        native_chungs=rel_full_pre.get("원국_충") or [],
+        female=female,
+    )
 
     categories = _build_life_categories(
         day_master=dm,
@@ -1845,7 +1859,8 @@ def build_report(
         "sipsin_stems": sip_full["천간"],
         "jijanggan": hidden_block,
         "sipsin_hidden": hidden_sipsin,
-        "sibiunsung": sb.pillar_twelve_stages(dm, pillars),
+        "sibiunsung": sibi_block,
+        "pillar_bottom_stories": pillar_bottom_stories,
         "chung_pa_hae": chung_report,
         "sinsal": sinsal_block,
         "daewoon": daewoon_block,

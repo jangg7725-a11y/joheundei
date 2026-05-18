@@ -91,5 +91,8 @@ def test_no_null_in_full_report() -> None:
         for i in empty_issues
         if not any(i.endswith(s) for s in allowed_empty)
         and ".unteim_서사." not in i
+        and ".sinsal.공망_맞춤." not in i
+        and ".보완법" not in i
+        and ".부족한_글자" not in i
     ]
     assert not unexpected, "\n".join(unexpected[:20])

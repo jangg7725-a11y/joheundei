@@ -307,6 +307,115 @@ def _xunkong_for_pillar(pillar: str) -> Tuple[str, str]:
     return pair[idx // 10]
 
 
+def kongmang_list_for_pillars(pillars: dict) -> List[str]:
+    """일주 순공 기준 공망 지지 두 글자."""
+    k1, k2 = _xunkong_for_pillar(pillars["day"]["pillar"])
+    return [k1, k2]
+
+
+def kongmang_story(
+    kongmang_list: list,
+    pillars: dict,
+    female: bool,
+) -> dict:
+    """공망 글자·위치·실생활 영향·보완법."""
+    _ = female
+    if not kongmang_list:
+        return {
+            "공망_글자": [],
+            "위치": "",
+            "해설": "이 사주에는 공망이 없습니다",
+            "실생활_영향": "",
+            "보완법": "",
+        }
+
+    pillar_name = {
+        "year": "년주",
+        "month": "월주",
+        "day": "일주",
+        "hour": "시주",
+    }
+    km_set = set(kongmang_list)
+
+    affected: List[str] = []
+    for pk, pv in pillars.items():
+        if pk not in pillar_name:
+            continue
+        if pv["zhi"] in km_set:
+            affected.append(f"{pillar_name[pk]}({pv['zhi']})")
+
+    kongmang_effect = {
+        "year": (
+            "부모·가문 인연이 약하거나 "
+            "일찍 독립하는 경우가 많습니다. "
+            "초년 환경이 불안정했을 수 있습니다"
+        ),
+        "month": (
+            "직업·사회생활에서 "
+            "예상치 못한 공백이 생기기 쉽습니다. "
+            "커리어 중단·이직이 반복될 수 있습니다"
+        ),
+        "day": (
+            "배우자 인연이 약하거나 늦습니다. "
+            "결혼보다 독립적인 삶이 "
+            "더 잘 맞을 수 있습니다"
+        ),
+        "hour": (
+            "자녀 인연이 약하거나 늦습니다. "
+            "말년에 혼자 지내는 시간이 "
+            "많아질 수 있습니다"
+        ),
+    }
+
+    effects: List[str] = []
+    for pk, pv in pillars.items():
+        if pk not in pillar_name:
+            continue
+        if pv["zhi"] in km_set:
+            eff = kongmang_effect.get(pk, "")
+            if eff:
+                effects.append(eff)
+
+    remedy = (
+        "공망은 정신·철학·종교에서 "
+        "오히려 큰 능력이 발휘됩니다. "
+        "공망이 된 자리의 인연보다 "
+        "나머지 자리의 인연을 더 소중히 하세요. "
+        "공망이 채워지는 대운·세운(공망 글자가 "
+        "들어오는 해)에 해당 영역이 활성화됩니다"
+    )
+
+    glyphs = "·".join(kongmang_list)
+    affected_str = "·".join(affected) if affected else "원국 지지에는 해당 없음(순공만 적용)"
+
+    if affected:
+        haeseol = (
+            f"이 사주의 공망은 「{glyphs}」입니다. "
+            f"{affected_str}이 공망에 해당합니다. "
+            f"공망이 된 자리는 해당 인연·역할이 "
+            f"약하거나 비어있는 느낌을 줍니다"
+        )
+        impact = " ".join(effects)
+    else:
+        haeseol = (
+            f"이 사주의 순공(旬空)은 「{glyphs}」입니다. "
+            f"원국 네 지지에는 공망 글자가 없으나, "
+            f"대운·세운에서 「{glyphs}」가 들어올 때 해당 주제가 요동칩니다"
+        )
+        impact = (
+            "평소에는 공망 영향이 약하고, "
+            "공망 글자가 들어오는 운에서만 허실·공백이 드러나기 쉽습니다"
+        )
+
+    return {
+        "공망_글자": list(kongmang_list),
+        "위치": affected_str,
+        "해설": haeseol,
+        "실생활_영향": impact,
+        "보완법": remedy,
+    }
+
+
 def _cheoneul(day_master: str) -> Set[str]:
     return {
         "甲": {"丑", "未"},
@@ -683,7 +792,16 @@ def analyze_sinsal(
     for r in rows:
         by_name.setdefault(r["신살"], []).append(_fmt(r))
 
-    return {"신살_목록": rows, **by_name}
+    km_list = kongmang_list_for_pillars(pillars)
+    female = gender.strip().lower() in ("female", "f", "여", "여자", "여성")
+    km_story = kongmang_story(km_list, pillars, female)
+
+    return {
+        "신살_목록": rows,
+        "공망": km_list,
+        "공망_맞춤": km_story,
+        **by_name,
+    }
 
 
 _PERIOD_STAR_RULES = (

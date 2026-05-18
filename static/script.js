@@ -1174,19 +1174,6 @@
     return box;
   }
 
-  const JJ_PILLAR_ROLE = {
-    year: "년지(年支)는 가문·조상·유년기 환경의 속기운을 봅니다. 겉으로 드러나지 않은 가문의 성향이나 초년 분위기가 여기서 읽힙니다.",
-    month: "월지(月支)는 부모·형제·성장 환경·사회에 나아가는 방식과 연결됩니다. 직장·학업의 초기 뿌리도 월지 지장간에서 단서를 찾습니다.",
-    day: "일지(日支)는 본인의 내면·배우자궁·성인 이후 삶의 핵심 반응 패턴입니다. 천간 일간이 ‘겉’, 일지 지장간이 ‘속’에 가깝습니다.",
-    hour: "시지(時支)는 자녀·말년·행동 결과·노후의 흐름을 보조합니다. 천간 시간과 합쳐 ‘무엇을 하며 어떻게 드러내는지’를 짚습니다.",
-  };
-
-  const JJ_SLOT_NOTE = {
-    정기: "정기(正氣) — 그 지지 안에서 가장 강하게 작용하는 본기(本氣)입니다.",
-    중기: "중기(中氣) — 정기를 보조하며 상황에 따라 중간 강도로 드러납니다.",
-    여기: "여기(餘氣) — 잔기·이전 계절의 기운이 남은 층으로, 약하지만 트리거되면 발동합니다.",
-  };
-
   function jjYukchinTag(arr) {
     if (!arr || !arr.length) return "";
     return ` <span class="jj-yuk">(${arr.map(escapeHtml).join(" · ")})</span>`;
@@ -1279,13 +1266,14 @@
           <span class="jj-gan-kr">(${escapeHtml(h.kr || "")}·${escapeHtml(h.element || "")})</span>
           <span class="jj-arrow">→</span>
           <span class="jj-sip"><strong>${escapeHtml(sp.sipsin || "—")}</strong>${jjYukchinTag(sp.yukchin)}</span>
-          <span class="jj-slot-note">${escapeHtml(JJ_SLOT_NOTE[slot] || "")}</span>`;
+          <span class="jj-slot-note">${escapeHtml(h.user_desc || "")}</span>`;
         rows.appendChild(row);
       });
       card.appendChild(rows);
 
       const role = el("p", "jj-pillar-role");
-      role.textContent = JJ_PILLAR_ROLE[k] || "";
+      const bottom = (r.pillar_bottom_stories && r.pillar_bottom_stories[k]) || "";
+      role.textContent = bottom;
       card.appendChild(role);
 
       list.appendChild(card);
@@ -1320,6 +1308,65 @@
     return String(val).trim();
   }
 
+  function appendDaymasterPsychCard(parent, card) {
+    if (!card || !parent || typeof card !== "object") return null;
+    const wrap = el("div", "daymaster-card");
+    const char = el("div", "daymaster-char han-inline");
+    char.textContent = card.gan || "";
+    const info = el("div", "daymaster-info");
+    const meta = el("div", "daymaster-meta");
+    meta.textContent = `${card.kr || ""}  ${card.element_emoji || ""} ${card.element || ""}  ☯ ${card.nature || ""}`;
+    const name = el("div", "daymaster-name");
+    name.textContent = card.label || "";
+    const desc = el("p", "daymaster-desc");
+    desc.textContent = card.desc || "";
+    info.appendChild(meta);
+    info.appendChild(name);
+    info.appendChild(desc);
+    wrap.appendChild(char);
+    wrap.appendChild(info);
+    parent.appendChild(wrap);
+    return wrap;
+  }
+
+  function appendKongmangBlock(parent, km) {
+    const data = km || {};
+    if (!parent || (!data["해설"] && !(data["공망_글자"] || []).length)) return null;
+    const glyphs = (data["공망_글자"] || []).join("·");
+    const wrap = el("div", "kongmang-story-block unteim-section");
+    const head = el("h4", "unteim-title");
+    head.textContent = glyphs ? `🕳️ 공망 — 「${glyphs}」` : "🕳️ 공망 해설";
+    wrap.appendChild(head);
+    if (data["위치"]) wrap.appendChild(el("p", "kongmang-pos", data["위치"]));
+    if (data["해설"]) {
+      const p = el("p", "kongmang-body");
+      p.textContent = data["해설"];
+      wrap.appendChild(p);
+    }
+    if (data["실생활_영향"]) {
+      wrap.appendChild(el("p", "kongmang-impact", data["실생활_영향"]));
+    }
+    const remedy = String(data["보완법"] || "").trim();
+    if (remedy) {
+      const btnRow = el("div", "kongmang-remedy-wrap");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "remedy-btn";
+      btn.textContent = "✅ 보완법 보기 ▼";
+      const box = el("div", "remedy-content");
+      box.textContent = remedy;
+      btn.addEventListener("click", () => {
+        const open = box.classList.toggle("open");
+        btn.textContent = open ? "✅ 보완법 닫기 ▲" : "✅ 보완법 보기 ▼";
+      });
+      btnRow.appendChild(btn);
+      btnRow.appendChild(box);
+      wrap.appendChild(btnRow);
+    }
+    parent.appendChild(wrap);
+    return wrap;
+  }
+
   function appendUnteimSection(parent, title, text, extraClass) {
     const body = unteimDisplayText(text);
     if (!body || !parent) return null;
@@ -1332,7 +1379,7 @@
     return div;
   }
 
-  function appendUnteimWongukBlocks(panel, unteim) {
+  function appendUnteimWongukBlocks(panel, unteim, r) {
     if (!unteim || typeof unteim !== "object" || !panel) return;
     const loaded = Number(unteim._files_loaded) > 0;
     const hasAny =
@@ -1345,22 +1392,44 @@
       unteim["감정_서사"];
     if (!hasAny) return;
 
+    if (unteim["일간_심리_카드"]) {
+      const sec = el("div", "unteim-section");
+      sec.appendChild(el("h4", "unteim-title", "🧠 심층 심리 분석"));
+      appendDaymasterPsychCard(sec, unteim["일간_심리_카드"]);
+      const extra = unteimDisplayText(unteim["일간_심리"]);
+      if (extra) {
+        const p = el("p", "unteim-text");
+        p.textContent = extra;
+        sec.appendChild(p);
+      }
+      panel.appendChild(sec);
+    } else if (unteim["일간_심리"]) {
+      appendUnteimSection(panel, "🧠 심층 심리 분석", unteim["일간_심리"], "");
+    }
+
     const blocks = [
-      ["일간_심리", "🧠 심층 심리 분석", ""],
       ["합충_서사", "⚡ 합·충·파·해 심층 해설", ""],
       ["십이운성_서사", "🌙 십이운성 심층 해설", ""],
-      ["공망_서사", "🕳️ 공망 해설", ""],
       ["힐링_메시지", "💚 오늘의 힐링 메시지", "unteim-heal"],
       ["감정_서사", "💬 감정·관계 심층 해설", "unteim-emotion"],
     ];
     blocks.forEach(([key, title, cls]) => {
       if (unteim[key]) appendUnteimSection(panel, title, unteim[key], cls);
     });
+
+    const km = (unteim["공망_맞춤"] && Object.keys(unteim["공망_맞춤"]).length)
+      ? unteim["공망_맞춤"]
+      : (r && r.sinsal && r.sinsal["공망_맞춤"]);
+    if (km && (km["해설"] || (km["공망_글자"] && km["공망_글자"].length))) {
+      appendKongmangBlock(panel, km);
+    } else if (unteim["공망_서사"]) {
+      appendUnteimSection(panel, "🕳️ 공망 해설", unteim["공망_서사"], "");
+    }
   }
 
-  function appendWongukUnteimOnly(panel, story) {
+  function appendWongukUnteimOnly(panel, story, r) {
     if (!story || !panel) return;
-    appendUnteimWongukBlocks(panel, story["unteim_서사"] || {});
+    appendUnteimWongukBlocks(panel, story["unteim_서사"] || {}, r);
   }
 
   function appendJonghapLifeSections(panel, story) {
@@ -1516,6 +1585,21 @@
     });
     sec1.appendChild(chart);
 
+    if (r.pillar_bottom_stories && story) {
+      const pbs = el("div", "pillar-bottom-stories");
+      PILLAR_KEYS_WONGUK_ORDER.forEach((k) => {
+        const txt = r.pillar_bottom_stories[k];
+        if (!txt) return;
+        const box = el("div", "pillar-bottom-item");
+        box.innerHTML = `<span class="pillar-bottom-label">${escapeHtml(LABELS[k])}</span>`;
+        const p = el("p", "pillar-bottom-text");
+        p.textContent = txt;
+        box.appendChild(p);
+        pbs.appendChild(box);
+      });
+      if (pbs.children.length) sec1.appendChild(pbs);
+    }
+
     if (!story) {
       sec1.appendChild(buildSibiGuideBlock(r));
     }
@@ -1586,7 +1670,7 @@
       appendStoryCoreCard(storyPanel, r);
       storyPanel.appendChild(buildSibiGuideBlock(r));
       storyPanel.appendChild(buildJijangganBlock(r));
-      appendWongukUnteimOnly(storyPanel, story);
+      appendWongukUnteimOnly(storyPanel, story, r);
       root.appendChild(storyPanel);
     }
 
