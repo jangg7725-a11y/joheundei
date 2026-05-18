@@ -99,12 +99,18 @@ def sanitize_narrative_text(text: str) -> str:
     return s.strip()
 
 
+def _voice_layer(text: str) -> str:
+    from . import tone as tn
+
+    return tn.voice_text(sanitize_narrative_text(text))
+
+
 def pick_from_pool(pool: Any, rng) -> str:
     if isinstance(pool, str) and pool.strip():
-        return sanitize_narrative_text(pool)
+        return _voice_layer(pool)
     if isinstance(pool, list) and pool:
         choice = rng.choice(pool)
-        return sanitize_narrative_text(str(choice)) if choice is not None else ""
+        return _voice_layer(str(choice)) if choice is not None else ""
     return ""
 
 

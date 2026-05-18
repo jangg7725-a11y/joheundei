@@ -25,6 +25,7 @@ from . import timeline as tl
 from . import wolwoon as ww
 from . import yongsin as ys
 from .story_engine import NativeStoryEngine
+from . import tone as tn
 from . import unteim_narrative_bridge as unb
 from .yongsin import CHEON_GAN_HAP_ELEM, ELEMENT_META, MONTH_COMMAND
 
@@ -1897,7 +1898,7 @@ def build_report(
             wol_pack=wol_pack,
         ),
     }
-    return report
+    return tn.apply_voice_to_report(report)
 
 
 def _compose_narrative(
@@ -1954,5 +1955,8 @@ def _compose_narrative(
 
     return {
         "bullets": "\n".join(lines),
-        "hint": "세부 해석은 명리학 파종과 상담자 관점에 따라 달라질 수 있습니다.",
+        "hint": (
+            "전통 명리 원칙에 따른 참고 요약입니다. "
+            "학파마다 세부는 다를 수 있으며, 의료·법률·투자 등 전문 판단을 대체하지 않습니다."
+        ),
     }

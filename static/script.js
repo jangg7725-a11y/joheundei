@@ -2146,14 +2146,39 @@
       const card = el("div", `wol-month-card${isTodayMonth ? " wol-month-card--today" : ""}${extra}`);
       const badgeCls = grade5 ? `wol-month-badge wol-month-badge--${grade5}` : "wol-month-badge";
       const quote = m["월별_핵심스토리"] || m["절기명"] || "—";
+      const actionTxt =
+        m["월별_행동지침_텍스트"] ||
+        (Array.isArray(m["월별_행동지침"]) ? m["월별_행동지침"][0] : "") ||
+        "";
+      const cautionTxt = m["월별_주의사항"] || "";
+      const practiceTxt = m["월별_실천팁"] || "";
+      const doubleChung =
+        m["이중충"] || (m["중첩플래그"] && m["중첩플래그"]["이중충"]);
+      const doubleBadge = doubleChung
+        ? '<span class="wol-month-double-chung" title="세운·월운 이중충">🔴🔴 이중충</span>'
+        : "";
+      const cautionBlock = cautionTxt
+        ? `<p class="wol-month-line wol-month-line--caution">⚠️ ${escapeHtml(cautionTxt)}</p>`
+        : "";
+      const practiceBlock = practiceTxt
+        ? `<p class="wol-month-line wol-month-line--practice">✨ ${escapeHtml(practiceTxt)}</p>`
+        : "";
       card.innerHTML = `
         <div class="wol-month-top">
           <span class="wol-month-slot">${m["절월번호"]}절월</span>
           <span class="han-inline wol-month-gz">${escapeHtml(m["월주간지"] || "")}</span>
+          ${doubleBadge}
+          <span class="${badgeCls}">${escapeHtml(grade5 || m["길흉판정"] || "—")}</span>
         </div>
-        <span class="${badgeCls}">${escapeHtml(grade5 || m["길흉판정"] || "—")}</span>
+        <p class="wol-month-meta-line">${escapeHtml(m["구간_양력"] || "")}</p>
         <p class="wol-month-quote">${escapeHtml(quote)}</p>
-        <div class="wol-month-meta-line">${escapeHtml(m["구간_양력"] || "")}</div>`;
+        ${
+          actionTxt
+            ? `<p class="wol-month-line wol-month-line--action">✅ ${escapeHtml(actionTxt)}</p>`
+            : ""
+        }
+        ${cautionBlock}
+        ${practiceBlock}`;
       grid.appendChild(card);
     });
     pane.appendChild(grid);

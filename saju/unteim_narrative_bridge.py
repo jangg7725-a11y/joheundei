@@ -13,6 +13,7 @@ from . import emotion_db_bridge as emb
 from . import ganji as gj
 from . import narrative_loader as nl
 from . import ohaeng as oh
+from . import wolwoon as ww
 
 _PILLAR_LABEL = {"year": "년주", "month": "월주", "day": "일주", "hour": "시주"}
 
@@ -644,21 +645,35 @@ def build_unteim_timeline_supplement(
             continue
         gz = str(m.get("월주간지") or "")
         stem = gz[0] if gz else ""
-        mel = gj.element_of_stem(stem) if stem else _dominant_oheng(counts)
-        rng = _rng("wol_mon", day_master, mn, mel, wol_pack.get("세운연도"))
-        strat_key = f"{mel}_강"
-        strat = oheng_strat.get(strat_key) or {}
-        action = nl.pick_from_pool(strat.get("action_pool") or strat.get("strategy_pool"), rng)
-        caution = nl.pick_from_pool(strat.get("caution_pool"), rng)
-        dm_entry = dm_tips.get(dm_key) or {}
-        tip = nl.pick_from_pool(dm_entry.get("monthly_tip_pool"), rng)
-        quote = str(m.get("월별_핵심스토리") or "").strip()
-        parts = [p for p in (action, tip, caution, quote) if p]
-        by_month[str(mn)] = {
-            "월운_서사": _join_text(parts[:3]),
-            "실천_팁": action,
-            "주의": caution,
+        mel = str(m.get("오행") or "") or (
+            gj.element_of_branch(str(m.get("월지") or "")) if m.get("월지") else ""
+        )
+        if not mel and stem:
+            mel = gj.element_of_stem(stem)
+        if not mel:
+            mel = _dominant_oheng(counts)
+        grade = str(m.get("길흉등급_5단계") or "평")
+        yong_el = str(yong.get("용신_오행") or "")
+        gi_el = str(yong.get("기신_오행") or "")
+        month_zhi = str(m.get("월지") or (gz[1] if len(gz) > 1 else ""))
+        narr_lines = ww.get_monthly_action_narrative(
+            month_idx=mn,
+            month_zhi=month_zhi,
+            month_el=mel,
+            yong_el=yong_el,
+            gi_el=gi_el,
+            day_master=day_master,
+            grade=grade,
+        )
+        practice = str(m.get("월별_실천팁") or "").strip()
+        caution = str(m.get("월별_주의사항") or "").strip()
+        row_out: Dict[str, str] = {
+            "월운_서사": _join_text(narr_lines),
+            "실천_팁": practice,
         }
+        if caution:
+            row_out["주의"] = caution
+        by_month[str(mn)] = row_out
 
     cy = int((wol_pack or {}).get("세운연도") or 0)
     year_line = ""

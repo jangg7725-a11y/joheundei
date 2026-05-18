@@ -2725,7 +2725,7 @@ body.has-bottom-nav .layout {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
-  min-height: 6.5rem;
+  min-height: 9.5rem;
 }
 
 .wol-month-card--today {
@@ -2798,6 +2798,34 @@ body.has-bottom-nav .layout {
 .wol-month-meta-line {
   font-size: 0.62rem;
   color: var(--muted);
+}
+
+.wol-month-double-chung {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #ff8a96;
+  padding: 0.12rem 0.3rem;
+  border-radius: 5px;
+  background: rgba(180, 40, 55, 0.35);
+  border: 1px solid rgba(232, 93, 111, 0.5);
+}
+
+.wol-month-line {
+  font-size: clamp(0.66rem, 2.5vw, 0.74rem);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.wol-month-line--action {
+  color: #9fdfb1;
+}
+
+.wol-month-line--caution {
+  color: #f0c4a0;
+}
+
+.wol-month-line--practice {
+  color: #c8b8ff;
 }
 
 /* 탭 패널 스와이프 힌트 */

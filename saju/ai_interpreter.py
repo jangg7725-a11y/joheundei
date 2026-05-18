@@ -18,6 +18,7 @@ from typing import Any, Callable, Dict, Generator, Iterator, List, Optional, Tup
 
 from . import ai_cache
 from . import ai_usage
+from .tone import COMMON_RULES_CONSULTANT
 
 try:
     from anthropic import Anthropic
@@ -83,21 +84,7 @@ def active_model_name() -> str:
 # 하위 호환
 DEFAULT_MODEL = DEFAULT_ANTHROPIC_MODEL
 
-COMMON_RULES = """
-공통 규칙 (반드시 준수):
-- "당신은..." 또는 "이 사주는..." 으로 시작한다.
-- 전문용어(用神, 冲, 伏吟 등)를 쓰면 바로 다음 문장에 쉬운 한국어로 풀어 쓴다.
-- 아래에 제공된 이 사람의 사주 데이터·계산 결과만 근거로 한다. 없는 사실을 지어내지 않는다.
-- 부정적 내용은 마지막에 희망·실천 가능한 조언으로 마무리한다.
-- 교과서식 정의·용어 나열·"~란 무엇이다" 설명은 금지한다.
-- 이모지를 섹션마다 1~3개 적절히 쓴다.
-- 따뜻하고 공감하는 어조로, 마치 잘 아는 역술가가 이 사람에게 말하듯 쓴다.
-- 각 section의 content 첫 문장은 반드시 "당신은" 또는 "이 사주는" 으로 시작한다.
-- 반드시 JSON만 출력한다. 다른 텍스트·코드펜스 없음.
-
-출력 형식:
-{"sections":[{"id":"섹션ID","title":"소제목","content":"해설 본문(여러 문단 가능, \\n 줄바꿈 허용)"}]}
-""".strip()
+COMMON_RULES = COMMON_RULES_CONSULTANT
 
 TAB_ALIASES = {
     "wonkuk": "wonkuk",

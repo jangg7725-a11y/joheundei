@@ -36,6 +36,365 @@ _MONTH_ELEM_BODY_LINE = {
 
 _ELEM_CYCLE: Tuple[str, ...] = ("목", "화", "토", "금", "수")
 
+ZHI_ELEMENT: Dict[str, str] = {
+    "子": "수",
+    "丑": "토",
+    "寅": "목",
+    "卯": "목",
+    "辰": "토",
+    "巳": "화",
+    "午": "화",
+    "未": "토",
+    "申": "금",
+    "酉": "금",
+    "戌": "토",
+    "亥": "수",
+}
+
+_CHUNG_SET = {tuple(sorted(p)) for p in gj.CHONG_PAIRS}
+_PO_SET = {tuple(sorted(p)) for p in gj.LIU_PO}
+_HAI_SET = {tuple(sorted(p)) for p in gj.LIU_HAI}
+
+_GENERATE = {"목": "화", "화": "토", "토": "금", "금": "수", "수": "목"}
+_CONTROL = {"목": "토", "화": "금", "토": "수", "금": "목", "수": "화"}
+
+_PILLAR_KR = {
+    "year": "부모·가문",
+    "month": "직업·사회",
+    "day": "배우자·건강",
+    "hour": "자녀·말년",
+}
+
+_ORGAN_BY_ZHI = {
+    "子": "신장·방광·하체",
+    "午": "심장·혈압·안구",
+    "丑": "비장·위장·복부",
+    "未": "비장·위장·근육",
+    "寅": "간·담·근육",
+    "申": "폐·대장·피부",
+    "卯": "간·담·눈",
+    "酉": "폐·대장·피부",
+    "辰": "위장·피부",
+    "戌": "위장·피부",
+    "巳": "심장·혈관",
+    "亥": "신장·방광",
+}
+
+_MONTH_SLOT_FLAVOR: Dict[int, str] = {
+    1: "입춘을 지난 인월, 한 해의 첫 추진력이 깨어납니다.",
+    2: "봄기운이 드러나는 묘월, 조율과 연결이 핵심입니다.",
+    3: "봄이 무르익는 진월, 계획을 현장에 옮기기 좋습니다.",
+    4: "초여름 사월, 표현과 노출이 에너지를 태웁니다.",
+    5: "한여름 오월, 속도와 열정을 조절하는 달입니다.",
+    6: "여름이 기울어지는 미월, 관계와 실속을 함께 챙기세요.",
+    7: "가을 문이 열리는 신월, 정리와 결단이 빛나는 시기입니다.",
+    8: "결실의 유월, 마무리와 기준이 성과를 가릅니다.",
+    9: "환절기 술월, 내실과 방어가 곧 실력입니다.",
+    10: "겨울로 들어가는 해월, 흐름을 읽고 방향을 조정하세요.",
+    11: "한겨울 자월, 에너지를 모으고 내년을 설계하세요.",
+    12: "소한을 지나는 축월, 올해를 정리하고 다음 해를 준비합니다.",
+}
+
+_MONTH_PRACTICE: Dict[int, str] = {
+    1: "이달 가장 에너지 새는 습관 하나를 끊어보세요",
+    2: "이달 중요한 사람에게 먼저 연락해보세요",
+    3: "이달 몸 상태를 기록하는 간단한 일지를 시작하세요",
+    4: "이달 재무 현황을 한 번 정리해보세요",
+    5: "이달 새로운 환경이나 공간에 한 번 나가보세요",
+    6: "이달 배우고 싶었던 것을 시작해보세요",
+    7: "이달 완성하지 못한 일 하나를 끝내보세요",
+    8: "이달 건강 검진이나 병원 방문을 챙기세요",
+    9: "이달 중요한 결정은 글로 적어보고 결정하세요",
+    10: "이달 오래된 인연에게 연락해보세요",
+    11: "이달 내년 계획의 큰 그림을 그려보세요",
+    12: "이달 올해를 돌아보고 감사한 것 3가지를 적어보세요",
+}
+
+_DM_MONTHLY: Dict[str, Dict[str, str]] = {
+    "甲": {
+        "yong_month": "추진력이 살아나는 달입니다. 미뤄둔 계획을 이달 실행에 옮기기 좋습니다",
+        "gi_month": "에너지 소진이 큰 달입니다. 새 일보다 기존 일의 완성에 집중하세요",
+        "neutral": "꾸준히 나아가는 달입니다. 방향성을 점검하며 일관성을 유지하세요",
+    },
+    "乙": {
+        "yong_month": "유연성이 빛나는 달입니다. 새로운 인연과 기회가 자연스럽게 연결됩니다",
+        "gi_month": "감정 소모가 큰 달입니다. 거절하는 연습이 에너지를 지킵니다",
+        "neutral": "적응력을 발휘하는 달입니다. 환경 변화를 거슬리지 말고 흘러가세요",
+    },
+    "丙": {
+        "yong_month": "에너지가 최고조인 달입니다. 표현하고 발산하는 활동에 적합합니다",
+        "gi_month": "과열 주의 달입니다. 흥분하기 전에 한 박자 멈추는 습관이 필요합니다",
+        "neutral": "활동적인 달입니다. 사람들과의 교류에서 에너지를 얻는 시기입니다",
+    },
+    "丁": {
+        "yong_month": "섬세한 감각이 빛나는 달입니다. 창작·예술·치유 활동에 적합합니다",
+        "gi_month": "예민함이 커지는 달입니다. 자극적인 환경을 피하고 안정을 취하세요",
+        "neutral": "내면의 소리에 귀 기울이는 달입니다. 직관을 신뢰하세요",
+    },
+    "戊": {
+        "yong_month": "묵직한 기운이 살아나는 달입니다. 쌓아온 것이 결실을 맺기 시작합니다",
+        "gi_month": "고집이 발동하기 쉬운 달입니다. 타인의 의견을 듣는 여유를 만드세요",
+        "neutral": "안정적으로 흘러가는 달입니다. 현재 자리를 지키며 내실을 다지세요",
+    },
+    "己": {
+        "yong_month": "실용적인 감각이 빛나는 달입니다. 실속 있는 결과를 만들기 좋습니다",
+        "gi_month": "걱정이 많아지는 달입니다. 생각보다 행동이 먼저인 달로 삼으세요",
+        "neutral": "조용히 쌓아가는 달입니다. 작은 성취를 기록하는 습관이 도움됩니다",
+    },
+    "庚": {
+        "yong_month": "결단력이 살아나는 달입니다. 오래 미뤄온 결정을 내리기 좋습니다",
+        "gi_month": "날이 서는 달입니다. 말과 행동이 타인에게 강하게 전달되니 조심하세요",
+        "neutral": "원칙을 지키며 나아가는 달입니다. 타협보다 기준을 높이세요",
+    },
+    "辛": {
+        "yong_month": "완성도가 높아지는 달입니다. 마무리 작업과 정리·정돈에 적합합니다",
+        "gi_month": "자존심이 상하기 쉬운 달입니다. 완벽보다 완성을 목표로 하세요",
+        "neutral": "세밀하게 점검하는 달입니다. 디테일에서 차이를 만드는 시기입니다",
+    },
+    "壬": {
+        "yong_month": "지혜와 유연성이 높아지는 달입니다. 넓은 시각으로 기회를 포착하세요",
+        "gi_month": "방향을 잃기 쉬운 달입니다. 핵심 목표 하나만 붙잡고 나아가세요",
+        "neutral": "흐름을 읽는 달입니다. 억지로 밀기보다 자연스러운 흐름에 맡기세요",
+    },
+    "癸": {
+        "yong_month": "직관이 살아나는 달입니다. 첫 느낌을 믿고 움직이면 좋은 결과가 옵니다",
+        "gi_month": "불안감이 커지는 달입니다. 혼자 삭이지 말고 신뢰하는 사람과 대화하세요",
+        "neutral": "감수성이 높아지는 달입니다. 창작·음악·산책으로 에너지를 순환시키세요",
+    },
+}
+
+_ELEMENT_ACTIONS: Dict[str, List[str]] = {
+    "목": [
+        "새로운 것을 배우거나 시작하기 좋은 에너지입니다",
+        "성장과 도전 욕구가 올라오는 달입니다",
+        "계획을 세우고 첫 발을 내딛는 달입니다",
+    ],
+    "화": [
+        "표현하고 드러내는 활동에 에너지가 집중됩니다",
+        "사람들과의 교류에서 에너지를 얻는 달입니다",
+        "열정이 살아나는 달이지만 과열에도 유의하세요",
+    ],
+    "토": [
+        "안정을 다지고 현재 자리를 지키는 달입니다",
+        "신뢰를 쌓고 관계를 돌보는 에너지가 강합니다",
+        "실속 있는 결과를 만드는 달입니다",
+    ],
+    "금": [
+        "정리·마무리·결단에 적합한 달입니다",
+        "불필요한 것을 쳐내고 핵심에 집중하는 달입니다",
+        "원칙과 기준을 세우기 좋은 에너지입니다",
+    ],
+    "수": [
+        "지혜와 유연성으로 상황을 읽는 달입니다",
+        "흐름을 파악하고 방향을 조정하는 달입니다",
+        "직관과 감수성이 높아지는 달입니다",
+    ],
+}
+
+
+def _zhi_pair_in_set(a: str, b: str, pair_set: Set[Tuple[str, str]]) -> bool:
+    return tuple(sorted((a, b))) in pair_set
+
+
+def _month_native_relations(month_zhi: str, pillars: dict) -> Tuple[List[Tuple[str, str]], List[Tuple[str, str]], List[Tuple[str, str]]]:
+    native_zhis = {pk: pillars[pk]["zhi"] for pk in PILLAR_KEYS}
+    chungs: List[Tuple[str, str]] = []
+    pas: List[Tuple[str, str]] = []
+    hais: List[Tuple[str, str]] = []
+    for pk, pz in native_zhis.items():
+        if _zhi_pair_in_set(month_zhi, pz, _CHUNG_SET):
+            chungs.append((pk, pz))
+        if _zhi_pair_in_set(month_zhi, pz, _PO_SET):
+            pas.append((pk, pz))
+        if _zhi_pair_in_set(month_zhi, pz, _HAI_SET):
+            hais.append((pk, pz))
+    return chungs, pas, hais
+
+
+def _score_wol_month(
+    *,
+    is_yong: bool,
+    is_gen_yong: bool,
+    is_gi: bool,
+    chungs: List[Tuple[str, str]],
+    sewoon_chung: bool,
+) -> Tuple[str, int]:
+    score = 3
+    if is_yong:
+        score += 2
+    if is_gen_yong:
+        score += 1
+    if is_gi:
+        score -= 2
+    if chungs:
+        score -= 1
+    if sewoon_chung and chungs:
+        score -= 2
+    score = max(1, min(5, score))
+    grade_map = {5: "대길", 4: "길", 3: "평", 2: "흉", 1: "대흉"}
+    return grade_map[score], score
+
+
+def _build_month_story(
+    *,
+    month_idx: int,
+    month_gan: str,
+    month_zhi: str,
+    month_el: str,
+    grade: str,
+    is_yong: bool,
+    is_gi: bool,
+    chungs: List[Tuple[str, str]],
+    pas: List[Tuple[str, str]],
+    hais: List[Tuple[str, str]],
+    sewoon_chung: bool,
+    day_master: str,
+    yong_el: str,
+    gi_el: str,
+    female: bool,
+) -> Dict[str, str]:
+    dm_pattern = _DM_MONTHLY.get(
+        day_master,
+        {
+            "yong_month": "활동하기 좋은 달입니다",
+            "gi_month": "조심하며 나아가는 달입니다",
+            "neutral": "꾸준히 유지하는 달입니다",
+        },
+    )
+
+    chung_txt = ""
+    if chungs:
+        affected = [_PILLAR_KR.get(pk, "") for pk, _ in chungs if _PILLAR_KR.get(pk)]
+        if affected:
+            chung_txt = (
+                f" {month_zhi}충이 발동하여 "
+                f"{', '.join(affected)} 자리에서 "
+                f"변화와 긴장이 생기기 쉽습니다."
+            )
+
+    double_chung_txt = ""
+    if sewoon_chung and chungs:
+        double_chung_txt = (
+            " 세운과 월운이 동시에 충돌하는 "
+            "이달은 특히 신중한 결정이 필요합니다."
+        )
+
+    if is_yong:
+        base = dm_pattern["yong_month"]
+        grade_txt = f"용신 {yong_el} 기운이 들어오는 달로, {base}"
+    elif is_gi:
+        base = dm_pattern["gi_month"]
+        grade_txt = f"기신 {gi_el} 기운이 강해지는 달입니다. {base}"
+    else:
+        base = dm_pattern["neutral"]
+        grade_txt = base
+
+    slot_flavor = _MONTH_SLOT_FLAVOR.get(month_idx, "")
+    gan_el = gj.element_of_stem(month_gan) if month_gan else ""
+    gan_note = ""
+    if gan_el and gan_el != month_el:
+        gan_note = f" 월간 {gan_el}이 지지 {month_el}을 돕는 구조입니다."
+    elif gan_el == month_el and gan_el:
+        gan_note = f" 월간·월지가 같은 {gan_el}로 기운이 한결같습니다."
+
+    story_main = (f"{slot_flavor} {grade_txt}{gan_note}{chung_txt}{double_chung_txt}").strip()
+
+    if grade in ("대길", "길"):
+        if female:
+            action = (
+                "이달은 적극적으로 움직이기 좋습니다. "
+                "커리어·인간관계에서 먼저 손을 내미세요. "
+                "중요한 미팅·계약·시작은 이달을 활용하세요"
+            )
+        else:
+            action = (
+                "이달은 밀어붙이기 좋은 달입니다. "
+                "사업·거래·협상에서 주도권을 잡으세요. "
+                "결정을 미뤄왔다면 이달이 적기입니다"
+            )
+    elif grade == "평":
+        if female:
+            action = (
+                "일상 리듬을 유지하며 꾸준히 가세요. "
+                "새로운 도전보다 현재 관계를 돌보는 달입니다"
+            )
+        else:
+            action = (
+                "현상 유지가 최선인 달입니다. "
+                "큰 변화보다 기존 일의 완성에 집중하세요"
+            )
+    else:
+        if female:
+            action = (
+                "이달은 조용히 내실을 다지는 달입니다. "
+                "새로운 시작·계약·투자는 다음 달로 미루세요. "
+                "가족·건강 챙기기에 집중하세요"
+            )
+        else:
+            action = (
+                "이달은 수비가 최선입니다. "
+                "리스크 있는 결정·투자·확장은 보류하세요. "
+                "현금 비중을 높이고 관계를 점검하세요"
+            )
+
+    caution = ""
+    if chungs:
+        organs = [_ORGAN_BY_ZHI.get(pz, "") for _, pz in chungs if _ORGAN_BY_ZHI.get(pz)]
+        if organs:
+            caution = (
+                f"이달 {', '.join(organs)} 쪽 "
+                f"신호에 유의하세요. "
+                f"피로·통증이 오면 빠르게 대응하세요"
+            )
+        else:
+            caution = "충이 발동하는 달이니 중요한 결정은 신중히 하세요"
+    elif pas:
+        caution = "파(破)가 발동하여 예상치 못한 균열이 생길 수 있습니다. 계약·문서를 꼼꼼히 확인하세요"
+    elif hais:
+        caution = "해(害)가 발동하여 인간관계에서 보이지 않는 방해가 쌓일 수 있습니다"
+
+    practice = _MONTH_PRACTICE.get(month_idx, "이달 작은 실천 하나를 정해 꾸준히 이어가 보세요")
+
+    _ = month_gan, hais
+    return {
+        "핵심": story_main,
+        "행동": action,
+        "주의": caution,
+        "실천": practice,
+    }
+
+
+def get_monthly_action_narrative(
+    month_idx: int,
+    month_zhi: str,
+    month_el: str,
+    yong_el: str,
+    gi_el: str,
+    day_master: str,
+    grade: str,
+) -> List[str]:
+    """절월별 실천 서사 2~3줄 — 핵심 스토리와 다른 내용."""
+    base_actions = list(_ELEMENT_ACTIONS.get(month_el, ["꾸준히 유지하는 달입니다"]))
+    n = max(len(base_actions), 1)
+    idx_a = (month_idx - 1) % n
+    idx_b = (month_idx + max(1, n // 2)) % n
+    if idx_a == idx_b:
+        idx_b = (idx_b + 1) % n
+    lines = [base_actions[idx_a], base_actions[idx_b]]
+    zhi_note = f"{month_zhi}월({month_idx}절월) 흐름에 맞춰 움직이세요"
+    if zhi_note not in lines[0]:
+        lines.insert(1, zhi_note)
+
+    if month_el == yong_el and yong_el:
+        lines.append(f"용신 {yong_el} 기운이 가득한 달로 중요한 일을 이달 안에 실행하세요")
+    elif month_el == gi_el and gi_el:
+        lines.append(f"기신 {gi_el} 기운이 강한 달이니 충동적 결정을 피하고 신중하게 움직이세요")
+
+    tip = _MONTH_PRACTICE.get(month_idx, "")
+    if tip:
+        lines.append(f"✨ 실천: {tip}")
+    return lines[:3]
+
 
 def _wealth_element(dm_elem: str) -> str:
     i = _ELEM_CYCLE.index(dm_elem)
@@ -560,6 +919,7 @@ def analyze_wolwoon_month(
     *,
     sewoon_zhi_override: Optional[str] = None,
     yong: Optional[Dict[str, Any]] = None,
+    gender: str = "남",
 ) -> Dict[str, Any]:
     """
     단일 절월(slot 1~12) 월운 분석.
@@ -570,6 +930,45 @@ def analyze_wolwoon_month(
     sew_zhi = sewoon_zhi_override if sewoon_zhi_override is not None else base["세운지지"]
     mon_zhi = base["월지"]
     mon_gan = base["월간"]
+    month_el = ZHI_ELEMENT.get(mon_zhi, "")
+
+    yb = yong or {}
+    yong_el = str(yb.get("용신_오행") or "")
+    gi_el = str(yb.get("기신_오행") or "")
+    is_yong = month_el == yong_el and bool(yong_el)
+    is_gi = month_el == gi_el and bool(gi_el)
+    is_gen_yong = _GENERATE.get(month_el) == yong_el if month_el and yong_el else False
+
+    chungs, pas, hais = _month_native_relations(mon_zhi, pillars)
+    sewoon_chung = _zhi_pair_in_set(sew_zhi, mon_zhi, _CHUNG_SET)
+    double_chung = sewoon_chung and bool(chungs)
+
+    five_name, five_score = _score_wol_month(
+        is_yong=is_yong,
+        is_gen_yong=is_gen_yong,
+        is_gi=is_gi,
+        chungs=chungs,
+        sewoon_chung=sewoon_chung,
+    )
+
+    female = sp.is_female_gender(gender)
+    story_pack = _build_month_story(
+        month_idx=slot_1_to_12,
+        month_gan=mon_gan,
+        month_zhi=mon_zhi,
+        month_el=month_el,
+        grade=five_name,
+        is_yong=is_yong,
+        is_gi=is_gi,
+        chungs=chungs,
+        pas=pas,
+        hais=hais,
+        sewoon_chung=sewoon_chung,
+        day_master=day_master,
+        yong_el=yong_el,
+        gi_el=gi_el,
+        female=female,
+    )
 
     nat_rel = _native_branch_relations(mon_zhi, pillars)
     all_z = _triple_union_zhis(sew_zhi, mon_zhi, pillars)
@@ -583,9 +982,11 @@ def analyze_wolwoon_month(
     overlap_notes.extend(san_notes)
 
     any_sew_chong = any(sw.branch_chong(sew_zhi, pillars[pk]["zhi"]) for pk in PILLAR_KEYS)
-    severe_overlap = dual_chong or (fuyin_sw_mw and any_sew_chong)
+    severe_overlap = dual_chong or double_chung or (fuyin_sw_mw and any_sew_chong)
 
-    if dual_chong:
+    if double_chung:
+        overlap_notes.append("🔴🔴 세운·월운 이중충: 원국 충과 겹쳐 변동이 극대화됩니다.")
+    elif dual_chong:
         overlap_notes.append(f"🔴 세운·월운 동시충 → {','.join(dual_chong_where)} 이중충 극대화.")
     if fuyin_sw_mw:
         overlap_notes.append(f"🔴 세운지·월운지 동일({sew_zhi}) 복음·중첩으로 과열.")
@@ -593,24 +994,28 @@ def analyze_wolwoon_month(
         overlap_notes.append("⚠️ 공망(일·년 순공 기준): 허무·속 빈 결실 구간.")
 
     sip_mg = sp.classify_sipsin(day_master, mon_gan)
-
     energy = _energy_notes(day_master, mon_gan, mon_zhi)
 
     luck = "보통"
-    if severe_overlap:
-        luck = "대흉우려"
-    elif san_done:
+    if severe_overlap or five_name in ("대흉", "흉"):
+        luck = "대흉우려" if severe_overlap or five_name == "대흉" else "약흉"
+    elif san_done or five_name == "대길":
         luck = "대길우려"
     elif kong:
         luck = "약흉"
 
     grade_word = {"대길우려": "길", "대흉우려": "흉", "약흉": "약흉", "보통": "보통"}[luck]
+    if five_name in ("대길", "길"):
+        grade_word = "길"
+    elif five_name in ("흉", "대흉"):
+        grade_word = "흉"
 
     flags = {
         "삼합완성": san_done,
         "세운월운_동시충": dual_chong,
         "세운월운_복음": fuyin_sw_mw,
         "공망달": kong,
+        "이중충": double_chung,
     }
 
     body_hints = sorted(
@@ -628,32 +1033,25 @@ def analyze_wolwoon_month(
         summary_parts.append(f"월간십신 {sip_mg}")
 
     icons: List[str] = []
-    if dual_chong or (fuyin_sw_mw and any_sew_chong):
+    if double_chung:
+        icons.append("🔴🔴")
+    elif dual_chong or (fuyin_sw_mw and any_sew_chong):
         icons.append("🔴")
     if san_done:
         icons.append("✅")
     if kong:
         icons.append("⚠️")
 
-    five_name, five_score = _month_five_tier(luck, energy, nat_rel)
-    story = _month_story_dynamic(
-        slot_1_to_12=slot_1_to_12,
-        mon_zhi=mon_zhi,
-        five_tier=five_name,
-        severe_overlap=severe_overlap,
-        san_done=san_done,
-        kong=kong,
-        sip_mg=sip_mg,
-        flags=flags,
-        nat_rel=nat_rel,
-        yong=yong,
-    )
     actions = _month_action_guidelines(five_name, severe_overlap, kong)
+    if story_pack.get("행동"):
+        actions = [story_pack["행동"]] + [a for a in actions if a != story_pack["행동"]][:2]
+
     health_pack = _month_health_pack(mon_zhi, solar_year, slot_1_to_12, body_line)
     wealth_tim = _month_wealth_timing(day_master, mon_gan, energy, severe_overlap, sip_mg)
 
-    return {
+    out: Dict[str, Any] = {
         **base,
+        "오행": month_el,
         "월간십신": sip_mg,
         "원국_충파해합형": nat_rel,
         "세운지지_실사용": sew_zhi,
@@ -664,14 +1062,21 @@ def analyze_wolwoon_month(
         "길흉판정": luck,
         "길흉등급_5단계": five_name,
         "길흉점수": five_score,
-        "월별_핵심스토리": story,
+        "월별_핵심스토리": story_pack["핵심"],
         "월별_행동지침": actions,
+        "월별_행동지침_텍스트": story_pack["행동"],
+        "월별_실천팁": story_pack["실천"],
+        "충발동": [f"{pk}({pz})" for pk, pz in chungs],
+        "이중충": double_chung,
         "건강_월별": health_pack,
         "재물_타이밍": wealth_tim,
         "건강부위메모": body_line,
         "한줄요약": " · ".join(summary_parts) if summary_parts else "특이 패턴 없음",
         "특이아이콘": icons,
     }
+    if story_pack.get("주의"):
+        out["월별_주의사항"] = story_pack["주의"]
+    return out
 
 
 def format_month_box_row(month_row: Dict[str, Any], *, width: int = 37) -> List[str]:
@@ -739,7 +1144,9 @@ def wolwoon_year_pack(
     yong: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     months = [
-        analyze_wolwoon_month(day_master, pillars, solar_year, s, yong=yong)
+        analyze_wolwoon_month(
+            day_master, pillars, solar_year, s, yong=yong, gender=gender
+        )
         for s in range(1, 13)
     ]
     se_pack = sw.analyze_sewoon_year(day_master, pillars, gender, solar_year, counts=counts)
