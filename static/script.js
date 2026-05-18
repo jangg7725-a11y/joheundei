@@ -330,8 +330,8 @@
 
   /* ── 사주 프로필 저장 (localStorage) ───────────────────────── */
   const PROFILE_STORAGE_KEY = "joheundei_saju_profiles_v1";
-  const profileTabsEl = document.getElementById("profile-tabs");
-  const profileAddBtn = document.getElementById("profile-add-btn");
+  const moreMenuProfilesEl = document.getElementById("more-menu-profiles");
+  const moreProfileAddBtn = document.getElementById("more-profile-add-btn");
   const profileSaveBtn = document.getElementById("profile-save-btn");
   const profileDelBtn = document.getElementById("profile-del-btn");
 
@@ -466,20 +466,20 @@
     return name.length > 12 ? name.slice(0, 11) + "…" : name;
   }
 
-  function renderProfileTabs() {
-    if (!profileTabsEl) return;
-    profileTabsEl.innerHTML = "";
+  function renderProfileMenus() {
+    if (!moreMenuProfilesEl) return;
+    moreMenuProfilesEl.innerHTML = "";
     profileStore.profiles.forEach((p) => {
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "profile-tab" + (p.id === profileStore.activeId ? " active" : "");
-      btn.setAttribute("role", "tab");
-      btn.setAttribute("aria-selected", p.id === profileStore.activeId ? "true" : "false");
+      btn.className =
+        "more-menu-profile-item" + (p.id === profileStore.activeId ? " active" : "");
+      btn.setAttribute("role", "menuitem");
       btn.dataset.profileId = p.id;
       btn.textContent = profileTabLabel(p);
       btn.title = (p.data && p.data.user_name) || p.label || "";
-      btn.addEventListener("click", () => switchProfile(p.id));
-      profileTabsEl.appendChild(btn);
+      btn.addEventListener("click", () => selectProfile(p.id));
+      moreMenuProfilesEl.appendChild(btn);
     });
     if (profileDelBtn) {
       profileDelBtn.disabled = profileStore.profiles.length <= 1;
@@ -493,19 +493,40 @@
     const nm = (p.data.user_name || "").trim();
     if (nm) p.label = nm;
     saveProfileStore(profileStore);
-    renderProfileTabs();
+    renderProfileMenus();
   }
 
-  function switchProfile(id) {
-    if (id === profileStore.activeId) return;
-    persistActiveProfileFromForm();
-    profileStore.activeId = id;
-    saveProfileStore(profileStore);
-    const p = getActiveProfile();
-    applyFormProfileData(p.data);
-    renderProfileTabs();
-    statusEl.textContent = `「${profileTabLabel(p)}」 프로필로 전환했습니다.`;
+  function scrollToBirthForm() {
+    const el = document.getElementById("panel-input-heading") || form;
+    if (el && el.scrollIntoView) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }
+
+  function selectProfile(id) {
+    if (!id) return;
+    const target = profileStore.profiles.find((p) => p.id === id);
+    if (!target) return;
+    if (id !== profileStore.activeId) {
+      persistActiveProfileFromForm();
+      profileStore.activeId = id;
+      saveProfileStore(profileStore);
+    }
+    applyFormProfileData(target.data);
+    renderProfileMenus();
+    closeMoreMenuIfOpen();
+    scrollToBirthForm();
+    statusEl.textContent = `「${profileTabLabel(target)}」 출생 정보를 불러왔습니다.`;
     statusEl.classList.remove("error");
+  }
+
+  function closeMoreMenuIfOpen() {
+    const panel = document.getElementById("more-menu-panel");
+    const btn = document.getElementById("more-menu-btn");
+    if (panel && btn && !panel.hidden) {
+      panel.hidden = true;
+      btn.setAttribute("aria-expanded", "false");
+    }
   }
 
   function addProfile() {
@@ -520,7 +541,9 @@
     profileStore.activeId = p.id;
     saveProfileStore(profileStore);
     applyFormProfileData(p.data);
-    renderProfileTabs();
+    renderProfileMenus();
+    closeMoreMenuIfOpen();
+    scrollToBirthForm();
     statusEl.textContent = `새 프로필 「${p.label}」을(를) 추가했습니다.`;
     statusEl.classList.remove("error");
     document.getElementById("user_name").focus();
@@ -539,12 +562,12 @@
     profileStore.activeId = profileStore.profiles[0].id;
     saveProfileStore(profileStore);
     applyFormProfileData(getActiveProfile().data);
-    renderProfileTabs();
+    renderProfileMenus();
     statusEl.textContent = `「${name}」 프로필을 삭제했습니다.`;
     statusEl.classList.remove("error");
   }
 
-  if (profileAddBtn) profileAddBtn.addEventListener("click", addProfile);
+  if (moreProfileAddBtn) moreProfileAddBtn.addEventListener("click", addProfile);
   if (profileSaveBtn) {
     profileSaveBtn.addEventListener("click", () => {
       persistActiveProfileFromForm();
@@ -555,7 +578,7 @@
   if (profileDelBtn) profileDelBtn.addEventListener("click", deleteActiveProfile);
 
   applyFormProfileData(getActiveProfile().data);
-  renderProfileTabs();
+  renderProfileMenus();
 
   let latestReport = null;
   let lastSajuBody = null;
@@ -3491,6 +3514,7 @@ ${matrixHTML}
     const open = moreMenuPanel.hidden;
     moreMenuPanel.hidden = !open;
     moreMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+    if (open) renderProfileMenus();
   }
 
   function showAuthError(msg) {
@@ -3542,28 +3566,10 @@ ${matrixHTML}
     (authModalMode === "signup" && authNameInput ? authNameInput : authEmailInput)?.focus();
   }
 
-  function scrollToSavedProfiles() {
-    closeMoreMenu();
-    const el = profileManagerEl || document.querySelector(".profile-manager");
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
-    el.classList.remove("profile-highlight");
-    void el.offsetWidth;
-    el.classList.add("profile-highlight");
-    window.setTimeout(() => el.classList.remove("profile-highlight"), 2600);
-    if (profileTabsEl) {
-      const activeTab = profileTabsEl.querySelector(".profile-tab.active");
-      if (activeTab) activeTab.focus();
-    }
-    statusEl.textContent = "저장된 프로필 탭에서 사주 정보를 선택·수정할 수 있습니다.";
-    statusEl.classList.remove("error");
-  }
-
   function handleMoreAction(action) {
     closeMoreMenu();
     if (action === "signup") openAuthModal("signup");
     else if (action === "login") openAuthModal("login");
-    else if (action === "profiles") scrollToSavedProfiles();
     else if (action === "logout") {
       clearAccount();
       updateMoreMenuAuthState();

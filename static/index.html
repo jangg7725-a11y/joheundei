@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260516-samjae-bar" />
+  <link rel="stylesheet" href="/static/style.css?v=20260516-profiles-menu" />
 </head>
 <body>
   <header class="hero">
@@ -22,7 +22,9 @@
       <div class="more-menu-panel" id="more-menu-panel" role="menu" hidden>
         <button type="button" class="more-menu-item" role="menuitem" data-more-action="signup">회원가입</button>
         <button type="button" class="more-menu-item" role="menuitem" data-more-action="login">로그인</button>
-        <button type="button" class="more-menu-item" role="menuitem" data-more-action="profiles">저장된프로필 사주정보바로가기</button>
+        <p class="more-menu-section-label" id="more-menu-profiles-label">저장된 사주정보 보기</p>
+        <div id="more-menu-profiles" class="more-menu-profiles" role="group" aria-labelledby="more-menu-profiles-label"></div>
+        <button type="button" class="more-menu-item more-menu-item-sub" id="more-profile-add-btn">+ 새 프로필</button>
         <button type="button" class="more-menu-item more-menu-item-muted fallback-hidden" role="menuitem" data-more-action="logout" id="more-menu-logout">로그아웃</button>
       </div>
     </div>
@@ -36,15 +38,11 @@
       <h2 id="panel-input-heading">출생 정보 입력</h2>
 
       <div class="profile-manager" id="profile-manager" aria-label="저장된 사주 프로필">
-        <div class="profile-tabs-wrap">
-          <div class="profile-tabs" id="profile-tabs" role="tablist" aria-label="사주 프로필 선택"></div>
-          <button type="button" class="profile-tab-add" id="profile-add-btn" title="새 프로필 추가">+</button>
-        </div>
         <div class="profile-toolbar">
           <button type="button" class="btn profile-save-btn" id="profile-save-btn">현재 프로필 저장</button>
           <button type="button" class="btn profile-del-btn" id="profile-del-btn" title="선택한 프로필 삭제">삭제</button>
         </div>
-        <p class="panel-note profile-hint">본인·가족·지인 등 여러 명의 생년월일시를 프로필로 저장해 두고 탭으로 바꿔 가며 분석할 수 있습니다. (브라우저에만 저장)</p>
+        <p class="panel-note profile-hint">더보기(») → 「저장된 사주정보 보기」에서 이름을 누르면 출생 정보가 채워집니다. 「현재 프로필 저장」으로 브라우저에 보관합니다.</p>
       </div>
 
       <form id="saju-form" class="form-saju">
@@ -345,6 +343,6 @@
   </div>
 
   <script src="/static/ai-story.js"></script>
-  <script src="/static/script.js?v=20260516-samjae-bar"></script>
+  <script src="/static/script.js?v=20260516-profiles-menu"></script>
 </body>
 </html>

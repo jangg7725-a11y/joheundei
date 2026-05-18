@@ -111,6 +111,60 @@ body {
   padding-top: 0.65rem;
 }
 
+.more-menu-section-label {
+  margin: 0.45rem 0.35rem 0.25rem;
+  padding: 0 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--gold);
+  opacity: 0.92;
+  letter-spacing: 0.02em;
+}
+
+.more-menu-profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.12rem;
+  max-height: 11rem;
+  overflow-y: auto;
+  padding: 0 0.15rem 0.2rem;
+}
+
+.more-menu-profile-item {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.7rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.more-menu-profile-item:hover {
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold);
+}
+
+.more-menu-profile-item.active {
+  background: rgba(212, 175, 55, 0.18);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.more-menu-item-sub {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin-bottom: 0.15rem;
+}
+
+.more-menu-item-sub:hover {
+  color: var(--gold);
+}
+
 .profile-manager.profile-highlight {
   outline: 2px solid var(--gold);
   outline-offset: 4px;
