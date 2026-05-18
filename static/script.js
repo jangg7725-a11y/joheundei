@@ -2134,7 +2134,7 @@
     }
     pane.appendChild(strip);
 
-    const grid = el("div", "wol-month-grid");
+    const grid = el("div", "wol-month-grid wol-month-grid--horizontal");
     const isoToday = todayISO();
     pack["월별"].forEach((m) => {
       const grade5 = m["길흉등급_5단계"] || "";
@@ -2163,22 +2163,30 @@
       const practiceBlock = practiceTxt
         ? `<p class="wol-month-line wol-month-line--practice">✨ ${escapeHtml(practiceTxt)}</p>`
         : "";
+      const actionBlock = actionTxt
+        ? `<p class="wol-month-line wol-month-line--action">✅ ${escapeHtml(actionTxt)}</p>`
+        : "";
+      const tipsInner = actionBlock + cautionBlock + practiceBlock;
       card.innerHTML = `
-        <div class="wol-month-top">
-          <span class="wol-month-slot">${m["절월번호"]}절월</span>
-          <span class="han-inline wol-month-gz">${escapeHtml(m["월주간지"] || "")}</span>
-          ${doubleBadge}
-          <span class="${badgeCls}">${escapeHtml(grade5 || m["길흉판정"] || "—")}</span>
+        <header class="wol-month-aside">
+          <div class="wol-month-top">
+            <span class="wol-month-slot">${m["절월번호"]}절월</span>
+            <span class="han-inline wol-month-gz">${escapeHtml(m["월주간지"] || "")}</span>
+          </div>
+          <div class="wol-month-badges">
+            ${doubleBadge}
+            <span class="${badgeCls}">${escapeHtml(grade5 || m["길흉판정"] || "—")}</span>
+          </div>
+          <p class="wol-month-meta-line">${escapeHtml(m["구간_양력"] || "")}</p>
+        </header>
+        <div class="wol-month-body">
+          <p class="wol-month-quote">${escapeHtml(quote)}</p>
         </div>
-        <p class="wol-month-meta-line">${escapeHtml(m["구간_양력"] || "")}</p>
-        <p class="wol-month-quote">${escapeHtml(quote)}</p>
         ${
-          actionTxt
-            ? `<p class="wol-month-line wol-month-line--action">✅ ${escapeHtml(actionTxt)}</p>`
-            : ""
-        }
-        ${cautionBlock}
-        ${practiceBlock}`;
+          tipsInner
+            ? `<aside class="wol-month-tips-col">${tipsInner}</aside>`
+            : '<aside class="wol-month-tips-col wol-month-tips-col--empty"></aside>'
+        }`;
       grid.appendChild(card);
     });
     pane.appendChild(grid);
