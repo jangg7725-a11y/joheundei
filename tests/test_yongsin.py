@@ -29,3 +29,6 @@ def test_step7_yongsin(sample_pillars, day_master: str, sample_birth) -> None:
     assert len(sew) == 5
     assert any(r.get("기준년") for r in sew)
     assert all(r.get("상세") for r in sew)
+    assert rep.get("신강약_스토리")
+    assert rep.get("lifestyle", {}).get("색상_좋음")
+    assert len((rep.get("직업추천") or {}).get("추천_직군") or []) >= 2

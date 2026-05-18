@@ -1756,6 +1756,7 @@ def build_report(
         pillars=pillars,
         sewoon_nearby=sewoon_nearby,
         sewoon_center_year=center,
+        gender=gender,
     )
     sinsal_block = sn.analyze_sinsal(dm, pillars, gender=gender)
 

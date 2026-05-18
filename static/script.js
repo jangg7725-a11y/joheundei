@@ -1803,103 +1803,207 @@
     return `<span class="${cls}">${escapeHtml(g)}</span>`;
   }
 
+  const YONG_EL_HAN = { 목: "木", 화: "火", 토: "土", 금: "金", 수: "水" };
+
+  function renderYongsinExpandCard(title, badgeCls, bodyLines, openDefault) {
+    const card = el("div", `yong-card yong-card--${badgeCls}`);
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "yong-card-toggle";
+    btn.textContent = title;
+    btn.setAttribute("aria-expanded", openDefault ? "true" : "false");
+    const body = el("div", `yong-card-body${openDefault ? " open" : ""}`);
+    (bodyLines || []).forEach((line) => {
+      if (!line) return;
+      body.appendChild(el("p", "yong-card-text", line));
+    });
+    btn.addEventListener("click", () => {
+      const open = body.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+    card.appendChild(btn);
+    card.appendChild(body);
+    return card;
+  }
+
+  function renderTabYongsin(r) {
+    renderTab2(r);
+  }
+
   function renderTab2(r) {
     const root = panels[2];
     root.innerHTML = "";
-    const ys = r.yongsin;
-    const sec = el("div", "panel-section");
-    sec.appendChild(el("h3", null, "신강·신약 身强身弱"));
-    const j = ys["일간_강약"] || "";
-    const score = ys["강약_점수"];
-    const detail = ys["강약_상세"] || {};
-    const head = el("div", "strength-head");
-    head.innerHTML = `<span class="strength-verdict">${escapeHtml(j || "—")}</span>${
-      score != null ? `<span class="strength-score">점수 ${escapeHtml(score)}</span>` : ""
-    }${detail["점수_구간"] ? `<span class="strength-band">${escapeHtml(detail["점수_구간"])}</span>` : ""}`;
-    sec.appendChild(head);
-    if (detail["판단_요약"]) sec.appendChild(el("p", "strength-lead", detail["판단_요약"]));
-    if (detail["점수_해설"]) sec.appendChild(el("p", "panel-note strength-score-note", detail["점수_해설"]));
-    if (Array.isArray(detail["현상_특징"]) && detail["현상_특징"].length) {
-      const box = el("div", "strength-box");
-      box.appendChild(el("h4", "strength-subtitle", "이렇게 나타나기 쉽습니다"));
-      const ul = el("ul", "strength-list");
-      detail["현상_특징"].forEach((line) => ul.appendChild(el("li", null, line)));
-      box.appendChild(ul);
-      sec.appendChild(box);
+    const ys = r.yongsin || {};
+    const yongEl = ys["용신_오행"] || "";
+    const yongHan = ys["용신_한자"] || YONG_EL_HAN[yongEl] || yongEl;
+    const heeList = ys["희신"] || [];
+    const giList = ys["기신"] || [];
+    const verdict = ys["일간_강약"] || "";
+    const lifestyle = ys.lifestyle || {};
+    const career = ys["직업추천"] || {};
+    const yearHints = ys["세운_힌트"] || {};
+
+    const hero = el("div", "yong-hero panel-section");
+    hero.innerHTML = `<p class="yong-hero-title">⭐ 당신의 용신은 <span class="han-inline yong-hero-el">${escapeHtml(
+      yongHan
+    )}</span> <span class="yong-hero-kr">(${escapeHtml(yongEl)})</span> 입니다</p>`;
+    if (ys["신강약_스토리"]) {
+      hero.appendChild(el("p", "yong-hero-story", ys["신강약_스토리"]));
     }
-    if (Array.isArray(detail["생활_조언"]) && detail["생활_조언"].length) {
-      const box2 = el("div", "strength-box strength-box-tip");
-      box2.appendChild(el("h4", "strength-subtitle", "생활에서 이렇게 보세요"));
-      const ul2 = el("ul", "strength-list");
-      detail["생활_조언"].forEach((line) => ul2.appendChild(el("li", null, line)));
-      box2.appendChild(ul2);
-      sec.appendChild(box2);
+    if (ys["용신_작용"]) {
+      hero.appendChild(el("p", "yong-hero-sub", ys["용신_작용"]));
     }
-    if (detail["세운_읽는_법"]) sec.appendChild(el("p", "panel-note", detail["세운_읽는_법"]));
-    const sewStrength = ys["세운_강약_해설"] || [];
-    if (sewStrength.length) {
-      const sewSec = el("div", "strength-sewoon-block");
-      sewSec.appendChild(el("h4", "strength-subtitle", "세운별 강약 해설 (±10년)"));
-      sewSec.appendChild(
+    root.appendChild(hero);
+
+    const cards = el("div", "yong-cards panel-section");
+    cards.appendChild(el("h3", null, "용신 · 희신 · 기신"));
+    const row = el("div", "yong-cards-row");
+    const heeLabel =
+      heeList.length > 0
+        ? `희신 ⚪ ${heeList.map((e) => `${YONG_EL_HAN[e] || ""}${e}`).join(" · ")}`
+        : "희신 ⚪ —";
+    row.appendChild(
+      renderYongsinExpandCard(
+        `용신 🔴 ${yongHan} ${yongEl}`,
+        "yong",
+        [ys["용신_의미"], ys["용신_작용"], ys["용신_생활"], ys["피할것"]].filter(Boolean),
+        true
+      )
+    );
+    row.appendChild(
+      renderYongsinExpandCard(
+        heeLabel,
+        "hee",
+        (ys["희신_스토리"] || []).length
+          ? ys["희신_스토리"]
+          : ["희신 오행이 들어오는 시기·환경을 적극 활용하세요."],
+        false
+      )
+    );
+    row.appendChild(
+      renderYongsinExpandCard(
+        `기신 🔵 ${giList.map((e) => `${YONG_EL_HAN[e] || ""}${e}`).join(" · ") || "—"}`,
+        "gi",
+        [ys["기신_스토리"]].filter(Boolean),
+        false
+      )
+    );
+    cards.appendChild(row);
+    root.appendChild(cards);
+
+    const life = el("div", "yong-lifestyle panel-section");
+    life.appendChild(el("h3", null, "생활 활용법"));
+    const lifeGrid = el("div", "yong-lifestyle-grid");
+    const colorBlk = el("div", "yong-life-block");
+    colorBlk.innerHTML = `<h4>🎨 색상</h4>`;
+    colorBlk.appendChild(
+      el(
+        "p",
+        "yong-good",
+        `✅ ${lifestyle["색상_좋음"] || "—"} (${lifestyle["색상_이유"] || ""})`
+      )
+    );
+    colorBlk.appendChild(
+      el(
+        "p",
+        "yong-bad",
+        `❌ ${lifestyle["색상_피함"] || "—"} (${lifestyle["색상_피함_이유"] || ""})`
+      )
+    );
+    lifeGrid.appendChild(colorBlk);
+    const dirBlk = el("div", "yong-life-block");
+    dirBlk.innerHTML = `<h4>🧭 방위</h4>`;
+    dirBlk.appendChild(
+      el("p", null, `${lifestyle["방위"] || "—"} — ${lifestyle["방위_이유"] || ""}`)
+    );
+    if (lifestyle["방위_팁"]) dirBlk.appendChild(el("p", "panel-note-inline", lifestyle["방위_팁"]));
+    lifeGrid.appendChild(dirBlk);
+    [["🥗 음식", lifestyle["음식"]], ["🏃 운동", lifestyle["운동"]], ["💆 힐링", lifestyle["힐링"]]].forEach(
+      ([title, txt]) => {
+        const b = el("div", "yong-life-block");
+        b.innerHTML = `<h4>${title}</h4>`;
+        b.appendChild(el("p", null, txt || "—"));
+        lifeGrid.appendChild(b);
+      }
+    );
+    life.appendChild(lifeGrid);
+    root.appendChild(life);
+
+    const carSec = el("div", "yong-career panel-section");
+    carSec.appendChild(el("h3", null, "용신 직업 추천"));
+    if (career["근무형태"]) carSec.appendChild(el("p", "yong-career-style", career["근무형태"]));
+    (career["추천_직군"] || []).forEach((item) => {
+      const box = el("div", "yong-career-item");
+      box.appendChild(el("strong", null, item["직군"] || ""));
+      box.appendChild(el("p", "yong-career-reason", item["이유"] || ""));
+      carSec.appendChild(box);
+    });
+    if (career["피할_직군"]) {
+      carSec.appendChild(el("p", "yong-career-avoid", `피하면 좋은 방향: ${career["피할_직군"]}`));
+    }
+    root.appendChild(carSec);
+
+    const yearSec = el("div", "yong-years panel-section");
+    yearSec.appendChild(el("h3", null, "이런 해가 좋습니다"));
+    (yearHints["좋은_해"] || []).forEach((row) => {
+      yearSec.appendChild(
         el(
           "p",
-          "panel-note",
-          "원국이 신강·신약인지에 따라, 매년 들어오는 오행이 도움이 되는지·부담인지를 짧게 정리했습니다. 합충·신살과 함께 보세요."
+          "yong-year-line yong-year-line--good",
+          `${row["연도"]}년 ${row["간지"]} — ${row["설명"] || ""}`
         )
       );
+    });
+    if ((yearHints["주의_해"] || []).length) {
+      yearSec.appendChild(el("h4", "yong-years-caution-title", "주의가 필요한 해"));
+      (yearHints["주의_해"] || []).forEach((row) => {
+        yearSec.appendChild(
+          el(
+            "p",
+            "yong-year-line yong-year-line--caution",
+            `${row["연도"]}년 ${row["간지"]} — ${row["설명"] || ""}`
+          )
+        );
+      });
+    }
+    root.appendChild(yearSec);
+
+    if (ys["근거_스토리"]) {
+      const sum = el("div", "panel-section yong-summary");
+      sum.appendChild(el("h3", null, "한눈에 보는 용신"));
+      sum.appendChild(el("p", "yong-summary-text", ys["근거_스토리"]));
+      root.appendChild(sum);
+    }
+
+    const detail = ys["강약_상세"] || {};
+    const sewStrength = ys["세운_강약_해설"] || [];
+    if (sewStrength.length) {
+      const sewSec = el("div", "panel-section strength-sewoon-block");
+      sewSec.appendChild(el("h3", null, `신강·신약 (${verdict || "—"}) · 세운 흐름`));
+      if (detail["판단_요약"]) sewSec.appendChild(el("p", "strength-lead", detail["판단_요약"]));
       const tw = el("div", "table-wrap strength-sewoon-table-wrap");
       const table = el("table", "data-table strength-sewoon-table");
       table.innerHTML =
-        "<thead><tr><th>연도</th><th>간지</th><th>등급</th><th>한줄 요약</th><th>해설</th></tr></thead>";
+        "<thead><tr><th>연도</th><th>간지</th><th>등급</th><th>한줄</th><th>해설</th></tr></thead>";
       const tb = el("tbody");
       sewStrength.forEach((row) => {
         const tr = el("tr", row["기준년"] ? "strength-row-current" : "");
         tr.innerHTML = `<td>${escapeHtml(row["연도"])}</td><td class="gz">${escapeHtml(
           row["간지"] || ""
-        )}</td><td>${renderStrengthBadge(row["종합_등급"])}</td><td>${escapeHtml(row["한줄"] || "")}</td><td class="strength-detail-cell">${escapeHtml(
-          row["상세"] || ""
-        )}</td>`;
+        )}</td><td>${renderStrengthBadge(row["종합_등급"])}</td><td>${escapeHtml(
+          row["한줄"] || ""
+        )}</td><td class="strength-detail-cell">${escapeHtml(row["상세"] || "")}</td>`;
         tb.appendChild(tr);
       });
       table.appendChild(tb);
       tw.appendChild(table);
       sewSec.appendChild(tw);
-      sec.appendChild(sewSec);
+      root.appendChild(sewSec);
     }
-    root.appendChild(sec);
 
-    const sec2 = el("div", "panel-section");
-    sec2.appendChild(el("h3", null, "용신·희신·기신"));
-    const lines = ys["출력_문장"];
-    if (lines) {
-      sec2.appendChild(el("p", "panel-note", lines["용신"] || ""));
-      sec2.appendChild(el("p", "panel-note", lines["희신"] || ""));
-      sec2.appendChild(el("p", "panel-note", lines["기신"] || ""));
-    }
-    const han = ys["한신"];
-    const gu = ys["구신"];
-    if (han && han.length) sec2.appendChild(el("p", "panel-note", `한신 閑神: ${han.join(", ")}`));
-    if (gu && gu.length) sec2.appendChild(el("p", "panel-note", `구신 仇神: ${gu.join(", ")}`));
-    root.appendChild(sec2);
-
-    const sec3 = el("div", "panel-section");
-    sec3.appendChild(el("h3", null, "색·방위·직업 (용신 오행)"));
-    const meta = ys["용신_색상_방위_직업"] || {};
-    sec3.appendChild(
-      el(
-        "p",
-        "panel-note",
-        `색상: ${meta["색상"] || "-"} · 방위: ${meta["방위"] || "-"} · 직업성향: ${meta["직업"] || "-"}`
-      )
-    );
-    root.appendChild(sec3);
-
-    const sec4 = el("div", "panel-section");
-    sec4.appendChild(el("h3", null, "근거 요약"));
-    (ys.notes || []).forEach((line) => sec4.appendChild(el("p", "panel-note", line)));
-    sec4.appendChild(el("p", "panel-note", ys.disclaimer || ""));
-    root.appendChild(sec4);
+    if (ys.disclaimer) root.appendChild(el("p", "panel-note yong-disclaimer", ys.disclaimer));
   }
+
 
   function escapeHtml(text) {
     const n = document.createElement("div");

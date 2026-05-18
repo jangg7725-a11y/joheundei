@@ -2911,6 +2911,157 @@ body.has-bottom-nav .layout {
   }
 }
 
+/* —— 용신 탭 —— */
+.yong-hero {
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  background: linear-gradient(135deg, rgba(40, 28, 12, 0.55), rgba(14, 20, 30, 0.95));
+}
+
+.yong-hero-title {
+  font-size: clamp(1.05rem, 3.5vw, 1.25rem);
+  font-weight: 800;
+  margin: 0 0 0.5rem;
+  line-height: 1.35;
+}
+
+.yong-hero-el {
+  font-size: 1.35em;
+  color: var(--gold);
+}
+
+.yong-hero-kr {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.yong-hero-story,
+.yong-hero-sub {
+  margin: 0.35rem 0 0;
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
+.yong-cards-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.55rem;
+}
+
+.yong-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(10, 14, 22, 0.9);
+  overflow: hidden;
+}
+
+.yong-card--yong {
+  border-color: rgba(232, 93, 111, 0.45);
+}
+
+.yong-card--hee {
+  border-color: rgba(200, 200, 200, 0.35);
+}
+
+.yong-card--gi {
+  border-color: rgba(100, 160, 255, 0.45);
+}
+
+.yong-card-toggle {
+  width: 100%;
+  text-align: left;
+  padding: 0.55rem 0.65rem;
+  background: rgba(0, 0, 0, 0.25);
+  border: none;
+  color: var(--text);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.yong-card-body {
+  display: none;
+  padding: 0 0.65rem 0.65rem;
+}
+
+.yong-card-body.open {
+  display: block;
+}
+
+.yong-card-text {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.yong-lifestyle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.55rem;
+}
+
+.yong-life-block {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(12, 16, 24, 0.85);
+}
+
+.yong-life-block h4 {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+}
+
+.yong-good {
+  color: #9fdfb1;
+  margin: 0.2rem 0;
+  font-size: 0.78rem;
+}
+
+.yong-bad {
+  color: #f0a8b0;
+  margin: 0.2rem 0;
+  font-size: 0.78rem;
+}
+
+.yong-career-item {
+  border-left: 3px solid var(--gold);
+  padding: 0.45rem 0 0.45rem 0.65rem;
+  margin-bottom: 0.5rem;
+}
+
+.yong-career-reason {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.yong-career-style,
+.yong-career-avoid {
+  font-size: 0.82rem;
+  margin: 0 0 0.55rem;
+}
+
+.yong-year-line {
+  margin: 0.3rem 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}
+
+.yong-year-line--good {
+  color: #9fdfb1;
+}
+
+.yong-year-line--caution {
+  color: #f0c4a0;
+}
+
+.yong-summary-text {
+  line-height: 1.5;
+  font-size: 0.88rem;
+}
+
 /* 탭 패널 스와이프 힌트 */
 @media (max-width: 768px) {
   .tab-panels {

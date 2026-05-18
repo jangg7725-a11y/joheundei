@@ -720,7 +720,10 @@ def suggest_useful_gods(
     pillars: Optional[dict] = None,
     sewoon_nearby: Optional[Sequence[Dict[str, Any]]] = None,
     sewoon_center_year: Optional[int] = None,
+    gender: str = "남",
 ) -> Dict[str, Any]:
+    from . import yongsin_narrative as yn
+
     if pillars is None:
         rep = _analyze_counts_only(counts, day_master, month_zhi)
     else:
@@ -729,4 +732,12 @@ def suggest_useful_gods(
         rep["세운_강약_해설"] = build_sewoon_strength_series(
             rep, day_master, sewoon_nearby, center_year=sewoon_center_year
         )
-    return rep
+    female = sp.is_female_gender(gender)
+    return yn.enrich_yongsin_report(
+        rep,
+        day_master=day_master,
+        pillars=pillars,
+        counts=counts,
+        female=female,
+        sewoon_nearby=sewoon_nearby,
+    )
