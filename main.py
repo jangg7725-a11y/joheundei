@@ -51,6 +51,10 @@ class NativeChartRequest(BaseModel):
     gender: str = Field(description="남/여 또는 male/female")
     lunar_leap: bool = Field(default=False, description="음력 윤달 여부")
     ya_jasi: bool = Field(default=False, description="야자시(夜子時) 처리: 23시 출생을 다음 날 일주로 배속")
+    hour_unknown: bool = Field(
+        default=False,
+        description="생시 미상 — 시주·대운은 참고용 정오(12:00) 가정",
+    )
 
     @field_validator("calendar", mode="before")
     @classmethod
@@ -125,16 +129,19 @@ class GoonghapRequest(BaseModel):
 
 def _compute_native(chart: NativeChartRequest) -> tuple[Any, Any, str, str, dict[str, Any]]:
     """(raw, eight_char, day_master, gender_str, counts)"""
+    hour = 12 if chart.hour_unknown else chart.hour
+    minute = 0 if chart.hour_unknown else chart.minute
+    ya_jasi = False if chart.hour_unknown else chart.ya_jasi
     birth = sc.BirthInput(
         calendar=chart.calendar,
         year=chart.year,
         month=chart.month,
         day=chart.day,
-        hour=chart.hour,
-        minute=chart.minute,
+        hour=hour,
+        minute=minute,
         lunar_leap=chart.lunar_leap,
         gender=chart.gender,
-        ya_jasi=chart.ya_jasi,
+        ya_jasi=ya_jasi,
     )
     raw = sc.compute_saju(birth)
     ec = raw["_eight_char"]
@@ -156,6 +163,10 @@ class SajuRequest(BaseModel):
     gender: str = Field(description="남/여 또는 male/female")
     lunar_leap: bool = Field(default=False, description="음력 윤달 여부")
     ya_jasi: bool = Field(default=False, description="야자시(夜子時) 처리: 23시 출생을 다음 날 일주로 배속")
+    hour_unknown: bool = Field(
+        default=False,
+        description="생시 미상 — 시주·대운은 참고용 정오(12:00) 가정",
+    )
     sewoon_center_year: int | None = Field(default=None, ge=1800, le=2100, description="세운 기준 연도")
     wolwoon_center_year: int | None = Field(
         default=None,
@@ -259,6 +270,7 @@ def _run_saju(req: SajuRequest) -> dict[str, Any]:
         gender=req.gender,
         lunar_leap=req.lunar_leap,
         ya_jasi=req.ya_jasi,
+        hour_unknown=req.hour_unknown,
         sewoon_center_year=req.sewoon_center_year,
         wolwoon_center_year=req.wolwoon_center_year,
         partner_day_pillar=req.partner_day_pillar,

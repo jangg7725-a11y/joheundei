@@ -277,6 +277,57 @@
 
   syncCalendarUI();
 
+  /* ── 생시 모름 ─────────────────────────────────────────────── */
+  const hourUnknownBtn = document.getElementById("hour-unknown-btn");
+  const hourUnknownInput = document.getElementById("hour_unknown");
+  const timeBlock = document.querySelector(".time-block");
+  const timeUnknownNote = document.getElementById("time-unknown-note");
+  const hourEl = document.getElementById("hour");
+  const minuteEl = document.getElementById("minute");
+  let savedHour = 12;
+  let savedMinute = 0;
+
+  function isHourUnknown() {
+    return hourUnknownInput && hourUnknownInput.value === "1";
+  }
+
+  function setHourUnknown(on) {
+    if (!hourUnknownInput) return;
+    hourUnknownInput.value = on ? "1" : "0";
+    if (hourUnknownBtn) {
+      hourUnknownBtn.classList.toggle("active", on);
+      hourUnknownBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    }
+    if (timeBlock) timeBlock.classList.toggle("is-unknown", on);
+    if (timeUnknownNote) timeUnknownNote.classList.toggle("fallback-hidden", !on);
+    const yaJasiEl = document.getElementById("ya_jasi");
+    if (!hourEl || !minuteEl) return;
+    if (on) {
+      savedHour = Number(hourEl.value);
+      if (Number.isNaN(savedHour)) savedHour = 12;
+      savedMinute = Number(minuteEl.value);
+      if (Number.isNaN(savedMinute)) savedMinute = 0;
+      hourEl.value = 12;
+      minuteEl.value = 0;
+      hourEl.disabled = true;
+      minuteEl.disabled = true;
+      if (yaJasiEl) {
+        yaJasiEl.checked = false;
+        yaJasiEl.disabled = true;
+      }
+    } else {
+      hourEl.value = savedHour;
+      minuteEl.value = savedMinute;
+      hourEl.disabled = false;
+      minuteEl.disabled = false;
+      if (yaJasiEl) yaJasiEl.disabled = false;
+    }
+  }
+
+  if (hourUnknownBtn) {
+    hourUnknownBtn.addEventListener("click", () => setHourUnknown(!isHourUnknown()));
+  }
+
   /* ── 사주 프로필 저장 (localStorage) ───────────────────────── */
   const PROFILE_STORAGE_KEY = "joheundei_saju_profiles_v1";
   const profileTabsEl = document.getElementById("profile-tabs");
@@ -298,6 +349,7 @@
       day: 1,
       hour: 12,
       minute: 0,
+      hour_unknown: false,
       gender: "male",
       lunar_leap: false,
       sewoon_year: "",
@@ -320,6 +372,7 @@
       day: Number(fd.get("day")) || 1,
       hour: Number(fd.get("hour")) ?? 12,
       minute: Number(fd.get("minute")) ?? 0,
+      hour_unknown: isHourUnknown(),
       gender: document.getElementById("gender").value || "male",
       lunar_leap: leapOn,
       sewoon_year: (fd.get("sewoon_year") || "").toString().trim(),
@@ -335,8 +388,11 @@
     document.getElementById("year").value = d.year;
     document.getElementById("month").value = d.month;
     document.getElementById("day").value = d.day;
-    document.getElementById("hour").value = d.hour;
-    document.getElementById("minute").value = d.minute;
+    setHourUnknown(!!d.hour_unknown);
+    if (!d.hour_unknown) {
+      document.getElementById("hour").value = d.hour;
+      document.getElementById("minute").value = d.minute;
+    }
     document.getElementById("sewoon_year").value = d.sewoon_year || "";
     document.getElementById("partner_day_pillar").value = d.partner_day_pillar || "";
     const yaJasiEl = document.getElementById("ya_jasi");
@@ -1554,6 +1610,12 @@
     const sec1 = el("div", "panel-section");
     sec1.appendChild(el("h3", null, "사주 원국 四柱"));
     sec1.appendChild(el("p", "panel-note", `${r.solar.label} · ${r.lunar.label}`));
+    if (r.meta && r.meta.hour_unknown) {
+      const note = r.meta.birth_time_note || (
+        "생시 미상 — 시주·대운·시간 관련 해석은 참고용으로 정오(12:00)를 가정했습니다."
+      );
+      sec1.appendChild(el("p", "hour-unknown-banner", note));
+    }
     sec1.appendChild(
       el(
         "p",
@@ -1573,14 +1635,19 @@
                        : "sibi-mid";
       const ganOh = ohClass(p.gan);
       const zhiOh = ohClass(p.zhi);
-      const cell = el("div", "pillar-cell");
+      const hourUnknown = r.meta && r.meta.hour_unknown && k === "hour";
+      const cell = el("div", "pillar-cell" + (hourUnknown ? " pillar-hour-unknown" : ""));
+      const unknownBadge = hourUnknown
+        ? '<span class="pillar-hour-unknown-badge">생시 미상·참고</span>'
+        : "";
       cell.innerHTML = `
         <div class="label-kr">${LABELS[k]}</div>
         <div class="gan-han han-inline ${ganOh}">${escapeHtml(p.gan)}</div>
         <div class="gan-kr">${escapeHtml(p.gan_kr || "")}</div>
         <div class="zhi-han han-inline ${zhiOh}">${escapeHtml(p.zhi)}</div>
         <div class="zhi-kr">${escapeHtml(p.zhi_kr || "")}</div>
-        <div class="pillar-sibi ${stageClass}" title="${escapeHtml(stageMeaning)}">${escapeHtml(stage)}</div>`;
+        <div class="pillar-sibi ${stageClass}" title="${escapeHtml(stageMeaning)}">${escapeHtml(stage)}</div>
+        ${unknownBadge}`;
       chart.appendChild(cell);
     });
     sec1.appendChild(chart);
@@ -2933,11 +3000,12 @@
       year: Number(fd.get("year")),
       month: Number(fd.get("month")),
       day: Number(fd.get("day")),
-      hour: Number(fd.get("hour")),
-      minute: Number(fd.get("minute")),
+      hour: isHourUnknown() ? 12 : Number(fd.get("hour")),
+      minute: isHourUnknown() ? 0 : Number(fd.get("minute")),
       gender: fd.get("gender"),
       lunar_leap: leapOn,
     };
+    if (isHourUnknown()) body.hour_unknown = true;
     const sewVal = fd.get("sewoon_year");
     if (sewVal) body.sewoon_center_year = Number(sewVal);
     const partner = (fd.get("partner_day_pillar") || "").toString().trim();

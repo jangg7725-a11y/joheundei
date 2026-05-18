@@ -1702,20 +1702,24 @@ def build_report(
     gender: str,
     lunar_leap: bool = False,
     ya_jasi: bool = False,
+    hour_unknown: bool = False,
     sewoon_center_year: int | None = None,
     wolwoon_center_year: int | None = None,
     partner_day_pillar: str | None = None,
 ) -> Dict[str, Any]:
+    calc_hour = 12 if hour_unknown else hour
+    calc_minute = 0 if hour_unknown else minute
+    calc_ya_jasi = False if hour_unknown else ya_jasi
     birth = sc.BirthInput(
         calendar=calendar,
         year=year,
         month=month,
         day=day,
-        hour=hour,
-        minute=minute,
+        hour=calc_hour,
+        minute=calc_minute,
         lunar_leap=lunar_leap,
         gender=gender,
-        ya_jasi=ya_jasi,
+        ya_jasi=calc_ya_jasi,
     )
     raw = sc.compute_saju(birth)
     ec = raw["_eight_char"]
@@ -1839,6 +1843,17 @@ def build_report(
             "gender_for_daewoon": "남성" if gender_male else "여성",
             "sewoon_center_applied": center,
             "wolwoon_center_applied": wol_center,
+            **(
+                {
+                    "hour_unknown": True,
+                    "birth_time_note": (
+                        "생시 미상 — 시주·대운·시간 관련 해석은 "
+                        "참고용으로 정오(12:00)를 가정했습니다."
+                    ),
+                }
+                if hour_unknown
+                else {}
+            ),
         },
         "solar": raw["solar"],
         "lunar": raw["lunar"],

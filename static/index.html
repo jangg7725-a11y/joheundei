@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260516-wol-h" />
+  <link rel="stylesheet" href="/static/style.css?v=20260516-time" />
 </head>
 <body>
   <header class="hero">
@@ -59,15 +59,33 @@
           </label>
         </div>
 
-        <div class="grid grid-time">
-          <label class="field">
-            <span>시 <small class="hint">0–23</small></span>
-            <input type="number" name="hour" id="hour" min="0" max="23" value="12" />
-          </label>
-          <label class="field">
-            <span>분</span>
-            <input type="number" name="minute" id="minute" min="0" max="59" value="0" />
-          </label>
+        <div class="field field-full time-block">
+          <div class="label-row time-label-row">
+            <span>생시 <small class="hint">0–23시 · 분</small></span>
+            <button
+              type="button"
+              class="btn-time-unknown"
+              id="hour-unknown-btn"
+              aria-pressed="false"
+              title="생시를 모를 때 선택합니다. 시주·대운은 참고용 정오(12:00) 기준입니다."
+            >
+              모름
+            </button>
+          </div>
+          <div class="grid grid-time" id="time-input-grid">
+            <label class="field">
+              <span>시</span>
+              <input type="number" name="hour" id="hour" min="0" max="23" value="12" />
+            </label>
+            <label class="field">
+              <span>분</span>
+              <input type="number" name="minute" id="minute" min="0" max="59" value="0" />
+            </label>
+          </div>
+          <input type="hidden" name="hour_unknown" id="hour_unknown" value="0" />
+          <p class="time-unknown-note fallback-hidden" id="time-unknown-note" role="status">
+            생시 미상 — 시주·대운·시간 관련 해석은 <strong>정오 12:00</strong> 가정 참고값입니다.
+          </p>
         </div>
 
         <div class="field field-full">
@@ -283,6 +301,6 @@
   </footer>
 
   <script src="/static/ai-story.js"></script>
-  <script src="/static/script.js?v=20260516-yong"></script>
+  <script src="/static/script.js?v=20260516-time"></script>
 </body>
 </html>
