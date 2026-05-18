@@ -18,6 +18,7 @@ from . import jijanggan as jj
 from . import ohaeng as oh
 from . import saju_calc as sc
 from . import sewoon as sw
+from . import samjae as sam
 from . import sibiunsung as sb
 from . import sinsal as sn
 from . import sipsin as sp
@@ -1893,6 +1894,10 @@ def build_report(
         "timeline": timeline_pack,
         "jeongmil": jeongmil,
         "yongsin": yong_block,
+        "삼재": sam.analyze_samjae(
+            pillars["year"]["zhi"],
+            target_year=center,
+        ),
         "분석_카테고리": categories,
         "원국_스토리텔링": _build_native_story_pack(
             day_master=dm,

@@ -1235,33 +1235,6 @@
     return ` <span class="jj-yuk">(${arr.map(escapeHtml).join(" · ")})</span>`;
   }
 
-  /** 십이운성 궁별 카드 묶음 — 원국 탭에서 성격 섹션 위로 올릴 때 재사용 */
-  function buildSibiGuideBlock(r) {
-    const sibiGuide = el("div", "sibi-guide-block");
-    sibiGuide.appendChild(el("h4", "sibi-guide-heading", "십이운성 · 궁(연·월·일·시)별 이해"));
-    sibiGuide.appendChild(
-      el(
-        "p",
-        "panel-note sibi-guide-intro",
-        "아래는 일간 기준으로 각 주의 지지에 붙은 운성을, 어느 「궁」에서 볼 때 쓰는지와 함께 풀어 쓴 참고 해석입니다. 파종·세팅에 따라 세부는 달라질 수 있습니다."
-      )
-    );
-    const guideGrid = el("div", "sibi-guide-grid");
-    PILLAR_KEYS_COL_ORDER.forEach((k) => {
-      const sb = (r.sibiunsung && r.sibiunsung[k]) || {};
-      const card = el("div", "sibi-guide-card");
-      const head = el("div", "sibi-guide-card-head");
-      head.innerHTML = `<span class="sibi-guide-ju">${escapeHtml(sb["주"] || LABELS[k])}</span><span class="sibi-guide-stage han-inline">${escapeHtml(sb.stage || "")}</span>`;
-      card.appendChild(head);
-      const body = el("p", "sibi-guide-body");
-      body.textContent = sb["해설_통합"] || sb["해설통합"] || "";
-      card.appendChild(body);
-      guideGrid.appendChild(card);
-    });
-    sibiGuide.appendChild(guideGrid);
-    return sibiGuide;
-  }
-
   /** 지장간 제목 + 상세 — 원국 탭에서 성격 섹션 위로 올릴 때 재사용 */
   function buildJijangganBlock(r) {
     const wrap = el("div", "jj-section-outer");
@@ -1667,10 +1640,6 @@
       if (pbs.children.length) sec1.appendChild(pbs);
     }
 
-    if (!story) {
-      sec1.appendChild(buildSibiGuideBlock(r));
-    }
-
     root.appendChild(sec1);
 
     const sec2 = el("div", "panel-section");
@@ -1680,7 +1649,7 @@
         "p",
         "panel-note",
         story
-          ? "아래 표는 년주 → 월주 → 일주 → 시주 순입니다. (한 줄 요약·십이운성·지장간은 표 아래에 이어집니다.)"
+          ? "아래 표는 년주 → 월주 → 일주 → 시주 순입니다. (십이운성은 표에, 지장간은 아래 섹션에 이어집니다.)"
           : "아래 표·지장간은 위에서 아래로 년주 → 월주 → 일주 → 시주 순입니다."
       )
     );
@@ -1735,7 +1704,6 @@
     if (story) {
       const storyPanel = el("div", "panel-section wonguk-story-panel");
       appendStoryCoreCard(storyPanel, r);
-      storyPanel.appendChild(buildSibiGuideBlock(r));
       storyPanel.appendChild(buildJijangganBlock(r));
       appendWongukUnteimOnly(storyPanel, story, r);
       root.appendChild(storyPanel);
@@ -2954,6 +2922,66 @@
     }
   }
 
+  function renderSamjaeAside(r) {
+    const aside = document.getElementById("samjae-aside");
+    if (!aside) return;
+    const sam = r.삼재 || r.samjae || {};
+    if (!sam || sam["기준_연도"] == null) {
+      aside.hidden = true;
+      aside.innerHTML = "";
+      return;
+    }
+    aside.hidden = false;
+    const phase = String(sam["올해_삼재_코드"] || "none");
+    const badgeCls =
+      phase === "deul"
+        ? "is-deul"
+        : phase === "nul"
+          ? "is-nul"
+          : phase === "nal"
+            ? "is-nal"
+            : "is-none";
+    const birthZhi = sam["년지_띠"] || "";
+    const birthKr = sam["년지_띠_한글"] || "";
+    const cycle = sam["가까운_삼재_연도"] || [];
+    const cycleUl = el("ul", "samjae-cycle-list");
+    if (cycle.length) {
+      cycle.forEach((row) => {
+        const li = document.createElement("li");
+        if (Number(row["연도"]) === Number(sam["기준_연도"])) li.className = "is-current";
+        li.textContent = `${row["연도"]} ${row["간지"] || ""} · ${row["단계"] || ""}`;
+        cycleUl.appendChild(li);
+      });
+    } else {
+      const li = document.createElement("li");
+      li.textContent = "가까운 3년 주기 삼재 없음";
+      cycleUl.appendChild(li);
+    }
+
+    aside.innerHTML = "";
+    const h3 = el("h3", "samjae-aside-title", "올해 삼재");
+    aside.appendChild(h3);
+    const yearP = el("p", "samjae-aside-year");
+    yearP.innerHTML = `${sam["기준_연도"]}년 세운 <span class="han-inline">${escapeHtml(sam["세운_간지"] || "")}</span>`;
+    aside.appendChild(yearP);
+    const badge = el("div", `samjae-phase-badge ${badgeCls}`);
+    badge.textContent = sam["올해_삼재"] || "해당 없음";
+    aside.appendChild(badge);
+    const desc = el("p", "samjae-aside-desc");
+    desc.textContent = sam["설명"] || sam["한줄_요약"] || "";
+    aside.appendChild(desc);
+    if (sam["팁"]) {
+      const tip = el("p", "samjae-aside-tip");
+      tip.textContent = sam["팁"];
+      aside.appendChild(tip);
+    }
+    const tri = el("p", "samjae-triplet");
+    tri.textContent = `본인 띠 ${birthZhi}(${birthKr}) 기준 삼재 주기: ${sam["들_라벨"] || ""} → ${sam["눌_라벨"] || ""} → ${sam["날_라벨"] || ""}`;
+    aside.appendChild(tri);
+    aside.appendChild(el("p", "samjae-cycle-title", "가까운 삼재 연도"));
+    aside.appendChild(cycleUl);
+  }
+
   function renderReport(data) {
     const r = data.result;
     latestReport = r;
@@ -2963,6 +2991,7 @@
       ? `${name} 님 · 일간 ${r.day_master}(${r.day_master_kr}) · ${r.eight_char_string || ""}`
       : `일간 ${r.day_master}(${r.day_master_kr}) · ${r.eight_char_string || ""}`;
 
+    renderSamjaeAside(r);
     renderDashboardSummary(r);
     renderTab0(r);
     renderTab1(r);
