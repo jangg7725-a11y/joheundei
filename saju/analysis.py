@@ -81,6 +81,40 @@ def _compress_evidence(ev: Sequence[str], max_items: int = 4) -> List[str]:
     return out or ["특이 신호 적음"]
 
 
+def _extract_year_from_line(line: str) -> Optional[int]:
+    m = re.search(r"(\d{4})년", str(line))
+    return int(m.group(1)) if m else None
+
+
+def _filter_evidence_to_center_year(ev: Sequence[str], center_year: int) -> List[str]:
+    """연도가 붙은 근거는 기준 세운 연도만 남긴다(원국·무연도 문장은 유지)."""
+    out: List[str] = []
+    for line in ev:
+        y = _extract_year_from_line(line)
+        if y is None or y == center_year:
+            out.append(str(line))
+    return out
+
+
+def _sewoon_items_for_center(
+    sewoon_nearby: Sequence[Dict[str, Any]], center_year: int
+) -> List[Dict[str, Any]]:
+    return [item for item in sewoon_nearby if item.get("year") == center_year]
+
+
+def _daewoon_cycle_for_year(
+    daewoon_cycles: Sequence[Dict[str, Any]], *, birth_year: int, target_year: int
+) -> Optional[Dict[str, Any]]:
+    age = target_year - birth_year
+    for c in daewoon_cycles:
+        sa, ea = c.get("start_age"), c.get("end_age")
+        if sa is None or ea is None:
+            continue
+        if int(sa) <= age <= int(ea):
+            return c
+    return None
+
+
 def _split_year_evidence(ev: Sequence[str], current_year: int) -> Tuple[List[str], List[str]]:
     future: List[str] = []
     past: List[str] = []
@@ -200,12 +234,18 @@ def _narr_wind(*, wind_ev: Sequence[str]) -> str:
     return "횡재 신호가 약하면 한 방보다 꾸준한 수입 구조가 안전합니다."
 
 
-def _narr_loss(*, loss_future: Sequence[str], loss_past: Sequence[str], cy: int) -> str:
-    if loss_future:
-        return "앞으로 겁재·재성 충이 겹치는 해에는 지출·보증·동업 분배를 특히 조심하고 현금 비중을 높이세요."
-    if loss_past:
-        return "과거에 손재·지출이 컸던 해가 있었을 수 있습니다. 앞으로는 공동지출·연대보증을 줄이는 편이 안전합니다."
-    return f"{cy}년 이후에는 지출 통제와 회계 습관이 재물 방어의 핵심입니다."
+def _narr_loss(
+    *, loss_at_center: Sequence[str], center_year: int
+) -> str:
+    if loss_at_center:
+        return (
+            f"{center_year}년 세운에서는 겁재·재성 충이 맞물리면 "
+            "지출·보증·동업 분배를 특히 조심하고 현금 비중을 높이세요."
+        )
+    return (
+        f"{center_year}년 세운 기준으로는 손재 신호가 약합니다. "
+        "지출 통제와 회계 습관을 유지하면 재물 방어에 도움이 됩니다."
+    )
 
 
 def _narr_mour(*, sangmun: bool, jogak: bool, kong: bool) -> str:
@@ -219,11 +259,15 @@ def _narr_mour(*, sangmun: bool, jogak: bool, kong: bool) -> str:
     return " ".join(parts) if parts else "상복·우환은 상문·조객·공망 신호로 봅니다."
 
 
-def _narr_sep(*, day_chong_years: Sequence[int], wonjin: bool, kong_day: bool) -> str:
+def _narr_sep(
+    *, day_chong_at_center: bool, center_year: int, wonjin: bool, kong_day: bool
+) -> str:
     parts: List[str] = []
-    if day_chong_years:
-        yrs = ", ".join(str(y) for y in day_chong_years[:4])
-        parts.append(f"일지 충이 예상되는 해({yrs})에는 거처·결혼·큰 계약을 성급히 결정하지 않는 편이 좋습니다.")
+    if day_chong_at_center:
+        parts.append(
+            f"{center_year}년(분석 기준 세운)에는 일지 충으로 "
+            "거처·결혼·큰 계약을 성급히 결정하지 않는 편이 좋습니다."
+        )
     if wonjin:
         parts.append("원진살이 있으면 가까운 관계에서 같은 갈등이 반복되기 쉬워 거리·규칙 합의가 필요합니다.")
     if kong_day:
@@ -231,11 +275,30 @@ def _narr_sep(*, day_chong_years: Sequence[int], wonjin: bool, kong_day: bool) -
     return " ".join(parts) if parts else "이별·거리는 일지 충·원진·공망으로 봅니다."
 
 
-def _narr_flow(*, yong_el: str, dw_lines: Sequence[str]) -> str:
-    head = f"대운·세운은 용신 {yong_el} 방향을 기준축으로 두고 움직이면 큰 그림이 잡힙니다." if yong_el else "대운·세운은 10년 흐름과 연도별 충·합으로 읽습니다."
-    if dw_lines:
-        return head + " " + str(dw_lines[0]).split("·")[0][:80]
-    return head
+def _narr_flow(
+    *,
+    yong_el: str,
+    dw_lines: Sequence[str],
+    center_year: int,
+    center_pillar: str,
+    daewoon_at_center: Optional[str],
+) -> str:
+    head = (
+        f"대운·세운은 용신 {yong_el} 방향을 기준축으로 두고 움직이면 큰 그림이 잡힙니다."
+        if yong_el
+        else "대운·세운은 10년 대운 흐름과 올해 세운 충·합으로 읽습니다."
+    )
+    parts: List[str] = [head]
+    if daewoon_at_center:
+        parts.append(f"{center_year}년에는 {daewoon_at_center}")
+    if center_pillar:
+        parts.append(
+            f"올해 세운 {center_pillar}이 원국·대운과 맞물리는 축으로 "
+            "연간 운세를 해석합니다."
+        )
+    elif dw_lines:
+        parts.append(str(dw_lines[0]).split("·")[0][:80])
+    return " ".join(parts)
 
 
 def _wealth_element(day_master: str) -> str:
@@ -553,7 +616,11 @@ def _build_life_categories(
     sewoon_nearby: Sequence[Dict[str, Any]],
     daewoon_cycles: Sequence[Dict[str, Any]],
     partner_day_pillar: Optional[str],
+    center_year: int,
+    birth_year: int,
+    sewoon_center_pillar: str = "",
 ) -> Dict[str, Any]:
+    sew_center = _sewoon_items_for_center(sewoon_nearby, center_year)
     female = sp.is_female_gender(gender)
     sip_c = _sipsin_counts(day_master, pillars)
     wealth_el = _wealth_element(day_master)
@@ -689,7 +756,7 @@ def _build_life_categories(
     if _has_sinsal_lines(sinsal, "괴강살"):
         legal_ev.append("괴강살(일주)")
     legal_ev.extend(_xing_lines_for_mishap(rel_full["원국_형"]))
-    officer_chong_years = _sewoon_years_officer_chong(day_master, pillars, sewoon_nearby)
+    officer_chong_years = _sewoon_years_officer_chong(day_master, pillars, sew_center)
     legal_ev.extend(officer_chong_years[:6])
 
     legal_warn = [
@@ -706,16 +773,16 @@ def _build_life_categories(
     che = _cheoneul_wealth_same_pillar(sinsal, day_master, pillars)
     if che:
         wind_ev.append("천을귀인 + 재성 동주: " + ", ".join(che))
-    wind_ev.extend(_sewoon_wealth_heavenly_union(day_master, pillars, sewoon_nearby))
+    wind_ev.extend(_sewoon_wealth_heavenly_union(day_master, pillars, sew_center))
 
     wind_warn = ["급격한 베팅·보증은 세운 충과 겹치면 오히려 증발하기 쉽습니다."]
     wind_adv = ["기회 해에는 현금 확보 비율을 정해 두고 단계적으로 실행하면 횡재가 실속으로 남습니다."]
 
-    loss_ev = _sewoon_years_geobjae_hit(day_master, sewoon_nearby)
-    loss_ev.extend(_sewoon_hits_rexcai_branch(day_master, pillars, sewoon_nearby))
+    loss_ev = _sewoon_years_geobjae_hit(day_master, sew_center)
+    loss_ev.extend(_sewoon_hits_rexcai_branch(day_master, pillars, sew_center))
     yangin_br = _yangin_marker_zhi(sinsal)
     if yangin_br and _has_sinsal_lines(sinsal, "양인살"):
-        for item in sewoon_nearby:
+        for item in sew_center:
             p = item.get("pillar") or ""
             if len(p) >= 2 and p[1] == yangin_br and item.get("year"):
                 loss_ev.append(f"{item['year']}년 세운 지지 {yangin_br}: 양인과 만나 지출·외상 변수를 의식합니다.")
@@ -744,9 +811,10 @@ def _build_life_categories(
     mour_adv = ["비보가 예상될 때는 마음·일정·재정 여유를 미리 확보하세요."]
 
     sep_ev = []
-    day_chong_years = _sewoon_day_chong_years(pillars, sewoon_nearby)
-    if day_chong_years:
-        sep_ev.append(f"일지 충이 예상되는 해: {', '.join(str(y) for y in day_chong_years[:8])}")
+    day_chong_years = _sewoon_day_chong_years(pillars, sew_center)
+    day_chong_at_center = center_year in day_chong_years
+    if day_chong_at_center:
+        sep_ev.append(f"{center_year}년 세운: 일지 충이 예상됩니다.")
     if wonjin:
         sep_ev.append("원진살: 반복 갈등으로 거리두기·이별 논의가 나오기 쉽습니다.")
     if pillars["day"]["zhi"] in kong_set:
@@ -757,13 +825,21 @@ def _build_life_categories(
 
     dw_lines = [_daewoon_tone(yong, c)[1] for c in daewoon_cycles if c.get("ganzhi")]
     flow_ev = dw_lines[:8]
-    flow_ev.extend(_flow_sewoon_digest(day_master, pillars, sewoon_nearby))
+    flow_ev.extend(_flow_sewoon_digest(day_master, pillars, sew_center))
+    dw_at_y = _daewoon_cycle_for_year(
+        daewoon_cycles, birth_year=birth_year, target_year=center_year
+    )
+    daewoon_at_center: Optional[str] = None
+    if dw_at_y:
+        daewoon_at_center = _daewoon_tone(yong, dw_at_y)[1]
 
     flow_warn = ["대운·세운은 참고용 규칙 기반이며 실제는 월운·일진·환경이 함께 작동합니다."]
-    flow_adv = ["10년 대운 방향을 용신 오행에 맞추고, 세운은 일지·재성 충 여부만 골라 관리해도 큰 그림이 잡힙니다."]
+    flow_adv = [
+        "10년 대운 방향을 용신 오행에 맞추고, 올해 세운(일지·재성 충)만 골라 관리해도 큰 그림이 잡힙니다.",
+        f"다른 연도 세운은 매년 새로 분석할 때 해당 해 기준으로 다시 봅니다(기준 {center_year}년).",
+    ]
 
-    cy = date.today().year
-    loss_future, loss_past = _split_year_evidence(loss_ev, cy)
+    loss_at_center = _filter_evidence_to_center_year(loss_ev, center_year)
     wonjin_zhi = _wonjin_glyph(sinsal)
     yong_wealth = yong.get("용신_오행") == wealth_el
 
@@ -834,8 +910,8 @@ def _build_life_categories(
             wind_adv,
         ),
         "7_손재운": _cat(
-            _narr_loss(loss_future=loss_future, loss_past=loss_past, cy=cy),
-            _compress_evidence(loss_future, 5),
+            _narr_loss(loss_at_center=loss_at_center, center_year=center_year),
+            _compress_evidence(loss_at_center, 5),
             loss_warn,
             loss_adv,
         ),
@@ -851,7 +927,8 @@ def _build_life_categories(
         ),
         "9_이별_별리": _cat(
             _narr_sep(
-                day_chong_years=day_chong_years,
+                day_chong_at_center=day_chong_at_center,
+                center_year=center_year,
                 wonjin=wonjin,
                 kong_day=pillars["day"]["zhi"] in kong_set,
             ),
@@ -860,8 +937,16 @@ def _build_life_categories(
             sep_adv,
         ),
         "10_전체_운세_흐름": _cat(
-            _narr_flow(yong_el=str(yong.get("용신_오행") or ""), dw_lines=dw_lines),
-            _compress_evidence(flow_ev, 5),
+            _narr_flow(
+                yong_el=str(yong.get("용신_오행") or ""),
+                dw_lines=dw_lines,
+                center_year=center_year,
+                center_pillar=sewoon_center_pillar,
+                daewoon_at_center=daewoon_at_center,
+            ),
+            _compress_evidence(
+                _filter_evidence_to_center_year(flow_ev, center_year), 5
+            ),
             flow_warn,
             flow_adv,
         ),
@@ -869,6 +954,10 @@ def _build_life_categories(
             "재성_오행": wealth_el,
             "관성_오행": officer_el,
             "편재_겁재_카운트": {"편재": sip_c["편재"], "정재": sip_c["정재"], "겁재": sip_c["겁재"]},
+        },
+        "_세운_기준": {
+            "연도": center_year,
+            "간지": sewoon_center_pillar,
         },
     }
     return out
@@ -1733,8 +1822,8 @@ def build_report(
     gender_male = gender.strip().lower() in ("male", "m", "남", "남자")
 
     center = sewoon_center_year or datetime.now().year
-    # 월운표 기준 연도: 미지정 시 양력 현재 연도(세운 기준연도와 독립)
-    wol_center = wolwoon_center_year if wolwoon_center_year is not None else datetime.now().year
+    # 월운표 기준 연도: 미지정 시 세운 기준연도와 동일
+    wol_center = wolwoon_center_year if wolwoon_center_year is not None else center
 
     hidden_block = jj.all_hidden_for_pillars(pillars)
     sip_full = sp.full_eight_char_sipsin(dm, pillars, gender)
@@ -1785,6 +1874,9 @@ def build_report(
         sewoon_nearby=sewoon_nearby,
         daewoon_cycles=daewoon_block["cycles"],
         partner_day_pillar=partner_day_pillar,
+        center_year=center,
+        birth_year=year,
+        sewoon_center_pillar=sew_now.get("pillar") or "",
     )
 
     sew_deep = sw.sewoon_forecast_pack(

@@ -865,12 +865,21 @@ def merge_health_with_unteim(health: Dict[str, Any], unteim: Dict[str, Any]) -> 
     out = dict(health)
     lines = (unteim.get("건강") or {}).get("문장_목록") or []
     if lines:
+        existing = set()
+        for key in ("건강_유지_조언", "건강_위험_패턴", "주의_장부"):
+            for item in out.get(key) or []:
+                if isinstance(item, str) and item.strip():
+                    existing.add(item.strip())
         advice = list(out.get("건강_유지_조언") or [])
+        unique_lines: List[str] = []
         for ln in lines[:2]:
-            if ln and ln not in advice:
-                advice.append(ln)
+            t = str(ln).strip()
+            if t and t not in existing and t not in unique_lines:
+                unique_lines.append(t)
+        for ln in unique_lines:
+            advice.append(ln)
         out["건강_유지_조언"] = advice
-        out["unteim_보강"] = _join_text(lines)
+        out["unteim_보강"] = _join_text(unique_lines or lines[:2])
     return out
 
 

@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+import re
+
 from saju import analysis as an
 
 
@@ -39,3 +41,15 @@ def test_step10_build_report(sample_birth) -> None:
     assert len(story["성격_분석"]["장점_5"]) == 5
     assert len(story["직업_적성"]["최적_직군_TOP5"]) == 5
     assert "유년기_15미만" in story["인생_전체_흐름"]
+    base = report["분석_카테고리"]["_세운_기준"]
+    assert base["연도"] == 2026
+    ev_loss = report["분석_카테고리"]["7_손재운"]["📌 근거"]
+    for line in ev_loss:
+        y = re.search(r"(\d{4})년", str(line))
+        if y:
+            assert int(y.group(1)) == 2026
+    ev_flow = report["분석_카테고리"]["10_전체_운세_흐름"]["📌 근거"]
+    for line in ev_flow:
+        y = re.search(r"(\d{4})년", str(line))
+        if y:
+            assert int(y.group(1)) == 2026

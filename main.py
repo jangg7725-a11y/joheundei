@@ -172,7 +172,7 @@ class SajuRequest(BaseModel):
         default=None,
         ge=1800,
         le=2100,
-        description="월운표 기준 세운 연도(미입력 시 양력 현재 연도)",
+        description="월운표 기준 연도(미입력 시 세운 기준연도와 동일)",
     )
     partner_day_pillar: str | None = Field(
         default=None,

@@ -10,27 +10,51 @@ from . import ohaeng as oh
 from . import sipsin as sp
 
 
-_PAD_NEUTRAL_POOL = (
+_PAD_STRENGTH_POOL = (
     "생활 습관과 마음가짐을 함께 다듬으면 강점이 더 분명해지고, 무리한 비교보다 자신의 페이스를 지키는 것이 도움이 됩니다.",
     "작은 실천이 쌓이면 성과로 이어지는 타입이므로, 급하게 결론 내리기보다 꾸준함을 우선하세요.",
-    "주변과의 호흡을 맞추면 부담이 줄고, 본인 페이스가 더 잘 살아납니다.",
     "강점은 한 번에 드러나기보다 시간이 지나며 분명해지는 경우가 많습니다.",
 )
 
+_PAD_WEAKNESS_POOL = (
+    "주변과의 호흡을 맞추면 부담이 줄고, 본인 페이스가 더 잘 살아납니다.",
+    "무리한 확장보다 회복·정리 시간을 확보하면 단점이 덜 드러납니다.",
+    "한 가지에 집중할 때 실수가 줄고, 에너지 소모도 완만해집니다.",
+)
 
-def _min_chars(text: str, min_len: int, tail: str = "") -> str:
+_PAD_NEUTRAL_POOL = _PAD_STRENGTH_POOL + _PAD_WEAKNESS_POOL
+
+
+def _min_chars(
+    text: str,
+    min_len: int,
+    tail: str = "",
+    *,
+    pool: tuple[str, ...] = _PAD_NEUTRAL_POOL,
+    used_fillers: Optional[set[str]] = None,
+) -> str:
     """짧은 문장은 성별·슬롯 태그 없이 중립 문장으로만 보강한다."""
     s = text.strip()
     if len(s) >= min_len:
         return s
     out = s
-    seed = sum(ord(c) for c in s) % len(_PAD_NEUTRAL_POOL)
-    fillers = [_PAD_NEUTRAL_POOL[seed]]
+    seed = sum(ord(c) for c in s) % len(pool)
+    fillers: List[str] = []
+    for i in range(len(pool)):
+        cand = pool[(seed + i) % len(pool)]
+        if used_fillers is not None and cand in used_fillers:
+            continue
+        fillers.append(cand)
+    if not fillers:
+        fillers = list(pool)
     if tail.strip():
         fillers.insert(0, tail.strip())
     idx = 0
     while len(out) < min_len:
-        out = f"{out} {fillers[idx % len(fillers)]}".strip()
+        filler = fillers[idx % len(fillers)]
+        if used_fillers is not None:
+            used_fillers.add(filler)
+        out = f"{out} {filler}".strip()
         idx += 1
     return out
 
@@ -535,8 +559,21 @@ class NativeStoryEngine:
                     "큰 결정(부동산·이직·사업)은 데이터와 주변 의견을 수렴한 뒤 확정하는 것이 후회를 줄입니다"
                 )
 
-        strengths = [_min_chars(s.strip(), 100) for s in strengths if s.strip()]
-        weaknesses = [_min_chars(s.strip(), 100) for s in weaknesses if s.strip()]
+        pad_used: set[str] = set()
+        strengths = [
+            _min_chars(
+                s.strip(), 100, pool=_PAD_STRENGTH_POOL, used_fillers=pad_used
+            )
+            for s in strengths
+            if s.strip()
+        ]
+        weaknesses = [
+            _min_chars(
+                s.strip(), 100, pool=_PAD_WEAKNESS_POOL, used_fillers=pad_used
+            )
+            for s in weaknesses
+            if s.strip()
+        ]
 
         gender_label = "여명" if self.female else "남명"
         return {

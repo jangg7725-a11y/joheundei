@@ -26,10 +26,47 @@
     return sajuYearAdmin;
   }
 
+  function sewoonCenterMeta(r) {
+    const cy = r?.meta?.sewoon_center_applied ?? new Date().getFullYear();
+    const base = r?.["분석_카테고리"]?.["_세운_기준"];
+    const gz =
+      (base && base["간지"]) ||
+      (Array.isArray(r?.sewoon_nearby)
+        ? r.sewoon_nearby.find((x) => x.year === cy)?.pillar
+        : "") ||
+      "";
+    return { year: cy, pillar: gz };
+  }
+
+  function appendSewoonCenterBanner(parent, r) {
+    const { year, pillar } = sewoonCenterMeta(r);
+    const gzTxt = pillar ? ` · 세운 ${pillar}` : "";
+    const note = isSajuYearAdmin()
+      ? "관리자: 세운 탭에서 ±10년·다른 기준 연도를 볼 수 있습니다."
+      : "다른 연도는 해당 해에 다시 분석할 때 그 해 세운으로 제공됩니다.";
+    parent.appendChild(
+      el(
+        "p",
+        "panel-note sewoon-center-banner",
+        `${year}년 세운 기준 해석${gzTxt}. ${note}`
+      )
+    );
+  }
+
+  function syncSewoonYearFieldForAdmin() {
+    const inp = document.getElementById("sewoon_year");
+    const field = inp && inp.closest(".field");
+    if (!field) return;
+    const admin = isSajuYearAdmin();
+    field.hidden = !admin;
+    if (!admin && inp) inp.value = "";
+  }
+
   function applySajuYearAdminFromConfig(cfg) {
     initSajuAdminUnlockFromUrl();
     if (sessionStorage.getItem(SAJU_ADMIN_SESSION_KEY) === "1") {
       sajuYearAdmin = true;
+      syncSewoonYearFieldForAdmin();
       return;
     }
     sajuYearAdmin = false;
@@ -46,6 +83,7 @@
     } catch {
       /* ignore */
     }
+    syncSewoonYearFieldForAdmin();
   }
 
   async function refreshSajuYearAdmin() {
@@ -56,6 +94,7 @@
     } catch {
       initSajuAdminUnlockFromUrl();
       sajuYearAdmin = sessionStorage.getItem(SAJU_ADMIN_SESSION_KEY) === "1";
+      syncSewoonYearFieldForAdmin();
     }
   }
   /** 원국 카드: 시→일→월→년 (좌→우). */
@@ -1820,6 +1859,7 @@
     if (cat) {
       const catSec = el("div", "panel-section");
       catSec.appendChild(el("h3", null, "합·충과 연결된 생활 해석"));
+      appendSewoonCenterBanner(catSec, r);
       catSec.appendChild(
         el(
           "p",
@@ -2918,6 +2958,7 @@
       secHero.appendChild(card);
     }
     root.appendChild(secHero);
+    appendSewoonCenterBanner(root, r);
 
     if (story) {
       const secLife = el("div", "panel-section");
@@ -3162,7 +3203,7 @@
     };
     if (isHourUnknown()) body.hour_unknown = true;
     const sewVal = fd.get("sewoon_year");
-    if (sewVal) body.sewoon_center_year = Number(sewVal);
+    if (isSajuYearAdmin() && sewVal) body.sewoon_center_year = Number(sewVal);
     const partner = (fd.get("partner_day_pillar") || "").toString().trim();
     if (partner) body.partner_day_pillar = partner;
     const yaJasiEl = document.getElementById("ya_jasi");
