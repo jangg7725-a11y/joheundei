@@ -1186,6 +1186,40 @@ table.data-table tr:last-child td {
   border-bottom: none;
 }
 
+table.data-table tr.remedy-row td {
+  border-bottom: 1px solid var(--line);
+  padding-top: 0.15rem;
+  padding-bottom: 0.65rem;
+}
+
+.remedy-btn {
+  background: none;
+  border: 1px solid rgba(201, 168, 76, 0.4);
+  color: var(--gold);
+  border-radius: 6px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-top: 0.4rem;
+}
+
+.remedy-content {
+  display: none;
+  background: rgba(201, 168, 76, 0.06);
+  border-left: 3px solid var(--gold);
+  border-radius: 0 8px 8px 0;
+  padding: 0.8rem 1rem;
+  margin-top: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-sub);
+  line-height: 1.7;
+  white-space: pre-line;
+}
+
+.remedy-content.open {
+  display: block;
+}
+
 table.data-table .han-inline {
   font-weight: 700;
 }

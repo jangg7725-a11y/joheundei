@@ -219,9 +219,333 @@ CHEON_GAN_HAP_RESULT = {
 
 SAN_HE_ELEMENT = {"목국": "목", "화국": "화", "토국": "토", "금국": "금", "수국": "수"}
 
+CHUNG_REMEDY: Dict[str, Dict[str, str]] = {
+    "子午": {
+        "보완": (
+            "🔵 水(子) 방향 보완: "
+            "북쪽 방향 활동, 파란색·검은색 활용, "
+            "신장·방광 정기 검진. "
+            "🔴 火(午) 방향 조절: "
+            "과열·흥분 시 잠시 멈추고 "
+            "수분 섭취로 열기를 식히세요. "
+            "충 발동 해에는 큰 결정 전 "
+            "하룻밤 숙고 습관을 들이세요"
+        )
+    },
+    "丑未": {
+        "보완": (
+            "🟡 土 균형: 중앙·안정 에너지 보완. "
+            "노란색·황토색 활용, "
+            "위장·비장 관리 우선. "
+            "변화보다 현재 자리를 지키는 "
+            "전략이 충 해소에 유리합니다"
+        )
+    },
+    "寅申": {
+        "보완": (
+            "🟢 木(寅) 보완: 동쪽 방향, 초록색, "
+            "간·담 스트레칭 운동. "
+            "⚪ 金(申) 조절: 결단 전 "
+            "감정 점검 루틴 추가. "
+            "이동·변화가 잦은 충이므로 "
+            "핵심 기반(주거·직장)만큼은 "
+            "안정적으로 유지하세요"
+        )
+    },
+    "卯酉": {
+        "보완": (
+            "🟢 木(卯) 보완: 봄철 야외 활동, "
+            "초록 식물 가까이 두기, "
+            "간·눈 피로 관리. "
+            "⚪ 金(酉) 조절: 완벽주의 내려놓기, "
+            "폐·대장 건강 체크. "
+            "감성과 이성 사이 균형이 핵심입니다"
+        )
+    },
+    "辰戌": {
+        "보완": (
+            "🟡 土 과다 충: 변화 수용 연습이 필요합니다. "
+            "환절기 위장·피부 관리 우선. "
+            "고집보다 유연성을 의식적으로 키우고 "
+            "명상·마음챙김으로 내면 안정을 찾으세요"
+        )
+    },
+    "巳亥": {
+        "보완": (
+            "🔴 火(巳) 보완: 남쪽 방향, 붉은색, "
+            "심장·순환 관리. "
+            "🔵 水(亥) 조절: 충동 전 "
+            "3초 멈춤 습관. "
+            "행동 전 한번 더 생각하는 루틴이 "
+            "이 충의 최고 보완법입니다"
+        )
+    },
+}
 
-def _relation_row(kind: str, glyphs: str, where: str, strength: str, note: str) -> Dict[str, str]:
-    return {"관계": kind, "글자": glyphs, "위치": where, "강도": strength, "해석": note}
+PA_REMEDY: Dict[str, str] = {
+    "子酉": "子丑합 또는 酉辰합 인연을 통해 균열을 메울 수 있습니다. 문서·계약 시 제3자 확인 습관을 들이세요",
+    "午卯": "午未합 인연이 완충 역할을 합니다. 감정 폭발 전 글쓰기·그림 등 창작 활동으로 해소하세요",
+    "巳申": "巳酉합으로 보완 가능합니다. 열정과 현실 사이 균형을 주기적으로 점검하세요",
+    "寅亥": "寅午합으로 보완됩니다. 시작은 크게 하되 마무리 루틴을 반드시 만드세요",
+    "辰丑": "辰酉합으로 보완됩니다. 저축·자산 관리를 정기적으로 점검하세요",
+    "戌未": "戌午합으로 보완됩니다. 인간관계에서 기대치를 미리 조율하는 대화가 중요합니다",
+}
+
+HAI_REMEDY: Dict[str, str] = {
+    "子未": "子丑합으로 해 기운을 완화할 수 있습니다. 재물 관련 문서는 반드시 서면으로 남기세요",
+    "丑午": "丑子합 또는 午未합으로 보완됩니다. 가족 간 금전 거래는 명확한 합의가 필요합니다",
+    "寅巳": "寅亥합으로 보완됩니다. 경쟁자보다 나의 속도에 집중하는 것이 해소법입니다",
+    "卯辰": "卯戌합으로 보완됩니다. 문서·계약 검토를 꼼꼼히 하는 습관이 필요합니다",
+    "申亥": "申子합으로 보완됩니다. 이동 시 안전 확인을 한 번 더 하는 습관을 들이세요",
+    "酉戌": "酉辰합으로 보완됩니다. 신뢰 관계를 천천히 쌓아가는 것이 최선입니다",
+}
+
+SAMHAP_MISSING: Dict[str, Dict[str, Dict[str, Dict[str, str]]]] = {
+    "子辰申": {
+        "수국": {
+            "없으면_辰": {
+                "부족글자": "辰",
+                "의미": "水 기운의 마무리·결실 글자가 없어 끝맺음이 아쉬운 구조입니다",
+                "보완": (
+                    "辰이 포함된 대운·세운이 오는 해에 "
+                    "수 기운(재물·지혜·유연성)이 완성됩니다. "
+                    "그 해를 놓치지 마세요. "
+                    "평소에는 辰 방향(동남쪽) 활동과 "
+                    "저축·마무리 습관으로 보완하세요"
+                ),
+            },
+            "없으면_申": {
+                "부족글자": "申",
+                "의미": "水 기운의 시작·추진 글자가 없어 새로운 도전의 동력이 부족합니다",
+                "보완": (
+                    "申운이 오는 해(寅年 이후 申年)에 "
+                    "새로운 시작의 기회가 옵니다. "
+                    "평소 서쪽 방향 활동과 "
+                    "금속 액세서리로 기운을 보완하세요"
+                ),
+            },
+        }
+    },
+    "寅午戌": {
+        "화국": {
+            "없으면_戌": {
+                "부족글자": "戌",
+                "의미": "火 기운의 마무리 글자가 없어 열정이 결실로 이어지기 어렵습니다",
+                "보완": (
+                    "戌운이 오는 해에 화 기운이 완성됩니다. "
+                    "평소 끝맺음 루틴과 "
+                    "마무리 체크리스트를 만드세요"
+                ),
+            },
+        }
+    },
+    "丑巳酉": {
+        "금국": {
+            "없으면_丑": {
+                "부족글자": "丑",
+                "의미": "金 기운의 저장·완성 글자가 없어 결단력이 끝까지 유지되기 어렵습니다",
+                "보완": (
+                    "丑운이 오는 해에 금 기운이 완성됩니다. "
+                    "평소 저축 습관과 "
+                    "마무리 실행력을 키우세요"
+                ),
+            },
+        }
+    },
+    "卯未亥": {
+        "목국": {
+            "없으면_未": {
+                "부족글자": "未",
+                "의미": "木 기운의 결실 글자가 없어 성장이 완전한 결실로 맺기 어렵습니다",
+                "보완": (
+                    "未운이 오는 해에 목 기운이 완성됩니다. "
+                    "평소 남서쪽 방향 활동과 "
+                    "꾸준한 성장 기록을 남기세요"
+                ),
+            },
+        }
+    },
+}
+
+# 세운·복음 보완 (sewoon.py 세운 분석과 동기화)
+SEWOON_CHUNG_REMEDY: Dict[str, str] = {
+    "복음": (
+        "⚡ 복음 보완법:\n"
+        "같은 실수를 반복하지 않도록 "
+        "작년 이슈를 먼저 정리하세요. "
+        "새로운 시작보다 "
+        "기존 관계·일의 완성에 집중하고 "
+        "중요한 변화는 복음 해를 피해 "
+        "다음 해로 미루는 것이 유리합니다"
+    ),
+    "반음": (
+        "⚡ 반음 보완법:\n"
+        "모든 것이 흔들리는 느낌이지만 "
+        "핵심 기반(주거·직업·건강)만 "
+        "지키면 반드시 회복됩니다. "
+        "이 해에는 현금 비중을 높이고 "
+        "큰 투자·이동은 자제하세요"
+    ),
+}
+
+SEWOON_PILLAR_REMEDY: Dict[str, str] = {
+    "년지충": (
+        "🔵 년지충 보완법:\n"
+        "부모·가문 관련 이슈가 생길 수 있습니다. "
+        "가족 건강 검진을 미리 챙기고 "
+        "조상·부모님께 연락을 자주 하세요. "
+        "이 해에는 고향 방문이 도움이 됩니다"
+    ),
+    "월지충": (
+        "🔵 월지충 보완법:\n"
+        "직업·사회생활 변화가 생기기 쉽습니다. "
+        "이직·전직을 고려 중이라면 "
+        "충 해소 월(합이 오는 달)을 골라 실행하세요. "
+        "계약·문서는 반드시 검토 후 진행하세요"
+    ),
+    "일지충": (
+        "🔵 일지충 보완법:\n"
+        "배우자·건강·주거 변화가 생기기 쉽습니다. "
+        "부부 대화를 늘리고 "
+        "건강 검진을 이 해 상반기 안에 받으세요. "
+        "큰 이사·이별 결정은 충동적으로 하지 마세요"
+    ),
+    "시지충": (
+        "🔵 시지충 보완법:\n"
+        "자녀·말년 관련 걱정이 생기기 쉽습니다. "
+        "자녀와 대화를 늘리고 "
+        "노후 준비를 점검하는 계기로 삼으세요"
+    ),
+    "세운해": (
+        "🟡 세운해 보완법:\n"
+        "보이지 않는 방해가 쌓이는 해입니다. "
+        "인간관계에서 오해가 생기면 "
+        "빠르게 대화로 풀고 "
+        "재물 관련 문서는 반드시 서면으로 남기세요"
+    ),
+}
+
+_PILLAR_KEY_BY_ZHI_LABEL = {v: k for k, v in ZHI_LABEL.items()}
+
+
+def _relation_row(
+    kind: str,
+    glyphs: str,
+    where: str,
+    strength: str,
+    note: str,
+    *,
+    remedy: Optional[str] = None,
+    missing_char: Optional[str] = None,
+    missing_meaning: Optional[str] = None,
+) -> Dict[str, Any]:
+    row: Dict[str, Any] = {
+        "관계": kind,
+        "글자": glyphs,
+        "위치": where,
+        "강도": strength,
+        "해석": note,
+    }
+    if remedy:
+        row["보완법"] = remedy
+    if missing_char is not None:
+        row["부족한_글자"] = missing_char
+        if missing_meaning:
+            row["부족한_글자_의미"] = missing_meaning
+    return row
+
+
+def _zhi_pair_key(glyphs: str) -> Optional[str]:
+    branches = [c for c in glyphs if c in gj.BRANCHES]
+    if len(branches) < 2:
+        return None
+    ordered = sorted(branches[:2], key=gj.branch_index)
+    return ordered[0] + ordered[1]
+
+
+def _chung_remedy_for(glyphs: str) -> str:
+    key = _zhi_pair_key(glyphs)
+    if not key:
+        return ""
+    entry = CHUNG_REMEDY.get(key)
+    return entry.get("보완", "") if entry else ""
+
+
+def _po_remedy_for(glyphs: str) -> str:
+    key = _zhi_pair_key(glyphs)
+    return PA_REMEDY.get(key or "", "")
+
+
+def _hai_remedy_for(glyphs: str) -> str:
+    key = _zhi_pair_key(glyphs)
+    return HAI_REMEDY.get(key or "", "")
+
+
+def _samhap_tri_key(tri: frozenset) -> str:
+    return "".join(sorted(tri, key=lambda z: gj.branch_index(z)))
+
+
+def _samhap_partial_info(
+    nation: str, tri: frozenset, inside: Set[str]
+) -> Tuple[Optional[str], Optional[str], Optional[str], str]:
+    """삼합(두지) — 부족 글자·의미·보완·갱신 해석."""
+    missing = tri - inside
+    if len(missing) != 1:
+        elem = SAN_HE_ELEMENT.get(nation, "")
+        ordered = "".join(sorted(inside, key=lambda z: gj.branch_index(z)))
+        note = (
+            f"{elem} 성향의 삼합({ordered})이 있으나 "
+            f"마지막 글자 「{list(missing)[0]}」이 없어 "
+            f"완전한 결실까지 변수가 있습니다"
+        )
+        return None, None, "", note
+    miss = list(missing)[0]
+    tri_key = _samhap_tri_key(tri)
+    entry = (
+        SAMHAP_MISSING.get(tri_key, {})
+        .get(nation, {})
+        .get(f"없으면_{miss}", {})
+    )
+    elem = SAN_HE_ELEMENT.get(nation, "")
+    ordered = "".join(sorted(inside, key=lambda z: gj.branch_index(z)))
+    meaning = entry.get("의미") or f"{elem} 삼합의 마무리 글자가 부족합니다"
+    remedy = entry.get("보완", "")
+    note = (
+        f"{elem} 성향의 삼합({ordered})이 있으나 "
+        f"마지막 글자 「{miss}」이 없어 "
+        f"완전한 결실까지 변수가 있습니다"
+    )
+    return miss, meaning, remedy, note
+
+
+def _sewoon_pillar_remedy(pillar_key: str) -> str:
+    return SEWOON_PILLAR_REMEDY.get(f"{ZHI_LABEL[pillar_key]}충", "")
+
+
+def _fan_yin_rows(pillars: dict, sewoon_pillar: str, sewoon_year: Optional[int]) -> List[Dict[str, Any]]:
+    """세운 지지가 원국 네 지지와 모두 충일 때 반음 행."""
+    if len(sewoon_pillar) < 2:
+        return []
+    sz = sewoon_pillar[1]
+    ch_set = _chong_set()
+    hits = [
+        k
+        for k in PILLAR_KEYS
+        if tuple(sorted((sz, pillars[k]["zhi"]))) in ch_set
+    ]
+    if len(hits) < 4:
+        return []
+    yr = f"{sewoon_year}년 " if sewoon_year else ""
+    return [
+        _relation_row(
+            "반음(세운)",
+            sewoon_pillar,
+            f"{yr}세운 지지 {sz}가 원국 네 지지와 모두 충",
+            "높음",
+            "세운 지지가 년·월·일·시 네 궁 모두와 정면 충돌하는 극단 패턴입니다.",
+            remedy=SEWOON_CHUNG_REMEDY.get("반음", ""),
+        )
+    ]
 
 
 def _pairs_positions(keys: Sequence[str]) -> List[Tuple[str, str]]:
@@ -307,7 +631,16 @@ def analyze_native_chong(pillars: dict) -> List[Dict[str, str]]:
         where = f"{ZHI_LABEL[k1]}–{ZHI_LABEL[k2]} ({glyphs})"
         strength = _strength((k1, k2))
         note = _chong_position_note(k1, k2)
-        out.append(_relation_row("충", glyphs, where, strength, note))
+        out.append(
+            _relation_row(
+                "충",
+                glyphs,
+                where,
+                strength,
+                note,
+                remedy=_chung_remedy_for(glyphs),
+            )
+        )
     return out
 
 
@@ -322,7 +655,16 @@ def analyze_native_po(pillars: dict) -> List[Dict[str, str]]:
         glyphs = f"{za}{zb}"
         where = f"{ZHI_LABEL[k1]}–{ZHI_LABEL[k2]}"
         strength = _strength((k1, k2))
-        out.append(_relation_row("파", glyphs, where, strength, _po_position_note(k1, k2)))
+        out.append(
+            _relation_row(
+                "파",
+                glyphs,
+                where,
+                strength,
+                _po_position_note(k1, k2),
+                remedy=_po_remedy_for(glyphs),
+            )
+        )
     return out
 
 
@@ -337,7 +679,16 @@ def analyze_native_hai(pillars: dict) -> List[Dict[str, str]]:
         glyphs = f"{za}{zb}"
         where = f"{ZHI_LABEL[k1]}–{ZHI_LABEL[k2]}"
         strength = _strength((k1, k2))
-        out.append(_relation_row("해", glyphs, where, strength, _hai_position_note(k1, k2)))
+        out.append(
+            _relation_row(
+                "해",
+                glyphs,
+                where,
+                strength,
+                _hai_position_note(k1, k2),
+                remedy=_hai_remedy_for(glyphs),
+            )
+        )
     return out
 
 
@@ -442,13 +793,17 @@ def analyze_native_he(pillars: dict) -> List[Dict[str, str]]:
             )
         elif len(inside) == 2:
             ordered = "".join(sorted(inside, key=lambda z: gj.branch_index(z)))
+            miss, miss_mean, remedy, note = _samhap_partial_info(nation, tri, inside)
             out.append(
                 _relation_row(
                     "삼합(두지)",
                     ordered,
                     f"{nation} 삼합 중 둘만 존재",
                     "중",
-                    f"{elem} 성향의 삼합 인연은 있으나 마지막 한 지가 없어 완전 결실까지는 변수가 있습니다.",
+                    note,
+                    remedy=remedy,
+                    missing_char=miss,
+                    missing_meaning=miss_mean,
                 )
             )
 
@@ -482,6 +837,7 @@ def analyze_fuyin(
                         f"{yr}세운이 {lbl}와 동일",
                         "중",
                         _fuyin_sewoon_note(k, lbl, sewoon_year),
+                        remedy=SEWOON_CHUNG_REMEDY.get("복음", ""),
                     )
                 )
             sz = sewoon_pillar[1] if len(sewoon_pillar) >= 2 else ""
@@ -542,6 +898,7 @@ def analyze_sewoon_injection(
         pos_lbl = ZHI_LABEL[k]
 
         if pair in ch_set:
+            pillar_remedy = _sewoon_pillar_remedy(k)
             out.append(
                 _relation_row(
                     "세운충",
@@ -549,6 +906,7 @@ def analyze_sewoon_injection(
                     f"{yr_note}지지 {sz}가 {pos_lbl}({nz})와 충",
                     "중",
                     _sewoon_chong_note(k, sz, nz),
+                    remedy=pillar_remedy or _chung_remedy_for(f"{sz}{nz}"),
                 )
             )
         if pair in po_set:
@@ -569,6 +927,7 @@ def analyze_sewoon_injection(
                     f"{yr_note}{sz}가 {pos_lbl} 해",
                     "중",
                     _sewoon_hai_note(k, sz, nz),
+                    remedy=SEWOON_PILLAR_REMEDY.get("세운해", "") or _hai_remedy_for(f"{sz}{nz}"),
                 )
             )
         if pair in he_set:
@@ -640,7 +999,7 @@ def analyze_relations_full(
         ),
     }
 
-    flat: List[Dict[str, str]] = []
+    flat: List[Dict[str, Any]] = []
     for key in (
         "원국_충",
         "원국_파",
@@ -654,6 +1013,17 @@ def analyze_relations_full(
             row2 = dict(row)
             row2["분류"] = key
             flat.append(row2)
+
+    if sewoon_pillar:
+        fan_rows = _fan_yin_rows(pillars, sewoon_pillar, sewoon_year)
+        for row in fan_rows:
+            row2 = dict(row)
+            row2["분류"] = "세운_대입"
+            sections["세운_대입"].append(row2)
+            flat.append(row2)
+        sections["세운_복음충"] = list(sections["복음"]) + list(sections["세운_대입"])
+    else:
+        sections["세운_복음충"] = []
 
     sections["관계_상세_전체"] = flat
     return sections
@@ -682,6 +1052,7 @@ def analyze_branch_relations(
 
     return {
         "관계_상세_전체": full["관계_상세_전체"],
+        "세운_복음충": full.get("세운_복음충", []),
         "충": [_one_line(r) for r in full["원국_충"]],
         "파": [_one_line(r) for r in full["원국_파"]],
         "해": [_one_line(r) for r in full["원국_해"]],

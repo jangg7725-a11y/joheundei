@@ -81,7 +81,9 @@ def test_ilwoon_period_sinsal_matches_special_bad() -> None:
         minute=5,
         gender="female",
     )
-    day_row = il.analyze_ilwoon_day(r["day_master"], r["pillars"], 2026, 5, 16)
+    ref_iso = (r.get("ilwoon") or {}).get("기준일") or ""
+    y, m, d = (int(x) for x in ref_iso.split("-"))
+    day_row = il.analyze_ilwoon_day(r["day_master"], r["pillars"], y, m, d)
     bad = day_row.get("특별흉") or {}
     pack = r["sinsal"].get("일운_신살") or {}
     names = {row.get("신살") for row in pack.get("발동_목록") or []}

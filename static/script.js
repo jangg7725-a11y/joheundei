@@ -1597,6 +1597,30 @@
     root.appendChild(sec3);
   }
 
+  function appendRemedyBelowRow(tbody, row, colSpan) {
+    const remedy = String((row && (row["보완법"] ?? row.보완법)) || "").trim();
+    if (!remedy) return;
+    const tr = document.createElement("tr");
+    tr.className = "remedy-row";
+    const td = document.createElement("td");
+    td.colSpan = colSpan;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "remedy-btn";
+    btn.textContent = "✅ 보완법 보기 ▼";
+    const box = document.createElement("div");
+    box.className = "remedy-content";
+    box.textContent = remedy;
+    btn.addEventListener("click", () => {
+      const open = box.classList.toggle("open");
+      btn.textContent = open ? "✅ 보완법 닫기 ▲" : "✅ 보완법 보기 ▼";
+    });
+    td.appendChild(btn);
+    td.appendChild(box);
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+  }
+
   function renderTab1(r) {
     const root = panels[1];
     root.innerHTML = "";
@@ -1652,6 +1676,7 @@
       tr.className = cls;
       tr.innerHTML = `<td class="badge-risk">${icon}</td><td>${row.관계}</td><td class="han-inline">${row.글자}</td><td>${row.위치}</td><td>${row.강도}</td><td>${row.해석}</td>`;
       body.appendChild(tr);
+      appendRemedyBelowRow(body, row, 6);
     });
     if (!filtered.length) {
       const tr = document.createElement("tr");
@@ -1677,6 +1702,7 @@
       const tr = document.createElement("tr");
       tr.innerHTML = `<td>${row.관계}</td><td class="han-inline">${row.글자}</td><td>${row.위치}</td><td>${row.해석}</td>`;
       b2.appendChild(tr);
+      appendRemedyBelowRow(b2, row, 4);
     });
     if (!b2.children.length) {
       b2.innerHTML = "<tr><td colspan=\"4\">세운·복음 데이터 없음</td></tr>";
