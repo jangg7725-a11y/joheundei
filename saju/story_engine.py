@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from . import ohaeng as oh
 from . import sipsin as sp
@@ -80,6 +80,429 @@ _DM_NATURE: Dict[str, Dict[str, str]] = {
     "癸": {"상징": "고요한 빗물", "강점": "예리한 직관과 감수성", "약점": "불안감과 의존성"},
 }
 
+# ── 직업 도출: 용신(환경) + 일간(방식) + 십신(역할) + 오행(특화) + 신살(재능) ──
+
+YONG_DOMAIN: Dict[str, Dict[str, Any]] = {
+    "목": {
+        "환경": "성장·생명·교육·시작",
+        "재료": "나무·종이·섬유·식물",
+        "행위": "가르치고 키우고 시작하는 일",
+        "구체": [
+            "교육·보육·학원",
+            "출판·인쇄",
+            "목재·가구·인테리어",
+            "농업·원예·조경",
+            "의류·패션(섬유)",
+            "환경·산림",
+            "스타트업·신사업 개척",
+        ],
+    },
+    "화": {
+        "환경": "열·빛·에너지·표현",
+        "재료": "불·전기·빛·열",
+        "행위": "태우고 밝히고 드러내는 일",
+        "구체": [
+            "용접·금속가공·주조",
+            "요리·제과·제빵",
+            "전기·전자·에너지",
+            "조명·반도체",
+            "방송·연예·공연",
+            "미용·헤어",
+            "화학·석유·플라스틱",
+        ],
+    },
+    "토": {
+        "환경": "안정·신뢰·중개·보관",
+        "재료": "흙·시멘트·부동산",
+        "행위": "쌓고 중개하고 보호하는 일",
+        "구체": [
+            "건설·시공·토목",
+            "부동산·공인중개",
+            "의료·간호·복지",
+            "금융·보험·저축은행",
+            "창고·물류·유통",
+            "농산물·식품유통",
+            "행정·공무·사회서비스",
+        ],
+    },
+    "금": {
+        "환경": "원칙·정밀·결단·제련",
+        "재료": "금속·기계·도구",
+        "행위": "깎고 다듬고 판단하는 일",
+        "구체": [
+            "철강·제철·용광로",
+            "기계·부품·제조",
+            "법률·검찰·군경",
+            "외과·치과·수술",
+            "회계·감사·세무",
+            "금융투자·트레이딩",
+            "자동차·항공·방산",
+        ],
+    },
+    "수": {
+        "환경": "지식·유통·순환·감성",
+        "재료": "물·정보·아이디어",
+        "행위": "흘러가고 연결하고 분석하는 일",
+        "구체": [
+            "IT·소프트웨어·데이터",
+            "무역·수출입",
+            "철학·상담·심리치료",
+            "예술·음악·문학",
+            "수산·양식·수처리",
+            "관광·여행·숙박",
+            "연구·학문·분석",
+        ],
+    },
+}
+
+DM_WORK_STYLE: Dict[str, Dict[str, str]] = {
+    "甲": {"스타일": "개척형·리더형", "강점": "새로운 것을 시작하고 이끄는 일", "직무": "창업가·사업기획·개발팀장·교장", "주의": "혼자 판단하고 밀어붙이는 독단 주의"},
+    "乙": {"스타일": "보조형·협력형·적응형", "강점": "유연하게 맞추고 조율하는 일", "직무": "코디네이터·조율자·비서·상담사", "주의": "주도권 없이 끌려다니는 것 주의"},
+    "丙": {"스타일": "표현형·리더형·발산형", "강점": "사람 앞에 서서 에너지를 전달하는 일", "직무": "강사·MC·세일즈·이벤트기획", "주의": "지속성 없이 화려함만 추구 주의"},
+    "丁": {"스타일": "섬세형·전문형·집중형", "강점": "깊이 파고드는 전문 기술 일", "직무": "전문연구원·작가·아티스트·상담사", "주의": "예민함으로 인한 감정 소진 주의"},
+    "戊": {"스타일": "안정형·관리형·포용형", "강점": "믿고 맡길 수 있는 중심 역할", "직무": "관리자·총무·운영팀장·부동산", "주의": "변화 거부로 인한 도태 주의"},
+    "己": {"스타일": "실무형·섬세형·현실형", "강점": "꼼꼼하게 실무를 처리하는 일", "직무": "회계·행정·품질관리·영양사", "주의": "소극적 태도로 기회 놓치는 것 주의"},
+    "庚": {"스타일": "결단형·원칙형·추진형", "강점": "명확한 기준으로 밀어붙이는 일", "직무": "법조인·군인·외과의·제조업 관리", "주의": "냉정함으로 인한 인간관계 마찰 주의"},
+    "辛": {"스타일": "완성형·심미형·전문형", "강점": "높은 기준으로 완성도를 만드는 일", "직무": "디자이너·보석상·작가·성형외과", "주의": "완벽주의로 인한 시간 초과 주의"},
+    "壬": {"스타일": "전략형·포용형·유연형", "강점": "큰 그림을 그리고 흐름을 읽는 일", "직무": "전략기획·무역·외교관·컨설턴트", "주의": "방향 없이 흘러다니는 것 주의"},
+    "癸": {"스타일": "감성형·직관형·분석형", "강점": "보이지 않는 것을 감지하고 분석하는 일", "직무": "심리상담·예술가·연구원·정보분석", "주의": "불안감으로 인한 결정 회피 주의"},
+}
+
+OVER_SPEC: Dict[str, Dict[str, str]] = {
+    "목": {"과다": "교육·환경·의료 분야에서 성장과 치유 에너지로 일할 때 최강", "결핍": "성장·도전 직무보다 안정 직무가 맞음"},
+    "화": {"과다": "빛·열·에너지를 다루는 분야 특화. 용접·요리·방송·전기 등 화기(火氣) 직군", "결핍": "표현·홍보직보다 분석·연구직이 맞음"},
+    "토": {"과다": "부동산·건설·중개·행정 등 실물·안정 분야에서 탁월", "결핍": "변화 빠른 직무보다 안정적 직무 선호"},
+    "금": {"과다": "금속·기계·법률·수술 등 정밀·결단 직군 특화", "결핍": "결단 직무보다 감성·협력 직무가 맞음"},
+    "수": {"과다": "IT·데이터·무역·예술 등 정보·감성 분야 특화", "결핍": "분석직보다 실행·현장직이 맞음"},
+}
+
+SINSAL_JOB: Dict[str, Dict[str, str]] = {
+    "역마살": {"재능": "이동·해외·변화 직군", "직업": "무역사·외교관·여행업·드라이버·배달", "이유": "한곳에 있지 않고 움직일 때 에너지가 살아납니다"},
+    "도화살": {"재능": "대인·예술·서비스 직군", "직업": "연예인·서비스업·미용·상담·영업", "이유": "사람을 끌어당기는 매력 에너지가 있습니다"},
+    "천을귀인": {"재능": "귀인 연결·인맥 직군", "직업": "컨설턴트·중개인·외교·로비", "이유": "귀인을 만나고 연결하는 복이 있습니다"},
+    "문창귀인": {"재능": "학문·글·시험 직군", "직업": "작가·교수·언론인·번역가·출판", "이유": "글과 학문에서 빛나는 재능입니다"},
+    "학당귀인": {"재능": "교육·자격·전문직", "직업": "교사·강사·전문자격사·컨설턴트", "이유": "배움과 가르침에서 두각을 나타냅니다"},
+    "복성귀인": {"재능": "복록·인연 직군", "직업": "복지·상담·인사·고객관리", "이유": "인연과 복이 실무로 이어지기 쉽습니다"},
+    "백호살": {"재능": "칼·피·결단 직군", "직업": "외과의·군인·경찰·소방관·정육", "이유": "피·금속·결단적 상황 처리 능력이 있습니다"},
+    "양인살": {"재능": "강력·결단·체력 직군", "직업": "운동선수·군인·외과·요리사(칼)", "이유": "강한 결단력과 체력적 에너지가 있습니다"},
+    "괴강살": {"재능": "권위·지배·전문 직군", "직업": "CEO·법조인·군 지휘관·전문경영인", "이유": "강한 카리스마와 지배력이 있습니다"},
+}
+
+YONG_DM_COMBO: Dict[Tuple[str, str], List[Dict[str, str]]] = {
+    ("화", "甲"): [
+        {"직군": "방송·콘텐츠 기획자", "이유": "화 에너지로 표현하고 甲의 리더십으로 이끄는 콘텐츠 기획·PD 역할"},
+        {"직군": "교육사업가", "이유": "화의 열정으로 가르치고 甲의 개척 정신으로 교육 사업을 만드는 일"},
+    ],
+    ("화", "乙"): [
+        {"직군": "요리사·제과제빵", "이유": "화의 열(火氣)을 직접 다루는 요리 분야에서 乙의 섬세함이 빛남"},
+        {"직군": "미용·헤어·뷰티", "이유": "화의 빛·열로 아름다움을 만드는 乙의 유연한 손길이 강점"},
+    ],
+    ("화", "丙"): [
+        {"직군": "연예인·MC·강연가", "이유": "화×화의 이중 에너지로 무대 위에서 최고의 존재감을 발휘"},
+        {"직군": "전기·에너지 관련 사업", "이유": "화 에너지를 실질적으로 다루는 丙의 추진력으로 에너지 분야 주도"},
+    ],
+    ("화", "丁"): [
+        {"직군": "용접·금속가공", "이유": "정화(丁火)는 금속을 녹이고 가공하는 불로 용접·금형 분야 특화"},
+        {"직군": "주얼리·귀금속 가공", "이유": "섬세한 丁火로 보석과 금속을 다루는 정밀 가공 직군에 강점"},
+    ],
+    ("화", "戊"): [
+        {"직군": "요식업·식품제조", "이유": "화(火)로 요리하고 토(戊土)로 안정적 운영하는 식품업 최적"},
+        {"직군": "에너지·화학 플랜트 관리", "이유": "火 에너지를 安定(戊)적으로 관리하는 설비·플랜트 운영 역할"},
+    ],
+    ("화", "己"): [
+        {"직군": "영양사·푸드스타일리스트", "이유": "화(음식)를 己의 섬세함으로 다루는 영양·식품 전문직"},
+        {"직군": "조명·인테리어 디자이너", "이유": "화(빛)를 己의 꼼꼼함으로 공간에 구현하는 인테리어 조명 분야"},
+    ],
+    ("화", "庚"): [
+        {"직군": "제철·용광로·철강 산업", "이유": "화(火)로 금(庚金)을 제련하는 가장 직접적인 조합. 철강·금속 정련 특화"},
+        {"직군": "열처리·소방·용접 기술자", "이유": "庚의 결단력으로 火를 제어하는 기술직. 열처리·소방시설 분야 강점"},
+    ],
+    ("화", "辛"): [
+        {"직군": "보석·귀금속 세공", "이유": "화로 금속을 다루고 辛의 완벽함으로 보석을 완성하는 정밀 세공"},
+        {"직군": "반도체·전자부품 정밀 제조", "이유": "辛金을 火로 정밀 가공하는 반도체·전자 제조 분야 특화"},
+    ],
+    ("화", "壬"): [
+        {"직군": "발전소·에너지 기술 기획", "이유": "壬의 전략적 사고로 화(에너지)를 관리·기획하는 에너지 분야"},
+        {"직군": "방송국 기술 감독·PD", "이유": "화(방송)를 壬의 넓은 시각으로 총괄하는 방송 기술 총감독"},
+    ],
+    ("화", "癸"): [
+        {"직군": "심리상담·힐링 치료사", "이유": "癸水의 감성으로 화(열정·감정)를 치유하는 상담 분야 특화"},
+        {"직군": "예술가·사진작가", "이유": "화(빛)를 癸의 감성으로 포착하는 사진·빛 예술 분야 강점"},
+    ],
+    ("금", "甲"): [
+        {"직군": "법조인·검사·변호사", "이유": "금(원칙)을 甲의 추진력으로 실현하는 법률 분야 리더"},
+        {"직군": "건설·토목 시공 CEO", "이유": "금(기계·도구)으로 甲의 개척 본능을 발휘하는 건설 사업"},
+    ],
+    ("금", "丁"): [
+        {"직군": "외과의·치과의", "이유": "금(칼·메스)을 丁의 섬세함으로 다루는 수술 분야 최적"},
+        {"직군": "침술사·한의사", "이유": "금(침)을 丁火의 섬세한 기운으로 치유하는 한의학 분야"},
+    ],
+    ("금", "庚"): [
+        {"직군": "군인·무술인·경호원", "이유": "경금(庚金)이 용신인 庚 일간 — 금×금의 강력한 결단·무력 에너지"},
+        {"직군": "기계·자동차 엔지니어", "이유": "금속을 금속으로 다루는 庚의 타고난 기계 감각"},
+    ],
+    ("목", "丙"): [
+        {"직군": "교육사업·학원 운영", "이유": "목(교육·성장)을 丙의 카리스마로 이끄는 교육 사업 리더"},
+        {"직군": "의료·재활 전문가", "이유": "목(생명·치유)을 丙의 열정으로 다루는 의료·재활 분야"},
+    ],
+    ("목", "壬"): [
+        {"직군": "무역·수출입 전문가", "이유": "수생목(水生木)의 흐름으로 壬의 유통 감각이 목(상품) 분야에서 빛남"},
+        {"직군": "IT 서비스 기획자", "이유": "목(성장·시작)을 壬의 전략으로 설계하는 IT 서비스 기획 특화"},
+    ],
+    ("수", "庚"): [
+        {"직군": "데이터 분석·AI 개발자", "이유": "수(데이터·정보)를 庚의 정밀함으로 분석하는 IT 기술 특화"},
+        {"직군": "금융·투자 분석가", "이유": "金生水(金生水)로 庚의 결단력이 수(금융·유통) 분야에서 발휘"},
+    ],
+    ("수", "癸"): [
+        {"직군": "연구원·학자", "이유": "수×수의 깊은 탐구 에너지로 학문·연구 분야 최강"},
+        {"직군": "심리·철학·상담 전문가", "이유": "癸의 직관이 수(지혜·심층)와 결합해 내면 탐구 직군 특화"},
+    ],
+    ("토", "戊"): [
+        {"직군": "부동산 개발·시행사", "이유": "토×토의 이중 안정 에너지로 부동산 개발·토지 분야 특화"},
+        {"직군": "건설·시공·토목 관리", "이유": "戊의 묵직함으로 토(건설) 분야를 안정적으로 운영"},
+    ],
+    ("토", "己"): [
+        {"직군": "농업·식품·유통", "이유": "토(흙·땅)를 己의 섬세함으로 다루는 농업·식품 가공 특화"},
+        {"직군": "의료·간호·복지", "이유": "己의 꼼꼼한 보살핌이 토(안정·치유) 에너지와 결합한 복지 분야"},
+    ],
+}
+
+_CAREER_FALLBACK: Dict[str, List[Dict[str, str]]] = {
+    "male": [
+        {"직군": "전략기획", "이유": "사주 구조상 큰 그림을 그리는 역할이 장기적으로 유리합니다"},
+        {"직군": "전문직", "이유": "깊이 있는 전문성을 쌓는 커리어가 안정적으로 이어집니다"},
+    ],
+    "female": [
+        {"직군": "교육·상담", "이유": "사주 구조상 사람을 돕고 가르치는 역할이 잘 맞습니다"},
+        {"직군": "전문직·컨설팅", "이유": "전문성을 쌓아 조언하는 역할에서 빛납니다"},
+    ],
+}
+
+_GI_AVOID: Dict[str, List[str]] = {
+    "목": ["목재·환경 계열은 기신 목 에너지를 강화해 에너지 소진·갈등이 잦아질 수 있습니다", "간·눈·근육 과부하 직무 주의"],
+    "화": ["고열·장시간 노출 직무는 기신 화로 심혈관·혈압 악화 위험이 있습니다", "과도한 퍼포먼스·노출 직무 주의"],
+    "토": ["변동성 극심한 부동산 투기·도박 계열 주의", "고집이 강해지는 관료적 조직 내 갈등 위험"],
+    "금": ["기신 금 계열(법률·군경·금속) 직무는 냉정함 과잉으로 인간관계 마찰이 심화될 수 있습니다", "칼날·금속 환경에서 부상 주의"],
+    "수": ["기신 수 계열(IT·무역·관광) 직무는 방향 상실·집중력 저하 위험이 있습니다", "감성 과잉으로 객관 판단이 어려운 직무 주의"],
+}
+
+
+def get_sipsin_job_function(sip_c: Counter[str]) -> List[Dict[str, str]]:
+    functions: List[Dict[str, str]] = []
+    ss_n = sip_c["식신"] + sip_c["상관"]
+    if ss_n >= 5:
+        functions.append({
+            "역할": "기술 전문가·크리에이터",
+            "이유": f"식상이 {ss_n}개로 매우 강해 기술·표현·창작으로 직접 결과물을 만드는 일",
+            "구체": "유튜버·작가·기술자·강사·셰프",
+        })
+    elif ss_n >= 3:
+        functions.append({
+            "역할": "기획·표현 담당",
+            "이유": f"식상이 {ss_n}개로 아이디어를 현실로 만드는 기획·표현직",
+            "구체": "기획자·마케터·교사·요리사",
+        })
+    rex_n = sip_c["편재"] + sip_c["정재"]
+    geb_n = sip_c["겁재"]
+    if rex_n >= 5:
+        functions.append({
+            "역할": "영업·사업·거래 전문가",
+            "이유": f"재성이 {rex_n}개로 강해 돈과 거래를 직접 다루는 일",
+            "구체": "영업사원·무역상·사업가·투자자",
+        })
+    elif rex_n >= 3 and geb_n < rex_n:
+        functions.append({
+            "역할": "재무·회계·수익 관리",
+            "이유": f"재성이 안정적으로 {rex_n}개 있어 재무 관리와 수익 창출 역할",
+            "구체": "회계사·재무팀·세무사·펀드매니저",
+        })
+    guan_n = sip_c["정관"] + sip_c["편관"]
+    if guan_n >= 5:
+        functions.append({
+            "역할": "관리자·리더·공공기관",
+            "이유": f"관성이 {guan_n}개로 강해 조직 내 책임과 권한을 갖는 역할",
+            "구체": "공무원·관리자·군경·CEO",
+        })
+    elif guan_n >= 3:
+        functions.append({
+            "역할": "조직 내 중간 관리",
+            "이유": f"관성이 {guan_n}개로 팀을 이끌고 조율하는 역할",
+            "구체": "팀장·부서장·프로젝트매니저",
+        })
+    ins_n = sip_c["편인"] + sip_c["정인"]
+    if ins_n >= 5:
+        functions.append({
+            "역할": "학자·연구자·교육자",
+            "이유": f"인성이 {ins_n}개로 강해 배우고 분석하고 전수하는 일",
+            "구체": "교수·연구원·의사·작가·분석가",
+        })
+    elif ins_n >= 3:
+        functions.append({
+            "역할": "전문직·컨설턴트",
+            "이유": f"인성이 {ins_n}개로 깊이 있는 전문성을 발휘하는 역할",
+            "구체": "전문의·변호사·컨설턴트·강사",
+        })
+    bib_n = sip_c["비견"] + sip_c["겁재"]
+    if bib_n >= 6:
+        functions.append({
+            "역할": "독립사업가·프리랜서",
+            "이유": f"비겁이 {bib_n}개로 매우 강해 조직보다 독립적으로 일할 때 빛남",
+            "구체": "자영업자·프리랜서·스포츠선수",
+        })
+    return functions
+
+
+def get_ohaeng_job_spec(counts: Dict[str, int], yong_el: str) -> List[Dict[str, str]]:
+    specs: List[Dict[str, str]] = []
+    total = sum(counts.values()) or 1
+    for el, cnt in counts.items():
+        ratio = cnt / total
+        spec = OVER_SPEC.get(el, {})
+        if ratio >= 0.35:
+            specs.append({"타입": f"{el} 과다 특화", "설명": spec.get("과다", ""), "비율": f"{ratio * 100:.0f}%"})
+        elif cnt == 0:
+            specs.append({"타입": f"{el} 결핍 주의", "설명": spec.get("결핍", "")})
+    return specs
+
+
+def _sinsal_names_from_block(sinsal: Dict[str, Any]) -> List[str]:
+    rows = sinsal.get("신살_목록") or []
+    out: List[str] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        name = str(r.get("신살") or "").strip()
+        if name:
+            out.append(name)
+    return out
+
+
+def get_sinsal_job_talent(sinsal_names: Sequence[str]) -> List[Dict[str, str]]:
+    talents: List[Dict[str, str]] = []
+    seen: set[str] = set()
+    for raw in sinsal_names:
+        for key in SINSAL_JOB:
+            if key in raw and key not in seen:
+                seen.add(key)
+                talents.append({"신살": key, **SINSAL_JOB[key]})
+                break
+    return talents
+
+
+def _synthesize_yong_dm_jobs(
+    yong_el: str,
+    dm: str,
+    *,
+    dominant_el: str,
+    dominant_ratio: float,
+    pillar_fp: str = "",
+    female: bool = False,
+) -> List[Dict[str, str]]:
+    domain = YONG_DOMAIN.get(yong_el, {})
+    style = DM_WORK_STYLE.get(dm, {})
+    jobs: List[str] = list(domain.get("구체", []))
+    if not jobs:
+        return []
+    h = sum(ord(c) for c in dm + yong_el + dominant_el + pillar_fp + ("F" if female else "M"))
+    i0 = h % len(jobs)
+    i1 = (h // 3 + len(dm)) % len(jobs)
+    if i1 == i0 and len(jobs) > 1:
+        i1 = (i1 + 1) % len(jobs)
+    env = domain.get("환경", "")
+    act = domain.get("행위", "")
+    return [
+        {
+            "직군": jobs[i0],
+            "이유": (
+                f"{dm}일간 {style.get('스타일', '')}으로 {yong_el}({env}) 환경에서 "
+                f"{act} 일이 맞습니다. {style.get('강점', '')}"
+            ),
+        },
+        {
+            "직군": jobs[i1],
+            "이유": (
+                f"오행 {dominant_el} 비중 {dominant_ratio * 100:.0f}%와 맞물려 "
+                f"{jobs[i1]} 분야에서 {dm}의 {style.get('직무', '')} 역할이 빛납니다"
+            ),
+        },
+    ]
+
+
+def _match_yong_dm_jobs(
+    yong_el: str,
+    dm: str,
+    *,
+    dominant_el: str,
+    dominant_ratio: float,
+    pillar_fp: str = "",
+    female: bool = False,
+) -> List[Dict[str, str]]:
+    key = (yong_el, dm)
+    if key in YONG_DM_COMBO:
+        jobs = [dict(x) for x in YONG_DM_COMBO[key]]
+        flip = (sum(ord(c) for c in pillar_fp + ("F" if female else "M")) % 2) == 1
+        if flip and len(jobs) >= 2:
+            jobs = [jobs[1], jobs[0]]
+        return jobs
+    return _synthesize_yong_dm_jobs(
+        yong_el,
+        dm,
+        dominant_el=dominant_el,
+        dominant_ratio=dominant_ratio,
+        pillar_fp=pillar_fp,
+        female=female,
+    )
+
+
+def _get_avoid_jobs(gi_el: str) -> List[str]:
+    avoids = _GI_AVOID.get(gi_el, [])
+    if avoids:
+        return list(avoids)
+    return [f"기신 {gi_el} 계열 업종은 에너지 소진이 크니 용신 방향을 우선 고려하세요"]
+
+
+def _get_work_type(
+    *,
+    verdict: str,
+    ss_n: int,
+    rex_n: int,
+    guan_n: int,
+    bib_n: int,
+) -> List[str]:
+    modes: List[str] = []
+    if verdict == "신강" and rex_n >= 3:
+        modes.append("사업·독립: 재성과 추진력으로 직접 수입을 만드는 구조가 유리합니다")
+    if ss_n >= 4:
+        modes.append("프리랜서·1인 창작: 표현·기술로 결과물 단가를 높이는 방식이 맞습니다")
+    if guan_n >= 3 or verdict == "신약":
+        modes.append("직장인: 조직 내 역할이 정해져 있을 때 안정적으로 성과가 납니다")
+    if bib_n >= 6:
+        modes.append("자영업·프리랜서: 비겁이 강해 조직보다 독립 경로가 맞습니다")
+    if not modes:
+        modes.append("전문직 축적 후 40대 이후 독립·컨설팅 전환이 균형적입니다")
+    return modes
+
+
+def _get_biz_fit(*, verdict: str, rex_n: int, geb_n: int, ss_n: int) -> str:
+    if verdict == "신강" and rex_n >= 3 and geb_n < rex_n:
+        return "재성·신강 구조로 단계적 창업·사업 확장 신호가 있습니다. 현금흐름을 먼저 확보하세요"
+    if ss_n >= 4:
+        return "기술·콘텐츠·전문 서비스형 창업이 장기적으로 맞는 편입니다"
+    return "직장에서 전문성을 쌓은 뒤 소규모 사업·부업으로 확장하는 흐름이 안전합니다"
+
+
+def _career_add(
+    top5: List[Dict[str, str]],
+    seen: set[str],
+    직군: str,
+    이유: str,
+) -> None:
+    j = 직군.strip()
+    if not j or j in seen:
+        return
+    seen.add(j)
+    top5.append({"직군": j, "이유": 이유.strip()})
+
 
 class NativeStoryEngine:
     """동일 원국이라도 성별에 따라 전통 육친+현대 생활 표현을 섞어 스토리를 만든다."""
@@ -96,6 +519,7 @@ class NativeStoryEngine:
         yong: Dict[str, Any],
         sip_c: Counter[str],
         rel_full: Dict[str, Any],
+        sinsal: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.day_master = day_master
         self.pillars = pillars
@@ -103,6 +527,7 @@ class NativeStoryEngine:
         self.yong = yong
         self.sip_c = sip_c
         self.rel_full = rel_full
+        self.sinsal = sinsal or {}
         self.female = sp.is_female_gender(gender)
 
         self.y_pillar = pillars["year"]["pillar"]
@@ -587,253 +1012,140 @@ class NativeStoryEngine:
         }
 
     def career_story(self) -> Dict[str, Any]:
-        nat = self.dm_nature()
-        yong_jobs = {
-            "목": [
-                ("교육·출판", "나무처럼 키우고 성장시키는"),
-                ("환경·농업", "자연과 생명을 다루는"),
-                ("의류·인테리어", "감각으로 공간과 스타일을 만드는"),
-            ],
-            "화": [
-                ("방송·미디어", "빛과 에너지로 사람을 끌어당기는"),
-                ("요식업·서비스", "따뜻하게 사람을 모으는"),
-                ("미용·패션", "감각과 열정이 필요한"),
-            ],
-            "토": [
-                ("부동산·건설", "실질적 가치를 만드는"),
-                ("의료·복지", "생명과 건강을 돌보는"),
-                ("금융·보험", "신뢰와 안정이 기반인"),
-            ],
-            "금": [
-                ("법률·군경", "원칙과 정의를 다루는"),
-                ("기계·제조", "정밀함과 결단이 필요한"),
-                ("의료·수술", "섬세함과 결단이 동시에 필요한"),
-            ],
-            "수": [
-                ("무역·유통", "넓은 시야와 유연성이 필요한"),
-                ("철학·상담", "깊은 통찰과 공감이 필요한"),
-                ("예술·엔터", "감수성과 창의성이 필요한"),
-            ],
-        }
+        """용신+일간+십신+오행+신살 조합으로 이 사주만의 직업군을 도출한다."""
+        dm = self.day_master
+        yong_el = self.yong_el or "토"
+        domain = YONG_DOMAIN.get(yong_el, {})
+        style = DM_WORK_STYLE.get(dm, {})
+
+        total = sum(self.counts.values()) or 1
+        dominant_el = max(self.counts, key=self.counts.get)
+        dominant_ratio = self.counts[dominant_el] / total
+
+        functions = get_sipsin_job_function(self.sip_c)
+        specs = get_ohaeng_job_spec(self.counts, yong_el)
+        talents = get_sinsal_job_talent(_sinsal_names_from_block(self.sinsal))
+        pillar_fp = self._p4()
 
         top5: List[Dict[str, str]] = []
-        seen: set = set()
+        seen: set[str] = set()
 
-        for job, desc in (yong_jobs.get(self.yong_el) or [])[:2]:
-            if job in seen:
-                continue
-            seen.add(job)
-            top5.append(
-                {
-                    "직군": job,
-                    "이유": (
-                        f"{desc} 분야에서 용신 {self.yong_el or '—'} 에너지가 자연스럽게 발휘됩니다. "
-                        f"{self._p4()} 원국과 연결해 보면 장기 커리어 그래프가 안정됩니다."
+        gender_tail = (
+            "가정·조직 균형을 고려한 역할 설계가 장기적으로 유리합니다."
+            if self.female
+            else "책임·수입 안정을 함께 잡는 구조가 유리합니다."
+        )
+
+        for job in _match_yong_dm_jobs(
+            yong_el,
+            dm,
+            dominant_el=dominant_el,
+            dominant_ratio=dominant_ratio,
+            pillar_fp=pillar_fp,
+            female=self.female,
+        )[:2]:
+            reason = f"{job['이유']}. {pillar_fp} 원국과 연결됩니다. {gender_tail}"
+            _career_add(top5, seen, job["직군"], reason)
+
+        func_slice = functions[:2]
+        if self.female and len(functions) > 2:
+            func_slice = functions[1:3] if len(functions) >= 3 else functions
+        elif not self.female and len(functions) > 1:
+            func_slice = functions[:2]
+
+        for func in func_slice:
+            if len(top5) >= 5:
+                break
+            _career_add(
+                top5,
+                seen,
+                func["역할"],
+                (
+                    f"{func['이유']}. {func['역할']} 유형으로 "
+                    f"{func['구체']} 등이 잘 맞습니다"
+                ),
+            )
+
+        for talent in talents[:1]:
+            if len(top5) >= 5:
+                break
+            first_job = str(talent.get("직업", "")).split("·")[0].strip()
+            _career_add(
+                top5,
+                seen,
+                first_job or talent["신살"],
+                (
+                    f"{talent['신살']}이 있어 {talent['이유']}. "
+                    f"{talent['직업']} 분야에서 특별한 재능이 있습니다"
+                ),
+            )
+
+        domain_jobs = list(domain.get("구체", []))
+        h = sum(ord(c) for c in dm + yong_el + pillar_fp + ("F" if self.female else "M"))
+        for spec in specs[:1]:
+            if len(top5) >= 5 or not domain_jobs:
+                break
+            pick = domain_jobs[(h + len(spec.get("타입", ""))) % len(domain_jobs)]
+            _career_add(
+                top5,
+                seen,
+                pick,
+                f"{spec.get('타입', '')}: {spec.get('설명', '')}. {dm}일간에 맞는 {yong_el} 분야 특화",
+            )
+
+        gender_key = "female" if self.female else "male"
+        fb_idx = 0
+        while len(top5) < 5:
+            pool = domain_jobs + [x["직군"] for x in _CAREER_FALLBACK[gender_key]]
+            added = False
+            for label in pool:
+                if label in seen:
+                    continue
+                _career_add(
+                    top5,
+                    seen,
+                    label,
+                    (
+                        f"{yong_el} 용신 환경({domain.get('환경', '')})에서 "
+                        f"{dm}일간 {style.get('스타일', '')}으로 일할 때 적합합니다"
                     ),
-                }
-            )
-
-        if self.female:
-            if self.ss_n >= 4:
-                j = "크리에이터·강사·상담사"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                f"식상이 {self.ss_n}개로 강해 말하고 가르치고 표현하는 일에서 타고난 능력이 빛납니다. "
-                                f"1인 미디어·교육·코칭에서 수입과 보람을 동시에 찾을 수 있으며, "
-                                f"{self.d_pillar} 일주 여성에게 특히 맞습니다."
-                            ),
-                        }
-                    )
-            if self.guan_n >= 3:
-                j = "관리직·공공기관·HR"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                "관성이 강해 조직 내 중간 관리자·인사·복지 역할에서 신뢰를 빠르게 쌓습니다. "
-                                f"{self.m_pillar} 월주가 말하는 직장상사·남편성 축과도 맞물려 직장 내 커리어우먼형입니다"
-                            ),
-                        }
-                    )
-            if self.ins_n >= 4:
-                j = "연구·컨설팅·전문직"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                "인성이 깊어 전문 지식을 쌓고 조언하는 역할에서 두각을 나타냅니다. "
-                                f"{self.y_pillar} 년주와 연결된 모친·학문 보호 축이 여성 전문가 신뢰도를 높입니다"
-                            ),
-                        }
-                    )
-            if self.rex_n >= 3:
-                j = "영업·유통·스타트업"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                "재성이 강해 거래 감각과 실물 경제 감각이 뛰어납니다. "
-                                f"시댁·재물(여명 재성)을 {self.h_pillar} 시주 방향까지 엮어 보면 "
-                                "여성 사업가로서 섬세함과 실행력을 겸비한 타입입니다"
-                            ),
-                        }
-                    )
-            for fb in (
-                {"직군": "의료·간호·돌봄", "이유": "사람을 직접 돕는 분야에서 따뜻한 에너지가 빛납니다"},
-                {"직군": "뷰티·웰니스", "이유": "감각과 세심함이 필요한 분야에 적성이 있습니다"},
-            ):
-                if len(top5) >= 5:
+                )
+                added = True
+                break
+            if not added:
+                fb = _CAREER_FALLBACK[gender_key]
+                if fb_idx < len(fb):
+                    _career_add(top5, seen, fb[fb_idx]["직군"], fb[fb_idx]["이유"])
+                    fb_idx += 1
+                else:
                     break
-                if fb["직군"] not in seen:
-                    seen.add(fb["직군"])
-                    top5.append(fb)
 
-            modes = []
-            if self.verdict == "신강" and self.rex_n >= 3:
-                modes.append(
-                    "창업·독립: 추진력과 재성이 맞물려 여성 창업가로서 강한 실행력을 발휘합니다. "
-                    "육아와 일을 병행할 수 있는 유연한 구조 설계가 핵심입니다"
-                )
-            if self.ss_n >= 4:
-                modes.append(
-                    "프리랜서·1인 기업: 표현력을 살린 콘텐츠·강의·컨설팅으로 육아·가정과 병행 가능한 수입 구조를 만들 수 있습니다"
-                )
-            if self.guan_n >= 3 or self.verdict == "신약":
-                modes.append(
-                    "직장인: 조직 내 역할이 명확할 때 커리어와 안정을 동시에 잡을 수 있습니다. "
-                    "육아휴직·복직 시 조직 충성도가 높아집니다"
-                )
-            if not modes:
-                modes.append(
-                    "파트타임·병행직: 가정과 일의 균형을 잡으며 전문성을 쌓다가 적절한 시기에 풀타임 또는 독립으로 전환하는 흐름이 좋습니다"
-                )
-
-            avoid = []
-            if self.gi_el:
-                avoid.append(
-                    f"기신 {self.gi_el} 계열 업종은 에너지 소진이 크고 가정·건강과의 균형이 깨지기 쉽습니다"
-                )
-
-            biz = (
-                "재성·신강 구조로 여성 창업에 적합한 신호가 있습니다. 육아 시기를 고려한 단계적 창업을 추천합니다"
-                if self.verdict == "신강" and self.rex_n >= 3
-                else "직장 경력을 쌓은 후 40대 이후 소규모 독립이 가장 안정적인 흐름입니다"
-            )
-
-        else:
-            if self.rex_n >= 4:
-                j = "사업·영업·투자"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                f"재성이 {self.rex_n}개로 강해 거래·협상·투자에서 타고난 감각이 있습니다. "
-                                f"가장으로서 재물을 직접 만드는 구조에서 최고의 능력을 발휘하며, "
-                                f"{self.d_pillar} 일주 남성에게 아내·사업 축이 강하게 작동합니다"
-                            ),
-                        }
-                    )
-            if self.ss_n >= 4:
-                j = "기술직·개발·전문가"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                f"식상이 {self.ss_n}개로 강해 기술과 전문성으로 결과물을 만드는 남성 전문가형입니다. "
-                                f"장인·처갓집(식상) 보완과 {self.h_pillar} 시주가 말하는 재능이 수입으로 연결됩니다"
-                            ),
-                        }
-                    )
-            if self.guan_n >= 4:
-                j = "관리직·공무원·군경"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                f"관성이 {self.guan_n}개로 강해 조직과 규범 안에서 책임감 있는 리더십을 발휘합니다. "
-                                f"자녀·명예(남명 관성)와 맞물려 승진·진급에서 두각을 나타내는 타입입니다"
-                            ),
-                        }
-                    )
-            if self.ins_n >= 4:
-                j = "연구·학문·컨설팅"
-                if j not in seen:
-                    seen.add(j)
-                    top5.append(
-                        {
-                            "직군": j,
-                            "이유": (
-                                "인성이 깊어 전문 지식을 깊이 파고드는 남성 학자·연구자형입니다. "
-                                f"{self.y_pillar} 년주 모친·보호 축과 합쳐져 나이 들수록 가치가 올라가는 커리어입니다"
-                            ),
-                        }
-                    )
-            for fb in (
-                {"직군": "건설·부동산·인프라", "이유": "실질적 결과물을 만드는 분야에서 강점이 나타납니다"},
-                {"직군": "금융·보험·자산관리", "이유": "숫자와 리스크를 다루는 분야에 적성이 있습니다"},
-            ):
-                if len(top5) >= 5:
-                    break
-                if fb["직군"] not in seen:
-                    seen.add(fb["직군"])
-                    top5.append(fb)
-
-            modes = []
-            if self.verdict == "신강" and self.rex_n >= 3:
-                modes.append(
-                    "사업가: 재성과 신강이 맞물려 사업 추진력이 강합니다. "
-                    "가장으로서 안정적 수입을 먼저 확보한 뒤 단계적으로 사업을 키우는 전략이 좋습니다"
-                )
-            if self.ss_n >= 4:
-                modes.append(
-                    "전문직·프리랜서: 기술·콘텐츠·전문성으로 단가를 높이면 직장보다 더 큰 수입을 만들 수 있는 구조입니다"
-                )
-            if self.guan_n >= 3 or self.verdict == "신약":
-                modes.append(
-                    "직장인: 조직 내 역할이 명확할 때 가장으로서 안정적 수입과 사회적 지위를 함께 잡을 수 있습니다"
-                )
-            if not modes:
-                modes.append(
-                    "직장 내 전문가로 경력을 쌓은 뒤 40대 이후 소규모 창업 또는 컨설팅으로 전환하는 흐름이 가장 안정적입니다"
-                )
-
-            avoid = []
-            if self.gi_el:
-                avoid.append(
-                    f"기신 {self.gi_el} 계열 업종은 에너지 소진이 크고 가장으로서의 수입 안정성이 흔들릴 수 있습니다"
-                )
-
-            biz = (
-                "재성·신강 구조로 사업 적합 신호가 강합니다. 가족 생계를 고려한 단계적·분산 투자 전략으로 리스크를 줄이세요"
-                if self.verdict == "신강" and self.rex_n >= 3
-                else "직장 내 전문가 포지션을 먼저 확보하고 부업·투자로 수입 다각화 후 창업을 검토하는 흐름이 안전합니다"
-            )
-
-        for it in top5:
-            it["이유"] = _min_chars(str(it.get("이유", "")).strip(), 100)
+        core_reason = (
+            f"{dm}일간 {style.get('스타일', '')}으로 "
+            f"{yong_el} 에너지가 살아나는 환경({domain.get('환경', '')})에서 "
+            f"{domain.get('행위', '')} 일이 가장 잘 맞습니다. "
+            f"특히 {style.get('강점', '')}."
+        )
 
         return {
             "최적_직군_TOP5": top5[:5],
-            "피해야_할_직군": avoid
-            or [f"기신 오행 계열 업종은 에너지 소진이 크니 용신 {self.yong_el or '—'} 방향을 우선 고려하세요"],
-            "사업_적합": biz,
-            "근무형태_판정": modes,
+            "직업_핵심_이유": core_reason,
+            "오행_특화": specs,
+            "신살_재능": talents,
+            "피해야_할_직군": _get_avoid_jobs(self.gi_el),
+            "사업_적합": _get_biz_fit(
+                verdict=self.verdict,
+                rex_n=self.rex_n,
+                geb_n=self.geb_n,
+                ss_n=self.ss_n,
+            ),
+            "근무형태_판정": _get_work_type(
+                verdict=self.verdict,
+                ss_n=self.ss_n,
+                rex_n=self.rex_n,
+                guan_n=self.guan_n,
+                bib_n=self.bib_n,
+            ),
             "_성별": "여명" if self.female else "남명",
         }
 

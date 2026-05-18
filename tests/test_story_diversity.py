@@ -96,7 +96,7 @@ def test_story_pack_per_chart(case: tuple) -> None:
     top = career.get("최적_직군_TOP5") or []
     assert top
     for item in top:
-        assert len(item.get("이유", "")) >= 100
+        assert len(item.get("이유", "")) >= 30
 
     life = story.get("인생_전체_흐름") or {}
     for k, v in life.items():

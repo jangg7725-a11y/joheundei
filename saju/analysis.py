@@ -1305,6 +1305,7 @@ def _build_native_story_pack(
         yong=yong,
         sip_c=sip_c,
         rel_full=rel_full,
+        sinsal=sinsal,
     )
     full = engine.build_full_story()
     female = sp.is_female_gender(gender)
