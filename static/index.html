@@ -4,10 +4,28 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
-  <link rel="stylesheet" href="/static/style.css?v=20260516-time" />
+  <link rel="stylesheet" href="/static/style.css?v=20260516-more" />
 </head>
 <body>
   <header class="hero">
+    <div class="hero-more" id="hero-more">
+      <button
+        type="button"
+        class="btn-more-menu"
+        id="more-menu-btn"
+        aria-expanded="false"
+        aria-haspopup="menu"
+        aria-controls="more-menu-panel"
+      >
+        더보기 &raquo;
+      </button>
+      <div class="more-menu-panel" id="more-menu-panel" role="menu" hidden>
+        <button type="button" class="more-menu-item" role="menuitem" data-more-action="signup">회원가입</button>
+        <button type="button" class="more-menu-item" role="menuitem" data-more-action="login">로그인</button>
+        <button type="button" class="more-menu-item" role="menuitem" data-more-action="profiles">저장된프로필 사주정보바로가기</button>
+        <button type="button" class="more-menu-item more-menu-item-muted fallback-hidden" role="menuitem" data-more-action="logout" id="more-menu-logout">로그아웃</button>
+      </div>
+    </div>
     <p class="hero-badge">전통명리기반</p>
     <h1><span class="hero-brand">k-사주마당</span> <span class="hero-poom">품</span></h1>
     <p class="lead hero-meaning">품해설: 인생을 살아오면서 맺힌 것들을 풀다, 또 아름다운 상생의 마음을 품는다는 의미입니다.</p>
@@ -17,7 +35,7 @@
     <section class="card panel" aria-labelledby="panel-input-heading">
       <h2 id="panel-input-heading">출생 정보 입력</h2>
 
-      <div class="profile-manager" aria-label="저장된 사주 프로필">
+      <div class="profile-manager" id="profile-manager" aria-label="저장된 사주 프로필">
         <div class="profile-tabs-wrap">
           <div class="profile-tabs" id="profile-tabs" role="tablist" aria-label="사주 프로필 선택"></div>
           <button type="button" class="profile-tab-add" id="profile-add-btn" title="새 프로필 추가">+</button>
@@ -300,7 +318,31 @@
     <small>명리는 유파·월장·시각에 따라 달라질 수 있습니다. 학습·참고용입니다.</small>
   </footer>
 
+  <div class="modal-overlay fallback-hidden" id="auth-modal-overlay" aria-hidden="true">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="auth-modal-title">
+      <button type="button" class="modal-close" id="auth-modal-close" aria-label="닫기">&times;</button>
+      <h3 class="modal-title" id="auth-modal-title">회원가입</h3>
+      <p class="modal-note" id="auth-modal-note">이메일로 간단히 가입해 두면 이 기기에서 로그인 상태가 유지됩니다.</p>
+      <form id="auth-modal-form" class="modal-form" novalidate>
+        <label class="field field-full fallback-hidden" id="auth-field-name">
+          <span>이름</span>
+          <input type="text" id="auth-name" maxlength="40" autocomplete="name" />
+        </label>
+        <label class="field field-full">
+          <span>이메일</span>
+          <input type="email" id="auth-email" required autocomplete="email" />
+        </label>
+        <label class="field field-full">
+          <span>비밀번호</span>
+          <input type="password" id="auth-password" required minlength="6" autocomplete="current-password" />
+        </label>
+        <p class="modal-error fallback-hidden" id="auth-modal-error" role="alert"></p>
+        <button type="submit" class="btn primary btn-submit" id="auth-modal-submit">가입하기</button>
+      </form>
+    </div>
+  </div>
+
   <script src="/static/ai-story.js"></script>
-  <script src="/static/script.js?v=20260516-time"></script>
+  <script src="/static/script.js?v=20260516-more"></script>
 </body>
 </html>

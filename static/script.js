@@ -3390,4 +3390,212 @@ ${matrixHTML}
       }
     });
   }
+
+  /* ── 우측 상단 더보기 메뉴 · 회원가입/로그인 ───────────────── */
+  const ACCOUNT_STORAGE_KEY = "joheundei_account_v1";
+  const moreMenuBtn = document.getElementById("more-menu-btn");
+  const moreMenuPanel = document.getElementById("more-menu-panel");
+  const moreMenuLogout = document.getElementById("more-menu-logout");
+  const profileManagerEl = document.getElementById("profile-manager");
+  const authModalOverlay = document.getElementById("auth-modal-overlay");
+  const authModalTitle = document.getElementById("auth-modal-title");
+  const authModalNote = document.getElementById("auth-modal-note");
+  const authModalForm = document.getElementById("auth-modal-form");
+  const authModalClose = document.getElementById("auth-modal-close");
+  const authModalError = document.getElementById("auth-modal-error");
+  const authModalSubmit = document.getElementById("auth-modal-submit");
+  const authFieldName = document.getElementById("auth-field-name");
+  const authNameInput = document.getElementById("auth-name");
+  const authEmailInput = document.getElementById("auth-email");
+  const authPasswordInput = document.getElementById("auth-password");
+  let authModalMode = "signup";
+
+  function loadAccount() {
+    try {
+      const raw = localStorage.getItem(ACCOUNT_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  function saveAccount(acc) {
+    localStorage.setItem(ACCOUNT_STORAGE_KEY, JSON.stringify(acc));
+  }
+
+  function clearAccount() {
+    localStorage.removeItem(ACCOUNT_STORAGE_KEY);
+  }
+
+  function isLoggedIn() {
+    const acc = loadAccount();
+    return !!(acc && acc.loggedIn && acc.email);
+  }
+
+  function updateMoreMenuAuthState() {
+    const logged = isLoggedIn();
+    if (moreMenuLogout) moreMenuLogout.classList.toggle("fallback-hidden", !logged);
+    if (moreMenuBtn && logged) {
+      const acc = loadAccount();
+      const label = (acc && acc.name) || (acc && acc.email) || "회원";
+      moreMenuBtn.title = `${label}님 로그인 중`;
+    } else if (moreMenuBtn) {
+      moreMenuBtn.title = "";
+    }
+  }
+
+  function closeMoreMenu() {
+    if (!moreMenuPanel || !moreMenuBtn) return;
+    moreMenuPanel.hidden = true;
+    moreMenuBtn.setAttribute("aria-expanded", "false");
+  }
+
+  function toggleMoreMenu() {
+    if (!moreMenuPanel || !moreMenuBtn) return;
+    const open = moreMenuPanel.hidden;
+    moreMenuPanel.hidden = !open;
+    moreMenuBtn.setAttribute("aria-expanded", open ? "true" : "false");
+  }
+
+  function showAuthError(msg) {
+    if (!authModalError) return;
+    if (msg) {
+      authModalError.textContent = msg;
+      authModalError.classList.remove("fallback-hidden");
+    } else {
+      authModalError.textContent = "";
+      authModalError.classList.add("fallback-hidden");
+    }
+  }
+
+  function closeAuthModal() {
+    if (!authModalOverlay) return;
+    authModalOverlay.classList.add("fallback-hidden");
+    authModalOverlay.setAttribute("aria-hidden", "true");
+    showAuthError("");
+  }
+
+  function openAuthModal(mode) {
+    if (!authModalOverlay) return;
+    authModalMode = mode === "login" ? "login" : "signup";
+    if (authModalTitle) {
+      authModalTitle.textContent = authModalMode === "login" ? "로그인" : "회원가입";
+    }
+    if (authModalNote) {
+      authModalNote.textContent =
+        authModalMode === "login"
+          ? "가입한 이메일과 비밀번호로 로그인합니다."
+          : "이메일로 간단히 가입해 두면 이 기기에서 로그인 상태가 유지됩니다.";
+    }
+    if (authModalSubmit) {
+      authModalSubmit.textContent = authModalMode === "login" ? "로그인" : "가입하기";
+    }
+    if (authFieldName) {
+      authFieldName.classList.toggle("fallback-hidden", authModalMode === "login");
+    }
+    if (authPasswordInput) {
+      authPasswordInput.autocomplete =
+        authModalMode === "login" ? "current-password" : "new-password";
+    }
+    if (authEmailInput) authEmailInput.value = "";
+    if (authPasswordInput) authPasswordInput.value = "";
+    if (authNameInput) authNameInput.value = "";
+    showAuthError("");
+    authModalOverlay.classList.remove("fallback-hidden");
+    authModalOverlay.setAttribute("aria-hidden", "false");
+    (authModalMode === "signup" && authNameInput ? authNameInput : authEmailInput)?.focus();
+  }
+
+  function scrollToSavedProfiles() {
+    closeMoreMenu();
+    const el = profileManagerEl || document.querySelector(".profile-manager");
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    el.classList.remove("profile-highlight");
+    void el.offsetWidth;
+    el.classList.add("profile-highlight");
+    window.setTimeout(() => el.classList.remove("profile-highlight"), 2600);
+    if (profileTabsEl) {
+      const activeTab = profileTabsEl.querySelector(".profile-tab.active");
+      if (activeTab) activeTab.focus();
+    }
+    statusEl.textContent = "저장된 프로필 탭에서 사주 정보를 선택·수정할 수 있습니다.";
+    statusEl.classList.remove("error");
+  }
+
+  function handleMoreAction(action) {
+    closeMoreMenu();
+    if (action === "signup") openAuthModal("signup");
+    else if (action === "login") openAuthModal("login");
+    else if (action === "profiles") scrollToSavedProfiles();
+    else if (action === "logout") {
+      clearAccount();
+      updateMoreMenuAuthState();
+      statusEl.textContent = "로그아웃했습니다.";
+      statusEl.classList.remove("error");
+    }
+  }
+
+  if (moreMenuBtn && moreMenuPanel) {
+    moreMenuBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleMoreMenu();
+    });
+    moreMenuPanel.querySelectorAll("[data-more-action]").forEach((btn) => {
+      btn.addEventListener("click", () => handleMoreAction(btn.dataset.moreAction || ""));
+    });
+    document.addEventListener("click", (e) => {
+      if (!moreMenuPanel.hidden && !e.target.closest("#hero-more")) closeMoreMenu();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeMoreMenu();
+    });
+  }
+
+  if (authModalClose) authModalClose.addEventListener("click", closeAuthModal);
+  if (authModalOverlay) {
+    authModalOverlay.addEventListener("click", (e) => {
+      if (e.target === authModalOverlay) closeAuthModal();
+    });
+  }
+  if (authModalForm) {
+    authModalForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const email = (authEmailInput?.value || "").trim().toLowerCase();
+      const password = authPasswordInput?.value || "";
+      const name = (authNameInput?.value || "").trim();
+      if (!email || !password) {
+        showAuthError("이메일과 비밀번호를 입력해 주세요.");
+        return;
+      }
+      if (password.length < 6) {
+        showAuthError("비밀번호는 6자 이상이어야 합니다.");
+        return;
+      }
+      const existing = loadAccount();
+      if (authModalMode === "signup") {
+        if (existing && existing.email === email) {
+          showAuthError("이미 가입된 이메일입니다. 로그인해 주세요.");
+          return;
+        }
+        saveAccount({ email, password, name: name || email.split("@")[0], loggedIn: true });
+        closeAuthModal();
+        updateMoreMenuAuthState();
+        statusEl.textContent = `회원가입 완료 — ${name || email}님 환영합니다.`;
+        statusEl.classList.remove("error");
+        return;
+      }
+      if (!existing || existing.email !== email || existing.password !== password) {
+        showAuthError("이메일 또는 비밀번호가 올바르지 않습니다.");
+        return;
+      }
+      saveAccount({ ...existing, loggedIn: true });
+      closeAuthModal();
+      updateMoreMenuAuthState();
+      statusEl.textContent = `${existing.name || email}님, 로그인했습니다.`;
+      statusEl.classList.remove("error");
+    });
+  }
+
+  updateMoreMenuAuthState();
 })();

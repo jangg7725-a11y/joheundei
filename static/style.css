@@ -36,8 +36,181 @@ body {
 }
 
 .hero {
+  position: relative;
   text-align: center;
   padding: 2rem 1rem 1.25rem;
+}
+
+.hero-more {
+  position: absolute;
+  top: 0.85rem;
+  right: max(1rem, calc(50% - 520px));
+  z-index: 20;
+}
+
+.btn-more-menu {
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold-dim);
+  background: rgba(18, 26, 38, 0.92);
+  color: var(--gold);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.btn-more-menu:hover,
+.btn-more-menu[aria-expanded="true"] {
+  background: rgba(212, 175, 55, 0.14);
+  border-color: var(--gold);
+}
+
+.more-menu-panel {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 13.5rem;
+  padding: 0.35rem;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(14, 20, 30, 0.98);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.more-menu-panel:not([hidden]) {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.more-menu-item {
+  display: block;
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  font-size: 0.86rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.more-menu-item:hover {
+  background: rgba(212, 175, 55, 0.12);
+  color: var(--gold);
+}
+
+.more-menu-item-muted {
+  color: var(--muted);
+  border-top: 1px solid var(--line);
+  margin-top: 0.2rem;
+  padding-top: 0.65rem;
+}
+
+.profile-manager.profile-highlight {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: var(--radius);
+  animation: profile-pulse 1.2s ease 2;
+}
+
+@keyframes profile-pulse {
+  0%,
+  100% {
+    outline-color: var(--gold-dim);
+  }
+  50% {
+    outline-color: var(--gold);
+  }
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(4, 8, 14, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.modal-overlay:not(.fallback-hidden) {
+  display: flex;
+}
+
+.modal-card {
+  position: relative;
+  width: min(100%, 22rem);
+  padding: 1.35rem 1.25rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--gold-dim);
+  background: linear-gradient(165deg, rgba(22, 32, 48, 0.98), rgba(14, 20, 30, 0.99));
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.5);
+}
+
+.modal-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  color: var(--gold);
+}
+
+.modal-note {
+  margin: 0 0 1rem;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.modal-form .btn-submit {
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.modal-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.65rem;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.modal-close:hover {
+  color: var(--text);
+}
+
+.modal-error {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  color: var(--danger);
+}
+
+.modal-error:not(.fallback-hidden) {
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .hero-more {
+    right: 0.75rem;
+  }
+
+  .more-menu-panel {
+    min-width: 11.5rem;
+  }
+
+  .more-menu-item {
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
 }
 
 .hero-badge {
@@ -402,6 +575,10 @@ body {
 .leap-block.active {
   opacity: 1;
   pointer-events: auto;
+}
+
+.fallback-hidden {
+  display: none !important;
 }
 
 .checkbox-leap.fallback-hidden {
