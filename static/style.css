@@ -63,11 +63,29 @@ body {
   font-weight: 600;
 }
 
+.hero-brand {
+  color: var(--gold);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.hero-poom {
+  color: var(--text);
+  font-weight: 700;
+}
+
 .lead {
   margin: 0 auto;
   max-width: 28rem;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.hero-meaning {
+  max-width: 36rem;
+  line-height: 1.65;
+  color: var(--text);
+  opacity: 0.92;
 }
 
 .layout {
