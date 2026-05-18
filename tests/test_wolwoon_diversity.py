@@ -40,7 +40,7 @@ def _assert_wol_pack(report: dict, label: str) -> None:
         ):
             txt = str(m.get(field) or "")
             for b in _BANNED_WOL_OPENERS:
-                assert not txt.startswith(b), f"{label} {field}: banned opener {b!r}"
+                assert b not in txt, f"{label} {field}: banned opener {b!r}"
 
     stories = [str(m.get("월별_핵심스토리") or "").strip() for m in wol]
     assert all(stories), f"{label}: empty story"

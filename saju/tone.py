@@ -16,15 +16,15 @@ from typing import Any, Dict, FrozenSet, Tuple
 # ── 법적 안전: 기존에 들어간 위험 표현 제거·치환 (긴 패턴 우선) ──
 _LEGAL_SAFE_REPLACEMENTS: Tuple[Tuple[str, str], ...] = (
     ("제가 30년 넘게 사주를 보아온 상담 관점에서 정리한 내용이며", "전통 명리 원칙에 따라 정리한 참고 내용이며"),
-    ("30년 넘게 사주를 보아온 상담 관점에서", "전통 명리를 바탕으로"),
-    ("30년 가까이 사주 상담을 해온 관점에서", "전통 명리를 바탕으로"),
-    ("30년 이상 사주·명리 상담을 해온 베테랑 명리 상담가", "전통 명리를 바탕으로 해석하는 참고 도우미"),
+    ("30년 넘게 사주를 보아온 상담 관점에서", "해석상"),
+    ("30년 가까이 사주 상담을 해온 관점에서", "해석상"),
+    ("30년 이상 사주·명리 상담을 해온 베테랑 명리 상담가", "참고 해설"),
     ("30년차 명리 상담가처럼", "차분하고 따뜻하게"),
     ("30년차 명리 상담가", "명리 참고 해설"),
     ("사주를 오래 보아온 입장에서", "명리적으로 보면"),
     ("상담 현장에서 자주 보는 패턴인데", "사주에서 자주 보이는 패턴인데"),
     ("현장 상담에서도 이렇게 말씀드리는", "해석할 때 이렇게 말씀드리는"),
-    ("제가 사주 상담을 해온 관점에서", "전통 명리를 바탕으로"),
+    ("제가 사주 상담을 해온 관점에서", "해석상"),
     ("학파마다 세부는 다를 수 있으나, 상담 현장에서 통하는 흐름으로", "학파마다 세부는 다를 수 있으나, 일반적으로 통하는 흐름으로"),
     ("실제 상담은 전문가와 함께 보시길 권합니다", "중요한 결정은 해당 분야 전문가와 상의하시면 좋습니다"),
 )
@@ -216,12 +216,13 @@ def _has_consultative_marker(text: str) -> bool:
 
 
 def strip_voice_openers(text: str) -> str:
-    """톤 레이어가 붙인 앞머리 접속어를 제거합니다."""
+    """톤 레이어 접속어(앞머리·문장 중간)를 전구간에서 제거합니다."""
     if not text or not isinstance(text, str):
         return text
     t = str(text).strip()
     if not t:
         return text
+
     changed = True
     while changed:
         changed = False
@@ -229,7 +230,19 @@ def strip_voice_openers(text: str) -> str:
             if t.startswith(opener):
                 t = t[len(opener) :].lstrip()
                 changed = True
-    return t
+
+    for opener in _OPENERS:
+        bare = opener.strip()
+        for sep in (". ", "。 ", ".\n", "。\n", "\n", "? ", "! ", ".\u3000", "。\u3000"):
+            t = t.replace(f"{sep}{opener}", sep)
+            t = t.replace(f"{sep}{bare}", sep)
+        t = t.replace(opener, "")
+        if bare and bare != opener:
+            t = t.replace(bare, "")
+
+    t = re.sub(r"[ \t]{2,}", " ", t)
+    t = re.sub(r"\n{3,}", "\n\n", t)
+    return t.strip()
 
 
 def _is_wolwoon_voice_path(path: str, key: str) -> bool:
@@ -289,16 +302,9 @@ def voice_text(text: str) -> str:
     t = re.sub(r"해야\s*합니다", "하시는 편이 좋습니다", t)
     t = re.sub(r"것입니다\.?", "것으로 보입니다.", t)
 
-    if (
-        len(t) >= 48
-        and not _has_consultative_marker(t)
-        and t[0] not in ("【", "▸", "※", "⚡", "🔵", "🟡", "🟢", "🔴", "💬", "🕳", "✅", "[")
-        and not t.startswith("http")
-    ):
-        idx = sum(ord(c) for c in t[:40]) % len(_OPENERS)
-        t = _OPENERS[idx] + t
-
+    t = strip_voice_openers(t)
     t = sanitize_legal_tone(t)
+    t = strip_voice_openers(t)
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t.strip() if t else text

@@ -47,7 +47,34 @@ def test_pick_from_pool_uses_voice() -> None:
     assert "주의하세요" not in out
 
 
-def test_wolwoon_no_voice_openers() -> None:
+_BANNED_OPENERS = (
+    "명리적으로 말씀드리면,",
+    "전통 명리를 바탕으로 보면,",
+    "이 사주에서는 흔히,",
+    "풀어서 말씀드리면,",
+)
+
+
+def _collect_strings(obj, out: list) -> None:
+    if isinstance(obj, str):
+        out.append(obj)
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            _collect_strings(v, out)
+    elif isinstance(obj, list):
+        for v in obj:
+            _collect_strings(v, out)
+
+
+def _assert_no_banned_openers(texts: list[str], label: str) -> None:
+    for txt in texts:
+        if len(txt) < 8:
+            continue
+        for b in _BANNED_OPENERS:
+            assert b not in txt, f"{label}: contains banned opener {b!r} in {txt[:60]!r}..."
+
+
+def test_report_no_voice_openers_global() -> None:
     r = an.build_report(
         calendar="lunar",
         year=1966,
@@ -58,31 +85,15 @@ def test_wolwoon_no_voice_openers() -> None:
         gender="female",
         lunar_leap=False,
     )
-    banned = (
-        "명리적으로 말씀드리면,",
-        "전통 명리를 바탕으로 보면,",
-        "이 사주에서는 흔히,",
-        "풀어서 말씀드리면,",
-    )
-    for m in (r.get("월운표") or {}).get("월별") or []:
-        for field in (
-            "월별_핵심스토리",
-            "월별_행동지침_텍스트",
-            "월별_실천팁",
-            "월별_주의사항",
-        ):
-            txt = str(m.get(field) or "")
-            for b in banned:
-                assert not txt.startswith(b), f"{field} starts with {b!r}"
-    unteim = (r.get("unteim_세운월운") or {}).get("월별") or {}
-    for blk in unteim.values():
-        if not isinstance(blk, dict):
-            continue
-        txt = str(blk.get("월운_서사") or "")
-        for b in banned:
-            assert not txt.startswith(b), f"unteim 서사 starts with {b!r}"
+    texts: list = []
+    _collect_strings(r.get("원국_스토리텔링") or {}, texts)
+    _collect_strings(r.get("월운표") or {}, texts)
+    _collect_strings(r.get("unteim_세운월운") or {}, texts)
+    _assert_no_banned_openers(texts, "1966-female")
 
 
 def test_strip_voice_openers() -> None:
     raw = "전통 명리를 바탕으로 보면, 입춘을 지난 인월입니다."
     assert tn.strip_voice_openers(raw).startswith("입춘")
+    mid = "에너지가 낮다. 풀어서 말씀드리면, 쉬는 시간이 필요합니다."
+    assert "풀어서 말씀드리면" not in tn.strip_voice_openers(mid)
