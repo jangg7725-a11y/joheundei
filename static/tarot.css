@@ -94,23 +94,41 @@ body.tarot-mode .footer {
 }
 
 .tarot-stars-track--far {
-  animation: tarotStarDrift 110s linear infinite;
+  animation: tarotStarDriftFar 85s linear infinite;
 }
 
 .tarot-stars-track--mid {
-  animation: tarotStarDrift 75s linear infinite;
+  animation: tarotStarDriftMid 55s linear infinite;
 }
 
 .tarot-stars-track--near {
-  animation: tarotStarDrift 48s linear infinite;
+  animation: tarotStarDriftNear 32s linear infinite;
 }
 
-@keyframes tarotStarDrift {
+@keyframes tarotStarDriftFar {
   from {
-    transform: translateY(0);
+    transform: translate(0, 0);
   }
   to {
-    transform: translateY(50%);
+    transform: translate(-2%, 50%);
+  }
+}
+
+@keyframes tarotStarDriftMid {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(2%, 50%);
+  }
+}
+
+@keyframes tarotStarDriftNear {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(-3%, 50%);
   }
 }
 
@@ -124,20 +142,30 @@ body.tarot-mode .footer {
   border-radius: 50%;
   background: #fff;
   box-shadow:
-    0 0 5px 1px rgba(255, 255, 255, 0.75),
-    0 0 14px 2px rgba(212, 175, 55, 0.28);
+    0 0 6px 2px rgba(255, 255, 255, 0.85),
+    0 0 16px 3px rgba(200, 220, 255, 0.35);
   animation: tarotTwinkle ease-in-out infinite;
+}
+
+.tarot-twinkle--gold {
+  box-shadow:
+    0 0 7px 2px rgba(255, 255, 255, 0.9),
+    0 0 18px 4px rgba(212, 175, 55, 0.45);
 }
 
 @keyframes tarotTwinkle {
   0%,
   100% {
-    opacity: 0.2;
-    transform: scale(0.75);
+    opacity: 0.15;
+    transform: scale(0.65);
   }
-  45% {
+  40% {
     opacity: 1;
-    transform: scale(1.15);
+    transform: scale(1.25);
+  }
+  70% {
+    opacity: 0.55;
+    transform: scale(0.95);
   }
 }
 
@@ -267,7 +295,64 @@ body.tarot-mode .tarot-app {
 }
 
 .tarot-head--compact {
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.25rem;
+}
+
+body.tarot-mode .tarot-phase-draw {
+  min-height: calc(100dvh - 10.5rem);
+}
+
+/* 뽑기 레이아웃: 왼쪽 카테고리(상단) + 넓은 덱 */
+.tarot-draw-layout {
+  display: grid;
+  grid-template-columns: minmax(5.2rem, 10rem) 1fr;
+  grid-template-rows: 1fr;
+  gap: 0.35rem 0.75rem;
+  align-items: start;
+  min-height: calc(100dvh - 11rem);
+}
+
+.tarot-spread-rail {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  overflow: visible;
+  max-height: none;
+  padding-right: 0.55rem;
+  padding-top: 0;
+  border-right: 1px solid rgba(212, 175, 55, 0.14);
+}
+
+.tarot-rail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(212, 175, 55, 0.14);
+}
+
+.tarot-rail-actions .btn {
+  width: 100%;
+  font-size: clamp(0.68rem, 2.2vw, 0.78rem);
+  padding: 0.48rem 0.35rem;
+  line-height: 1.25;
+  white-space: nowrap;
+}
+
+.tarot-rail-actions .tarot-btn-auto {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.12);
+}
+
+.tarot-rail-actions .tarot-btn-redraw {
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
 }
 
 .tarot-head--compact .tarot-head-text {
@@ -337,29 +422,6 @@ body.tarot-mode .tarot-badge {
   flex-shrink: 0;
 }
 
-/* 뽑기 레이아웃: 왼쪽 카테고리 + 넓은 덱 */
-.tarot-draw-layout {
-  display: grid;
-  grid-template-columns: minmax(5rem, 9.5rem) 1fr;
-  grid-template-rows: 1fr;
-  gap: 0.5rem 0.85rem;
-  align-items: stretch;
-  min-height: clamp(26rem, 62vh, 44rem);
-}
-
-.tarot-spread-rail {
-  position: sticky;
-  top: 0.75rem;
-  align-self: start;
-  overflow-x: hidden;
-  overflow-y: auto;
-  max-height: calc(100vh - 10rem);
-  padding-right: 0.5rem;
-  border-right: 1px solid rgba(212, 175, 55, 0.12);
-  scrollbar-width: thin;
-  scrollbar-color: var(--gold-dim) transparent;
-}
-
 .tarot-spread-rail .tarot-spread-tabs {
   flex-direction: column;
   flex-wrap: nowrap;
@@ -381,7 +443,7 @@ body.tarot-mode .tarot-badge {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
-  min-height: clamp(24rem, 60vh, 42rem);
+  min-height: calc(100dvh - 11.5rem);
   padding: 0;
   min-width: 0;
 }
@@ -402,26 +464,26 @@ body.tarot-mode .tarot-badge {
   perspective: 1600px;
 }
 
-/* 60장 부채꼴 — 섞기 → 촤라락 펼침 */
+/* 60장 부채꼴 — 넓은 반경 호(캡쳐2) + 섞기 → 펼침 */
 .tarot-deck-fan {
   position: relative;
   display: block;
   width: 100%;
   max-width: 100%;
-  height: 100%;
-  min-height: clamp(22rem, 56vh, 38rem);
+  height: clamp(18rem, 46vh, 28rem);
+  min-height: clamp(18rem, 46vh, 28rem);
   margin: 0;
   overflow: visible;
-  padding: 0 0 0.75rem;
-  --fan-pivot: clamp(14rem, 40vh, 24rem);
+  padding: 0;
+  --fan-pivot: clamp(28rem, 78vh, 52rem);
 }
 
 .tarot-deck-fan .tarot-card-slot {
-  --tarot-card-w: clamp(2.75rem, 4.8vw, 4.85rem);
+  --tarot-card-w: clamp(2.15rem, 3.4vw, 3.65rem);
   --tarot-card-h: calc(var(--tarot-card-w) * 1.55);
   position: absolute;
   left: 50%;
-  bottom: 8%;
+  bottom: 0;
   margin-left: calc(var(--tarot-card-w) / -2);
   transform: rotate(var(--fan-angle, 0deg));
   transform-origin: 50% calc(100% + var(--fan-pivot));
@@ -432,7 +494,7 @@ body.tarot-mode .tarot-badge {
 /* 1단계: 한곳에 모아 섞기 */
 .tarot-deck-fan.is-dealing .tarot-card-slot {
   left: 50%;
-  bottom: 38%;
+  bottom: 28%;
   margin-left: 0;
   transform: translateX(-50%) rotate(var(--shuffle-r, 0deg)) translateY(calc(var(--fan-i) * -0.06px));
   transform-origin: 50% 100%;
@@ -458,7 +520,7 @@ body.tarot-mode .tarot-badge {
 .tarot-deck-fan.is-spreading .tarot-card-slot {
   animation: none;
   left: 50%;
-  bottom: 8%;
+  bottom: 0;
   margin-left: calc(var(--tarot-card-w) / -2);
   transform: rotate(var(--fan-angle, 0deg));
   transform-origin: 50% calc(100% + var(--fan-pivot));
@@ -467,7 +529,7 @@ body.tarot-mode .tarot-badge {
 }
 
 .tarot-deck-fan .tarot-card-slot:hover:not(.is-disabled):not(.is-picked) {
-  transform: rotate(var(--fan-angle, 0deg)) translateY(-16px) scale(1.14);
+  transform: rotate(var(--fan-angle, 0deg)) translateY(-20px) scale(1.16);
   z-index: 120;
   filter: drop-shadow(0 10px 20px rgba(212, 175, 55, 0.3));
 }
@@ -489,14 +551,6 @@ body.tarot-mode .tarot-badge {
   filter: none;
 }
 
-.tarot-draw-actions {
-  position: relative;
-  z-index: 60;
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: none;
-}
-
 .tarot-phase-result {
   padding: 1rem 0.5rem;
 }
@@ -511,17 +565,18 @@ body.tarot-mode .tarot-badge {
 
 @media (min-width: 900px) {
   .tarot-draw-layout {
-    grid-template-columns: 10rem 1fr;
-    gap: 1rem 1.25rem;
+    grid-template-columns: 10.5rem 1fr;
+    gap: 0.5rem 1rem;
   }
 
   .tarot-deck-fan {
-    min-height: clamp(24rem, 58vh, 40rem);
-    --fan-pivot: clamp(16rem, 42vh, 26rem);
+    height: clamp(20rem, 48vh, 30rem);
+    min-height: clamp(20rem, 48vh, 30rem);
+    --fan-pivot: clamp(32rem, 82vh, 56rem);
   }
 
   .tarot-deck-fan .tarot-card-slot {
-    --tarot-card-w: clamp(3rem, 3.8vw, 5.1rem);
+    --tarot-card-w: clamp(2.35rem, 2.8vw, 3.85rem);
   }
 }
 
@@ -661,12 +716,12 @@ body.tarot-mode .tarot-badge {
   pointer-events: none;
 }
 
-.tarot-draw-actions,
 .tarot-result-actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   gap: 0.5rem;
+  margin-top: 0.75rem;
 }
 
 .tarot-btn-auto {
@@ -843,27 +898,33 @@ body.tarot-mode .tarot-badge {
   }
 
   .tarot-draw-layout {
-    grid-template-columns: 4.6rem 1fr;
-    gap: 0.35rem 0.5rem;
+    grid-template-columns: 4.8rem 1fr;
+    gap: 0.25rem 0.45rem;
+    min-height: calc(100dvh - 10rem);
   }
 
   .tarot-spread-tabs .tab {
-    font-size: 0.62rem;
-    padding: 0.38rem 0.25rem;
+    font-size: 0.6rem;
+    padding: 0.36rem 0.22rem;
+  }
+
+  .tarot-rail-actions .btn {
+    font-size: 0.6rem;
+    padding: 0.4rem 0.2rem;
   }
 
   .tarot-deck-stage {
-    min-height: clamp(20rem, 54vh, 32rem);
+    min-height: calc(100dvh - 10.5rem);
   }
 
   .tarot-deck-fan {
-    min-height: clamp(18rem, 50vh, 30rem);
-    --fan-pivot: clamp(11rem, 34vh, 18rem);
+    height: clamp(16rem, 42vh, 24rem);
+    min-height: clamp(16rem, 42vh, 24rem);
+    --fan-pivot: clamp(22rem, 68vh, 38rem);
   }
 
   .tarot-deck-fan .tarot-card-slot {
-    --tarot-card-w: clamp(2.35rem, 6.5vw, 3.2rem);
-    bottom: 6%;
+    --tarot-card-w: clamp(1.85rem, 5.8vw, 2.65rem);
   }
 }
 

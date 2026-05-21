@@ -2,7 +2,7 @@
   "use strict";
 
   const SPREAD_ORDER = ["today", "week", "month", "year", "worry", "love", "deep"];
-  const FAN_SPREAD_DEG = 178;
+  const FAN_SPREAD_DEG = 179;
   const DEAL_SHUFFLE_MS = 850;
   const DEAL_SPREAD_MS = 1400;
 
@@ -72,9 +72,9 @@
   let dealing = false;
 
   const STAR_LAYERS = {
-    far: { count: 140, size: 1, spread: 2400, opacity: [0.25, 0.55] },
-    mid: { count: 85, size: 1.6, spread: 2400, opacity: [0.4, 0.75] },
-    near: { count: 42, size: 2.2, spread: 2400, opacity: [0.55, 0.95] },
+    far: { count: 180, size: 1, spread: 2800, opacity: [0.3, 0.62] },
+    mid: { count: 110, size: 1.6, spread: 2800, opacity: [0.45, 0.82] },
+    near: { count: 55, size: 2.2, spread: 2800, opacity: [0.6, 1] },
   };
 
   function buildStarShadows(count, spread, size, opacityRange) {
@@ -107,18 +107,19 @@
     });
 
     if (els.tarotTwinkles) {
-      const twinkleCount = 22;
+      const twinkleCount = 48;
       els.tarotTwinkles.innerHTML = "";
       for (let i = 0; i < twinkleCount; i++) {
         const star = document.createElement("span");
         star.className = "tarot-twinkle";
-        const size = 2 + Math.random() * 2.5;
+        const size = 1.5 + Math.random() * 3.2;
         star.style.width = `${size}px`;
         star.style.height = `${size}px`;
         star.style.left = `${Math.random() * 100}%`;
         star.style.top = `${Math.random() * 100}%`;
-        star.style.animationDuration = `${2.2 + Math.random() * 3.8}s`;
-        star.style.animationDelay = `${Math.random() * 5}s`;
+        star.style.animationDuration = `${1.6 + Math.random() * 3.2}s`;
+        star.style.animationDelay = `${Math.random() * 6}s`;
+        if (Math.random() > 0.55) star.classList.add("tarot-twinkle--gold");
         els.tarotTwinkles.appendChild(star);
       }
     }
