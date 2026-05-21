@@ -54,9 +54,21 @@ body.tarot-mode .hero-badge {
   display: none;
 }
 
-body.tarot-mode .hero h1 {
-  font-size: clamp(1.15rem, 4vw, 1.45rem);
-  margin-bottom: 0.15rem;
+body.tarot-mode .hero-signboard {
+  margin-bottom: 0.25rem;
+}
+
+body.tarot-mode .hero-signboard__line {
+  color: #e8c547;
+  -webkit-text-stroke: 2.5px rgba(0, 0, 0, 0.5);
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.35),
+    0 4px 14px rgba(0, 0, 0, 0.45),
+    0 0 28px rgba(212, 175, 55, 0.35);
+}
+
+body.tarot-mode .hero-signboard__poom {
+  color: #f5e6b8;
 }
 
 body.tarot-mode .app-mode-nav {

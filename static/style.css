@@ -336,11 +336,35 @@ body.tarot-mode .sansuhwa-bg {
   opacity: 0.9;
 }
 
-.hero h1 {
-  margin: 0 0 0.5rem;
-  font-weight: 700;
-  font-size: clamp(1.45rem, 4vw, 1.85rem);
-  letter-spacing: -0.02em;
+/* 간판형 흘림 타이틀 */
+.hero-signboard {
+  margin: 0.15rem 0 0.55rem;
+  padding: 0;
+  line-height: 1;
+  text-align: center;
+}
+
+.hero-signboard__line {
+  display: inline-block;
+  font-family: "East Sea Dokdo", "Nanum Brush Script", "Brush Script MT", cursive;
+  font-size: clamp(2.75rem, 11vw, 5rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  color: var(--gold);
+  -webkit-text-stroke: 2px rgba(12, 22, 28, 0.55);
+  paint-order: stroke fill;
+  text-shadow:
+    0 2px 0 rgba(255, 255, 255, 0.82),
+    0 4px 0 rgba(255, 255, 255, 0.35),
+    0 6px 18px rgba(28, 42, 48, 0.28),
+    2px 3px 0 rgba(20, 35, 42, 0.18);
+  filter: drop-shadow(0 2px 1px rgba(255, 255, 255, 0.5));
+}
+
+.hero-signboard__poom {
+  font-style: normal;
+  letter-spacing: 0.06em;
 }
 
 .han-title {
@@ -348,17 +372,6 @@ body.tarot-mode .sansuhwa-bg {
   margin-right: 0.35rem;
   color: var(--gold);
   font-weight: 600;
-}
-
-.hero-brand {
-  color: var(--gold);
-  font-weight: 600;
-  letter-spacing: -0.01em;
-}
-
-.hero-poom {
-  color: var(--text);
-  font-weight: 700;
 }
 
 .lead {
@@ -383,21 +396,18 @@ body:not(.tarot-mode) .hero-badge {
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
 }
 
-body:not(.tarot-mode) .hero-brand {
+body:not(.tarot-mode) .hero-signboard__line {
   color: var(--hero-ink);
-  font-weight: 700;
+  -webkit-text-stroke: 3px rgba(18, 32, 38, 0.42);
   text-shadow:
-    0 0 24px rgba(255, 255, 255, 0.55),
-    0 1px 0 rgba(255, 255, 255, 0.9),
-    0 2px 6px rgba(30, 50, 56, 0.12);
+    0 2px 0 rgba(255, 255, 255, 0.92),
+    0 5px 0 rgba(255, 255, 255, 0.45),
+    0 8px 22px rgba(30, 48, 54, 0.22),
+    3px 4px 0 rgba(22, 38, 44, 0.14);
 }
 
-body:not(.tarot-mode) .hero-poom {
+body:not(.tarot-mode) .hero-signboard__poom {
   color: var(--hero-bronze);
-  font-weight: 800;
-  text-shadow:
-    0 0 20px rgba(255, 255, 255, 0.5),
-    0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 body:not(.tarot-mode) .hero-meaning,
