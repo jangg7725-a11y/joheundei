@@ -14,6 +14,7 @@
     bottomNav: document.getElementById("bottom-nav"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
     spreadTabs: document.getElementById("tarot-spread-tabs"),
+    instruction: document.getElementById("tarot-instruction"),
     deckArea: document.getElementById("tarot-deck-area"),
     drawPhase: document.getElementById("tarot-draw-phase"),
     resultPhase: document.getElementById("tarot-result-phase"),
@@ -174,6 +175,29 @@
     return ((index - mid) / mid) * (FAN_SPREAD_DEG / 2);
   }
 
+  function updateInstruction() {
+    if (!els.instruction) return;
+    const need = needCount();
+    const picked = selectedCards.length;
+    const label = spreadLabel();
+    if (picked >= need) {
+      els.instruction.textContent = `${label} — 선택 완료. 해석을 확인해 주세요.`;
+      return;
+    }
+    els.instruction.textContent = `${label} — 60장 중 ${need}장을 직접 골라 주세요 (${picked}/${need})`;
+  }
+
+  function syncCardInteractivity() {
+    if (!els.deckArea) return;
+    const selectionDone = selectedCards.length >= needCount();
+    els.deckArea.querySelectorAll(".tarot-card-slot").forEach((btn) => {
+      const cardId = btn.dataset.cardId;
+      const isPicked = cardId ? pickedIds.has(cardId) : false;
+      const shouldDisable = pickingLocked || dealing || (selectionDone && !isPicked);
+      btn.classList.toggle("is-disabled", shouldDisable);
+    });
+  }
+
   function setAppMode(mode) {
     const isTarot = mode === "tarot";
     if (isTarot) initTarotSky();
@@ -220,6 +244,7 @@
         if (btn.dataset.spread === activeSpread || pickingLocked || dealing) return;
         activeSpread = btn.dataset.spread;
         renderSpreadTabs();
+        updateInstruction();
         resetDeckSelection();
       });
     });
@@ -279,7 +304,7 @@
         const flipClass = revealed ? " flipped" : "";
         const pickedClass = isPicked ? " is-picked" : "";
         const doneClass = isPicked && selectionDone ? " is-complete" : "";
-        const disabled = pickingLocked || dealing || (selectionDone && !isPicked) ? " is-disabled" : "";
+        const disabled = pickingLocked || (selectionDone && !isPicked) ? " is-disabled" : "";
         const angle = fanAngle(i, total).toFixed(2);
         const shuffleR = ((i % 13) - 6) * 2.8;
         const revClass = revealed?.is_reversed ? " card-reversed" : "";
@@ -308,6 +333,7 @@
       });
     });
 
+    updateInstruction();
     updateDrawButtons(selectionDone);
 
     if (selectedCards.length === 0) {
@@ -318,7 +344,9 @@
         window.setTimeout(() => {
           if (els.deckArea) els.deckArea.classList.remove("is-spreading");
           dealing = false;
+          syncCardInteractivity();
           updateDrawButtons(selectedCards.length >= needCount());
+          updateInstruction();
         }, DEAL_SPREAD_MS);
       }, DEAL_SHUFFLE_MS);
     } else {

@@ -504,7 +504,7 @@ body.tarot-mode .tarot-badge {
   perspective: 1400px;
 }
 
-/* 60장 부채꼴 — 크게·넓게 */
+/* 60장 부채꼴 — 크게·넓게·좌측 정렬 */
 .tarot-deck-fan {
   position: relative;
   display: block;
@@ -515,6 +515,7 @@ body.tarot-mode .tarot-badge {
   margin: 0 auto;
   overflow: visible;
   padding: 0;
+  --fan-center-x: 38%;
   --fan-pivot: clamp(14rem, 38vh, 24rem);
 }
 
@@ -522,7 +523,7 @@ body.tarot-mode .tarot-badge {
   --tarot-card-w: clamp(3.35rem, 6.8vw, 6.5rem);
   --tarot-card-h: calc(var(--tarot-card-w) * 1.55);
   position: absolute;
-  left: 50%;
+  left: var(--fan-center-x);
   bottom: 10%;
   margin-left: calc(var(--tarot-card-w) / -2);
   transform: rotate(var(--fan-angle, 0deg));
@@ -531,9 +532,16 @@ body.tarot-mode .tarot-badge {
   z-index: calc(var(--fan-i) + 1);
 }
 
+/* 섞기·펼치기 중에는 클릭 불가 */
+.tarot-deck-fan.is-dealing .tarot-card-slot,
+.tarot-deck-fan.is-spreading .tarot-card-slot {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* 1단계: 한곳에 모아 섞기 */
 .tarot-deck-fan.is-dealing .tarot-card-slot {
-  left: 50%;
+  left: var(--fan-center-x);
   bottom: 42%;
   margin-left: 0;
   transform: translateX(-50%) rotate(var(--shuffle-r, 0deg)) translateY(calc(var(--fan-i) * -0.06px));
@@ -559,7 +567,7 @@ body.tarot-mode .tarot-badge {
 /* 2단계: 넓게 펼치기 */
 .tarot-deck-fan.is-spreading .tarot-card-slot {
   animation: none;
-  left: 50%;
+  left: var(--fan-center-x);
   bottom: 10%;
   margin-left: calc(var(--tarot-card-w) / -2);
   transform: rotate(var(--fan-angle, 0deg));
@@ -612,6 +620,7 @@ body.tarot-mode .tarot-badge {
   .tarot-deck-fan {
     height: clamp(26rem, 60vh, 40rem);
     min-height: clamp(26rem, 60vh, 40rem);
+    --fan-center-x: 36%;
     --fan-pivot: clamp(16rem, 40vh, 26rem);
   }
 
@@ -962,6 +971,7 @@ body.tarot-mode .tarot-status:empty {
   .tarot-deck-fan {
     height: clamp(20rem, 50vh, 28rem);
     min-height: clamp(20rem, 50vh, 28rem);
+    --fan-center-x: 40%;
     --fan-pivot: clamp(11rem, 28vh, 17rem);
   }
 
