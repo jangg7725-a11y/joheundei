@@ -31,8 +31,41 @@ body {
   font-family: var(--font);
   color: var(--text);
   line-height: 1.55;
-  background: radial-gradient(ellipse 120% 80% at 50% -20%, #1a2840 0%, var(--bg-deep) 45%, #06090d 100%);
+  background: #06090d;
   background-attachment: fixed;
+}
+
+/* 은은한 산수화 배경 (사주 모드) */
+.sansuhwa-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(6, 9, 13, 0.72) 0%,
+      rgba(6, 9, 13, 0.48) 38%,
+      rgba(6, 9, 13, 0.55) 72%,
+      rgba(6, 9, 13, 0.78) 100%
+    ),
+    radial-gradient(ellipse 120% 70% at 50% 18%, rgba(26, 40, 64, 0.28) 0%, transparent 58%),
+    url("/static/bg/sansuhwa.svg") center bottom / cover no-repeat;
+  opacity: 0.68;
+  transition: opacity 0.45s ease;
+}
+
+body.tarot-mode .sansuhwa-bg {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.hero,
+.layout,
+.footer {
+  position: relative;
+  z-index: 1;
 }
 
 .hero {

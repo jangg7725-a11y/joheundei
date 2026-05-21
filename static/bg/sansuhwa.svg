@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="paper" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0c1420"/>
+      <stop offset="55%" stop-color="#0a1018"/>
+      <stop offset="100%" stop-color="#06090d"/>
+    </linearGradient>
+    <linearGradient id="mist-a" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#8aa4bc" stop-opacity="0"/>
+      <stop offset="35%" stop-color="#9eb6cc" stop-opacity="0.16"/>
+      <stop offset="65%" stop-color="#b8c8d8" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#8aa4bc" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="mist-b" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#c8d4e0" stop-opacity="0"/>
+      <stop offset="100%" stop-color="#c8d4e0" stop-opacity="0.18"/>
+    </linearGradient>
+    <linearGradient id="peak-far" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5a7088" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#5a7088" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="peak-mid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7a8ea4" stop-opacity="0.72"/>
+      <stop offset="100%" stop-color="#7a8ea4" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="peak-near" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9aabb8" stop-opacity="0.88"/>
+      <stop offset="100%" stop-color="#9aabb8" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="soften" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="1.2"/>
+    </filter>
+  </defs>
+
+  <rect width="1920" height="1080" fill="url(#paper)"/>
+
+  <!-- distant peaks -->
+  <g opacity="0.42" filter="url(#soften)">
+    <path fill="url(#peak-far)" d="M0 620 L120 480 L260 540 L420 420 L580 500 L760 390 L920 470 L1080 360 L1240 430 L1420 340 L1580 410 L1760 370 L1920 450 L1920 1080 L0 1080 Z"/>
+    <path fill="url(#peak-far)" d="M0 680 L180 560 L340 610 L520 500 L700 580 L880 490 L1060 560 L1240 480 L1420 540 L1600 470 L1780 530 L1920 500 L1920 1080 L0 1080 Z" opacity="0.75"/>
+  </g>
+
+  <!-- mist between layers -->
+  <ellipse cx="960" cy="560" rx="980" ry="120" fill="url(#mist-a)"/>
+  <ellipse cx="520" cy="620" rx="620" ry="90" fill="url(#mist-a)" opacity="0.7"/>
+  <ellipse cx="1420" cy="640" rx="700" ry="100" fill="url(#mist-a)" opacity="0.55"/>
+
+  <!-- middle mountains -->
+  <g opacity="0.58" filter="url(#soften)">
+    <path fill="url(#peak-mid)" d="M0 760 L220 620 L380 690 L560 580 L740 660 L920 570 L1100 640 L1280 560 L1460 630 L1640 590 L1820 650 L1920 620 L1920 1080 L0 1080 Z"/>
+  </g>
+
+  <ellipse cx="960" cy="720" rx="860" ry="110" fill="url(#mist-b)" opacity="0.55"/>
+
+  <!-- foreground mountains -->
+  <g opacity="0.72" filter="url(#soften)">
+    <path fill="url(#peak-near)" d="M0 860 L160 740 L320 810 L500 700 L680 780 L860 690 L1040 770 L1220 710 L1400 790 L1580 730 L1760 800 L1920 760 L1920 1080 L0 1080 Z"/>
+    <path fill="url(#peak-near)" d="M0 920 L140 830 L300 880 L480 790 L660 850 L840 800 L1020 860 L1200 810 L1380 870 L1560 820 L1740 880 L1920 850 L1920 1080 L0 1080 Z" opacity="0.65"/>
+  </g>
+
+  <!-- pine silhouettes -->
+  <g fill="#8a9aa8" opacity="0.35">
+    <path d="M280 820 L292 760 L304 820 Z M286 780 L298 740 L310 780 Z"/>
+    <path d="M520 860 L532 795 L544 860 Z M526 815 L538 775 L550 815 Z"/>
+    <path d="M1180 840 L1192 770 L1204 840 Z M1186 790 L1198 745 L1210 790 Z"/>
+    <path d="M1520 880 L1532 815 L1544 880 Z M1526 835 L1538 790 L1550 835 Z"/>
+  </g>
+
+  <!-- tiny pavilion -->
+  <g transform="translate(860 760)" opacity="0.28">
+    <rect x="0" y="18" width="36" height="14" fill="#a8b4c0"/>
+    <polygon points="18,0 42,18 -6,18" fill="#b8c4d0"/>
+    <rect x="14" y="22" width="8" height="10" fill="#8898a8"/>
+  </g>
+
+  <!-- water / river hint -->
+  <path d="M0 980 Q480 940 960 960 T1920 950 L1920 1080 L0 1080 Z" fill="#6a8094" opacity="0.08"/>
+
+  <!-- bottom mist -->
+  <rect x="0" y="880" width="1920" height="200" fill="url(#mist-b)" opacity="0.35"/>
+</svg>
