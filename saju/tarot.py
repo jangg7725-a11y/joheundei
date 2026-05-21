@@ -39,6 +39,51 @@ SPREADS: dict[str, dict[str, Any]] = {
     "deep": {"label": "심층 타로", "count": 10},
 }
 
+SPREAD_POSITIONS: dict[str, list[dict[str, str]]] = {
+    "today": [{"label": "오늘", "role": "지금 이 순간의 메시지"}],
+    "week": [
+        {"label": "초반", "role": "이번 주의 시작과 기운"},
+        {"label": "중반", "role": "한 주의 전개와 변화"},
+        {"label": "후반", "role": "마무리와 결과"},
+    ],
+    "worry": [
+        {"label": "현재", "role": "지금 마주한 상황"},
+        {"label": "장애", "role": "막고 있는 요인"},
+        {"label": "조언", "role": "풀어갈 방향"},
+    ],
+    "month": [
+        {"label": "1", "role": "한 달의 출발점"},
+        {"label": "2", "role": "초반의 흐름"},
+        {"label": "3", "role": "떠오르는 이슈"},
+        {"label": "4", "role": "전환과 변수"},
+        {"label": "5", "role": "필요한 조언"},
+        {"label": "6", "role": "다가오는 전망"},
+        {"label": "7", "role": "한 달의 마무리"},
+    ],
+    "year": [{"label": f"{m}월", "role": f"{m}월의 기운"} for m in range(1, 13)],
+    "love": [
+        {"label": "나", "role": "나의 마음과 태도"},
+        {"label": "상대", "role": "상대의 에너지"},
+        {"label": "관계", "role": "두 사람 사이의 흐름"},
+        {"label": "장애", "role": "막고 있는 것"},
+        {"label": "조언", "role": "관계를 위한 제언"},
+        {"label": "근접", "role": "가까워질 가능성"},
+        {"label": "결말", "role": "앞으로의 방향"},
+    ],
+    "deep": [
+        {"label": "1", "role": "현재 상황"},
+        {"label": "2", "role": "직면한 장애"},
+        {"label": "3", "role": "무의식의 영향"},
+        {"label": "4", "role": "지나간 흐름"},
+        {"label": "5", "role": "나의 목표"},
+        {"label": "6", "role": "가까운 미래"},
+        {"label": "7", "role": "나 자신"},
+        {"label": "8", "role": "주변 환경"},
+        {"label": "9", "role": "희망과 두려움"},
+        {"label": "10", "role": "최종 결론"},
+    ],
+}
+
 REVERSED_PROBABILITY = 0.3
 
 
@@ -225,6 +270,13 @@ def reveal_card(
 
 def spreads_meta() -> dict[str, Any]:
     deck = load_deck()
+    spreads_out: dict[str, Any] = {}
+    for key, info in SPREADS.items():
+        positions = SPREAD_POSITIONS.get(key, [])
+        spreads_out[key] = {
+            **info,
+            "positions": positions,
+        }
     return {
         "ok": True,
         "deck_name": deck.get("deck_name"),
@@ -232,5 +284,133 @@ def spreads_meta() -> dict[str, Any]:
         "back_image_url": deck.get("back_image_url"),
         "reversed_probability": deck.get("reversed_probability", REVERSED_PROBABILITY),
         "reading_categories": list(READING_CATEGORIES),
-        "spreads": SPREADS,
+        "spreads": spreads_out,
+    }
+
+
+def _position_connector(index: int, total: int) -> str:
+    if total <= 1:
+        return ""
+    if index == 0:
+        return "먼저"
+    if index == total - 1:
+        return "마침내"
+    if index == 1:
+        return "이어서"
+    return "그다음"
+
+
+def _compose_spread_closing(spread_key: str, sections: list[dict[str, Any]]) -> str:
+    if not sections:
+        return ""
+    first = sections[0]["name"]
+    last = sections[-1]["name"]
+    if spread_key == "today":
+        return sections[0].get("excerpt", "")
+    if spread_key == "year":
+        return (
+            f"올해는 「{first}」의 기운으로 문을 연 뒤 「{last}」의 에너지로 마무리되는 흐름입니다. "
+            "각 달의 카드를 순서대로 살피며, 시기에 맞는 준비와 조율을 이어가 보세요."
+        )
+    if spread_key in ("week", "worry") or len(sections) == 3:
+        return (
+            f"시작의 「{first}」에서 출발한 이야기는 중간의 변화를 거쳐 「{last}」로 향합니다. "
+            "각 장면을 따로 읽기보다, 앞 카드에서 뒤 카드로 이어지는 흐름 속에서 "
+            "지금 필요한 태도와 마무리 방향을 찾아보세요."
+        )
+    if spread_key == "month":
+        return (
+            f"한 달의 운세는 「{first}」로 시작해 「{last}」로 정리됩니다. "
+            "초반의 기운, 중간의 이슈, 후반의 전망이 하나의 이야기이니 "
+            "순서를 따라 전체 그림을 먼저 짚은 뒤 행동에 옮기면 좋습니다."
+        )
+    if spread_key == "love":
+        return (
+            f"나와 상대, 그리고 관계의 흐름이 「{first}」에서 「{last}」까지 이어집니다. "
+            "한 장만 단정하기보다, 장애와 조언 카드가 알려주는 균형을 참고해 "
+            "관계를 천천히 가다듬어 보세요."
+        )
+    return (
+        f"「{first}」에서 시작된 흐름은 여러 장의 카드를 거치며 「{last}」로 수렴합니다. "
+        "각 카드는 독립된 답이 아니라 하나의 이야기 속 장면입니다. "
+        "앞뒤 흐름을 함께 읽으며 지금 필요한 선택을 정리해 보세요."
+    )
+
+
+def compose_spread_narrative(spread_key: str, sections: list[dict[str, Any]]) -> str:
+    info = SPREADS[spread_key]
+    parts = [
+        f"「{info['label']}」 — 카드를 뽑은 순서대로 이야기를 풀어 봅니다.",
+    ]
+    total = len(sections)
+    for i, sec in enumerate(sections):
+        conn = _position_connector(i, total)
+        rev = f" ({sec['orient']})" if sec.get("is_reversed") else ""
+        pos = sec["position_label"]
+        role = sec["position_role"]
+        name = sec["name"]
+        kw = sec.get("keyword") or ""
+        text = sec["excerpt"]
+        head = f"{conn + ' ' if conn else ''}{pos}({role})에는 「{name}」{rev} 카드가 놓였습니다."
+        if kw:
+            head += f" 핵심 키워드는 {kw}입니다."
+        parts.append(f"{head} {text}")
+    return "\n\n".join(parts)
+
+
+def spread_reading(
+    spread: str,
+    cards: list[dict[str, Any]],
+    category: str = "종합운",
+) -> dict[str, Any]:
+    """뽑은 순서대로 스프레드 스토리텔링 해석."""
+    spread_key = normalize_spread(spread)
+    cat = normalize_category(category)
+    info = SPREADS[spread_key]
+    expected = info["count"]
+    if len(cards) != expected:
+        raise ValueError(
+            f"{info['label']}은(는) {expected}장이 필요합니다. (받음: {len(cards)}장)"
+        )
+
+    positions_meta = SPREAD_POSITIONS[spread_key]
+    sections: list[dict[str, Any]] = []
+    for i, entry in enumerate(cards):
+        card = card_by_id(entry["card_id"])
+        is_rev = bool(entry.get("is_reversed", False))
+        pos = (
+            positions_meta[i]
+            if i < len(positions_meta)
+            else {"label": str(i + 1), "role": "흐름"}
+        )
+        excerpt = reading_text(card, cat, reversed=is_rev)
+        sections.append(
+            {
+                "position": i + 1,
+                "position_label": pos["label"],
+                "position_role": pos["role"],
+                "card_id": card["id"],
+                "name": card["name"],
+                "keyword": card.get("keyword", ""),
+                "element": card.get("element", ""),
+                "category_kr": card.get("category_kr", ""),
+                "is_reversed": is_rev,
+                "orient": "역방향" if is_rev else "정방향",
+                "image_url": card.get("image_url"),
+                "excerpt": excerpt,
+            }
+        )
+
+    narrative = compose_spread_narrative(spread_key, sections)
+    closing = _compose_spread_closing(spread_key, sections)
+
+    return {
+        "ok": True,
+        "spread": spread_key,
+        "spread_label": info["label"],
+        "category": cat,
+        "count": expected,
+        "positions": sections,
+        "narrative": narrative,
+        "closing": closing,
     }

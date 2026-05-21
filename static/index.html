@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
   <link rel="stylesheet" href="/static/style.css?v=20260516-sewoon-center" />
-  <link rel="stylesheet" href="/static/tarot.css?v=20260519-shuffle-random" />
+  <link rel="stylesheet" href="/static/tarot.css?v=20260519-narrative" />
 </head>
 <body>
   <div class="tarot-sky" id="tarot-sky" hidden aria-hidden="true">
@@ -353,8 +353,12 @@
       </div>
 
       <div class="tarot-phase tarot-phase-result" id="tarot-result-phase" hidden>
-        <div class="tarot-result-nav" id="tarot-result-nav" hidden aria-label="뽑은 카드 목록"></div>
-        <div class="tarot-result-body">
+        <header class="tarot-result-spread-head" id="tarot-result-spread-head" hidden>
+          <h3 id="tarot-result-spread-title"></h3>
+          <p class="tarot-result-spread-sub">뽑은 순서대로 하나의 이야기로 읽어 보세요.</p>
+        </header>
+        <div class="tarot-spread-cards" id="tarot-spread-cards" hidden aria-label="뽑은 카드 순서"></div>
+        <div class="tarot-result-body" id="tarot-single-result">
           <div class="tarot-card-hero">
             <div class="tarot-card-slot tarot-card-slot--large" id="tarot-hero-card">
               <div class="card-flip flipped">
@@ -377,11 +381,15 @@
         <div class="tarot-cat-tabs tab-bar" id="tarot-cat-tabs" role="tablist" aria-label="해석 카테고리"></div>
         <div class="tarot-reading-block">
           <h4 class="tarot-reading-title" id="tarot-reading-title">종합운</h4>
-          <p class="tarot-reading-text" id="tarot-reading-text"></p>
+          <div class="tarot-reading-text" id="tarot-reading-text"></div>
         </div>
         <blockquote class="tarot-today" id="tarot-today">
           <span class="tarot-today-label">오늘의 한마디</span>
           <p class="tarot-today-text" id="tarot-today-text"></p>
+        </blockquote>
+        <blockquote class="tarot-spread-closing" id="tarot-spread-closing" hidden>
+          <span class="tarot-today-label">마무리 조언</span>
+          <p class="tarot-spread-closing-text" id="tarot-spread-closing-text"></p>
         </blockquote>
         <div class="tarot-result-actions">
           <button type="button" class="btn tarot-btn-back-draw" id="tarot-back-draw">카드 다시 고르기</button>
@@ -431,6 +439,6 @@
 
   <script src="/static/ai-story.js"></script>
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
-  <script src="/static/tarot.js?v=20260519-shuffle-random"></script>
+  <script src="/static/tarot.js?v=20260519-narrative"></script>
 </body>
 </html>

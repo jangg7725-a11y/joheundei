@@ -94,3 +94,42 @@ def test_tarot_reveal_api(client: TestClient) -> None:
 def test_tarot_invalid_category(client: TestClient) -> None:
     r = client.get("/api/tarot/draw/today", params={"category": "없는운"})
     assert r.status_code == 400
+
+
+def test_tarot_spread_narrative_week(client: TestClient) -> None:
+    import saju.tarot as tr
+
+    tr.load_deck.cache_clear()
+    cards = [
+        {"card_id": "01", "is_reversed": False},
+        {"card_id": "19", "is_reversed": True},
+        {"card_id": "20", "is_reversed": False},
+    ]
+    out = tr.spread_reading("week", cards, "종합운")
+    assert out["count"] == 3
+    assert len(out["positions"]) == 3
+    assert out["positions"][0]["position_label"] == "초반"
+    assert "씨앗" in out["narrative"]
+    assert "마무리" in out["closing"] or "산" in out["closing"]
+
+    r = client.post(
+        "/api/tarot/spread-reading",
+        json={"spread": "week", "category": "종합운", "cards": cards},
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert body["spread"] == "week"
+    assert len(body["positions"]) == 3
+    assert len(body["narrative"]) > 80
+
+
+def test_tarot_spread_narrative_wrong_count(client: TestClient) -> None:
+    r = client.post(
+        "/api/tarot/spread-reading",
+        json={
+            "spread": "week",
+            "category": "종합운",
+            "cards": [{"card_id": "01", "is_reversed": False}],
+        },
+    )
+    assert r.status_code == 400

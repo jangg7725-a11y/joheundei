@@ -578,4 +578,30 @@ async def api_tarot_reading(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+class TarotSpreadCardIn(BaseModel):
+    card_id: str
+    is_reversed: bool = False
+
+
+class TarotSpreadReadingIn(BaseModel):
+    spread: str
+    category: str = "종합운"
+    cards: list[TarotSpreadCardIn] = Field(min_length=1)
+
+
+@app.post("/api/tarot/spread-reading")
+async def api_tarot_spread_reading(body: TarotSpreadReadingIn) -> dict[str, Any]:
+    """뽑은 순서대로 스프레드 스토리텔링 해석."""
+    try:
+        payload = [
+            {"card_id": c.card_id, "is_reversed": c.is_reversed}
+            for c in body.cards
+        ]
+        return tr.spread_reading(body.spread, payload, body.category)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

@@ -24,7 +24,13 @@
     viewReading: document.getElementById("tarot-view-reading"),
     backDraw: document.getElementById("tarot-back-draw"),
     status: document.getElementById("tarot-status"),
-    resultNav: document.getElementById("tarot-result-nav"),
+    spreadHead: document.getElementById("tarot-result-spread-head"),
+    spreadTitle: document.getElementById("tarot-result-spread-title"),
+    spreadCards: document.getElementById("tarot-spread-cards"),
+    singleResult: document.getElementById("tarot-single-result"),
+    spreadClosing: document.getElementById("tarot-spread-closing"),
+    spreadClosingText: document.getElementById("tarot-spread-closing-text"),
+    today: document.getElementById("tarot-today"),
     heroBack: document.getElementById("tarot-hero-back"),
     heroFront: document.getElementById("tarot-hero-front"),
     orientation: document.getElementById("tarot-orientation"),
@@ -157,6 +163,10 @@
     return meta?.spreads?.[activeSpread]?.count ?? 1;
   }
 
+  function isMultiSpread() {
+    return needCount() > 1;
+  }
+
   function spreadLabel() {
     return meta?.spreads?.[activeSpread]?.label || "타로";
   }
@@ -183,6 +193,69 @@
       throw new Error(typeof detail === "string" ? detail : "요청에 실패했습니다.");
     }
     return data;
+  }
+
+  async function fetchSpreadReading() {
+    const res = await fetch("/api/tarot/spread-reading", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        spread: activeSpread,
+        category: activeCategory,
+        cards: selectedCards.map((c) => ({
+          card_id: c.card_id,
+          is_reversed: !!c.is_reversed,
+        })),
+      }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const detail = data.detail || data.message || res.statusText;
+      throw new Error(typeof detail === "string" ? detail : "스프레드 해석을 불러오지 못했습니다.");
+    }
+    return data;
+  }
+
+  function renderNarrativeText(text) {
+    if (!els.readingText) return;
+    const value = String(text || "").trim();
+    if (!value) {
+      els.readingText.innerHTML = "";
+      return;
+    }
+    els.readingText.innerHTML = value
+      .split("\n\n")
+      .map((para) => `<p>${escapeHtml(para)}</p>`)
+      .join("");
+  }
+
+  function setResultLayout(isMulti) {
+    if (els.spreadHead) els.spreadHead.hidden = !isMulti;
+    if (els.spreadCards) els.spreadCards.hidden = !isMulti;
+    if (els.singleResult) els.singleResult.hidden = isMulti;
+    if (els.spreadClosing) els.spreadClosing.hidden = !isMulti;
+    if (els.today) els.today.hidden = isMulti;
+  }
+
+  function renderSpreadCards(positions) {
+    if (!els.spreadCards || !positions?.length) return;
+    els.spreadCards.innerHTML = positions
+      .map((pos, idx) => {
+        const rev = pos.is_reversed ? " card-reversed" : "";
+        const orient = pos.is_reversed ? " · 역방향" : "";
+        return `<figure class="tarot-spread-card">
+          <span class="tarot-spread-card-order">${idx + 1}</span>
+          <div class="tarot-spread-card-img">
+            <img src="${escapeHtml(pos.image_url)}" alt="${escapeHtml(pos.name)}" class="${rev.trim()}" />
+          </div>
+          <figcaption>
+            <strong>${escapeHtml(pos.position_label)}</strong>
+            <span>${escapeHtml(pos.position_role)}</span>
+            <em>${escapeHtml(pos.name)}${orient}</em>
+          </figcaption>
+        </figure>`;
+      })
+      .join("");
   }
 
   function shuffle(arr) {
@@ -291,7 +364,11 @@
         if (!cat || cat === activeCategory) return;
         activeCategory = cat;
         renderCategoryTabs();
-        refreshReadingForActiveCard();
+        if (isMultiSpread() && !els.resultPhase?.hidden) {
+          refreshSpreadReading(true);
+        } else {
+          refreshReadingForActiveCard();
+        }
       });
     });
   }
@@ -515,35 +592,6 @@
     }
   }
 
-  function renderResultNav() {
-    if (!els.resultNav) return;
-    if (selectedCards.length <= 1) {
-      els.resultNav.hidden = true;
-      els.resultNav.innerHTML = "";
-      return;
-    }
-    els.resultNav.hidden = false;
-    els.resultNav.innerHTML = selectedCards
-      .map((card, idx) => {
-        const active = idx === activeCardIdx ? " active" : "";
-        const rev = card.is_reversed ? " card-reversed" : "";
-        return `<button type="button" class="tarot-result-thumb${active}" data-idx="${idx}" aria-label="${escapeHtml(card.name)}">
-          <img src="${escapeHtml(card.image_url)}" alt="" class="${rev.trim()}" />
-        </button>`;
-      })
-      .join("");
-
-    els.resultNav.querySelectorAll(".tarot-result-thumb").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const idx = Number(btn.dataset.idx);
-        if (Number.isNaN(idx)) return;
-        activeCardIdx = idx;
-        displayCardResult(selectedCards[idx], false);
-        renderResultNav();
-      });
-    });
-  }
-
   function displayCardResult(card, loadingReading) {
     if (!card) return;
     const backUrl = card.back_image_url || meta?.back_image_url || "/static/tarot/back/back.png";
@@ -567,12 +615,30 @@
     if (els.cardTags) els.cardTags.textContent = tags;
     if (els.cardKeyword) els.cardKeyword.textContent = card.keyword ? `「${card.keyword}」` : "";
     if (els.readingTitle) els.readingTitle.textContent = activeCategory;
-    if (els.readingText) {
-      els.readingText.textContent = loadingReading
-        ? "해석을 불러오는 중…"
-        : card.reading?.content || "";
+    if (loadingReading) {
+      renderNarrativeText("해석을 불러오는 중…");
+    } else {
+      renderNarrativeText(card.reading?.content || "");
     }
     if (els.todayText) els.todayText.textContent = card.today_message || "";
+  }
+
+  async function refreshSpreadReading(showLoading) {
+    if (!isMultiSpread() || !selectedCards.length) return;
+    if (els.readingTitle) els.readingTitle.textContent = activeCategory;
+    if (showLoading) renderNarrativeText("해석을 불러오는 중…");
+    setStatus("");
+    try {
+      const data = await fetchSpreadReading();
+      if (els.spreadTitle) els.spreadTitle.textContent = data.spread_label || spreadLabel();
+      renderSpreadCards(data.positions || []);
+      renderNarrativeText(data.narrative || "");
+      if (els.spreadClosingText) {
+        els.spreadClosingText.textContent = data.closing || "";
+      }
+    } catch (err) {
+      setStatus(err.message || "스프레드 해석을 불러오지 못했습니다.", true);
+    }
   }
 
   async function refreshReadingForActiveCard() {
@@ -592,13 +658,21 @@
     }
   }
 
-  function openResult(idx) {
-    activeCardIdx = idx;
+  async function openResult() {
     showResultPhase();
-    renderResultNav();
-    displayCardResult(selectedCards[idx], false);
     renderCategoryTabs();
     setStatus("");
+
+    if (isMultiSpread()) {
+      setResultLayout(true);
+      if (els.spreadTitle) els.spreadTitle.textContent = spreadLabel();
+      await refreshSpreadReading(true);
+      return;
+    }
+
+    setResultLayout(false);
+    activeCardIdx = 0;
+    displayCardResult(selectedCards[0], false);
   }
 
   function resetDeckSelection() {
@@ -654,8 +728,7 @@
   if (els.viewReading) {
     els.viewReading.addEventListener("click", () => {
       if (selectedCards.length < needCount() || pickingLocked || dealing || randomRunning) return;
-      activeCardIdx = 0;
-      openResult(0);
+      openResult();
     });
   }
   if (els.backDraw) {
