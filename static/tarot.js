@@ -2,7 +2,9 @@
   "use strict";
 
   const SPREAD_ORDER = ["today", "week", "month", "year", "worry", "love", "deep"];
-  const FAN_SPREAD_DEG = 172;
+  const FAN_SPREAD_DEG = 178;
+  const DEAL_SHUFFLE_MS = 850;
+  const DEAL_SPREAD_MS = 1400;
 
   const els = {
     sajuMain: document.getElementById("saju-main"),
@@ -65,6 +67,9 @@
 
   /** @type {boolean} */
   let pickingLocked = false;
+
+  /** @type {boolean} */
+  let dealing = false;
 
   const STAR_LAYERS = {
     far: { count: 140, size: 1, spread: 2400, opacity: [0.25, 0.55] },
@@ -229,7 +234,7 @@
 
     els.spreadTabs.querySelectorAll("[data-spread]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (btn.dataset.spread === activeSpread || autoRunning || pickingLocked) return;
+        if (btn.dataset.spread === activeSpread || autoRunning || pickingLocked || dealing) return;
         activeSpread = btn.dataset.spread;
         renderSpreadTabs();
         resetDeckSelection();
@@ -271,14 +276,15 @@
   function renderDeckLoading() {
     if (!els.deckArea) return;
     els.deckArea.className = "tarot-deck-area is-loading";
-    els.deckArea.innerHTML = '<p class="tarot-deck-loading">60장의 카드를 펼치는 중…</p>';
+    els.deckArea.innerHTML = '<p class="tarot-deck-loading">60장을 모아 섞는 중…</p>';
     if (els.autoDraw) els.autoDraw.disabled = true;
     if (els.redraw) els.redraw.disabled = true;
   }
 
   function renderFanDeck() {
     if (!els.deckArea || !meta || !deckOrder.length) return;
-    els.deckArea.className = "tarot-deck-area tarot-deck-fan";
+    dealing = true;
+    els.deckArea.className = "tarot-deck-area tarot-deck-fan is-dealing";
     const backUrl = meta.back_image_url || "/static/tarot/back/back.png";
     const total = deckOrder.length;
     const selectionDone = selectedCards.length >= needCount();
@@ -291,15 +297,16 @@
         const flipClass = revealed ? " flipped" : "";
         const pickedClass = isPicked ? " is-picked" : "";
         const doneClass = isPicked && selectionDone ? " is-complete" : "";
-        const disabled = autoRunning || pickingLocked || (selectionDone && !isPicked) ? " is-disabled" : "";
+        const disabled = autoRunning || pickingLocked || dealing || (selectionDone && !isPicked) ? " is-disabled" : "";
         const angle = fanAngle(i, total).toFixed(2);
+        const shuffleR = ((i % 13) - 6) * 2.8;
         const revClass = revealed?.is_reversed ? " card-reversed" : "";
         const frontImg = revealed
           ? `<img src="${escapeHtml(revealed.image_url)}" alt="${escapeHtml(revealed.name || "")}" class="${revClass.trim()}" />`
           : "";
         const pickOrder = isPicked ? selectedCards.findIndex((c) => c.card_id === id) + 1 : 0;
         const label = pickOrder > 0 && needCount() > 1 ? `<span class="tarot-card-index">${pickOrder}</span>` : "";
-        return `<button type="button" class="tarot-card-slot${pickedClass}${doneClass}${disabled}" data-card-id="${escapeHtml(id)}" style="--fan-i:${i};--fan-angle:${angle}deg" aria-label="타로 카드${isPicked ? ` ${pickOrder}번 선택` : ""}">
+        return `<button type="button" class="tarot-card-slot${pickedClass}${doneClass}${disabled}" data-card-id="${escapeHtml(id)}" style="--fan-i:${i};--fan-angle:${angle}deg;--shuffle-r:${shuffleR.toFixed(2)}deg" aria-label="타로 카드${isPicked ? ` ${pickOrder}번 선택` : ""}">
           <div class="card-flip${flipClass}">
             <div class="card-face card-face-back">
               <img src="${escapeHtml(backUrl)}" alt="카드 뒷면" />
@@ -320,12 +327,29 @@
     });
 
     updateInstruction();
-    if (els.autoDraw) {
-      els.autoDraw.disabled = autoRunning || pickingLocked || selectionDone || !deckOrder.length;
+    updateDrawButtons(selectionDone);
+
+    if (selectedCards.length === 0) {
+      window.setTimeout(() => {
+        if (!els.deckArea) return;
+        els.deckArea.classList.remove("is-dealing");
+        els.deckArea.classList.add("is-spreading");
+        window.setTimeout(() => {
+          if (els.deckArea) els.deckArea.classList.remove("is-spreading");
+          dealing = false;
+          updateDrawButtons(selectedCards.length >= needCount());
+        }, DEAL_SPREAD_MS);
+      }, DEAL_SHUFFLE_MS);
+    } else {
+      dealing = false;
+      els.deckArea.classList.remove("is-dealing");
     }
-    if (els.redraw) {
-      els.redraw.disabled = autoRunning || pickingLocked || !deckOrder.length;
-    }
+  }
+
+  function updateDrawButtons(selectionDone) {
+    const locked = autoRunning || pickingLocked || dealing || !deckOrder.length;
+    if (els.autoDraw) els.autoDraw.disabled = locked || selectionDone;
+    if (els.redraw) els.redraw.disabled = locked;
   }
 
   function animateFlip(cardId, cardData) {
@@ -349,6 +373,7 @@
     if (
       autoRunning ||
       pickingLocked ||
+      dealing ||
       pickedIds.has(cardId) ||
       selectedCards.length >= needCount()
     ) {
@@ -538,7 +563,7 @@
   }
   if (els.redraw) {
     els.redraw.addEventListener("click", () => {
-      if (autoRunning || pickingLocked) return;
+      if (autoRunning || pickingLocked || dealing) return;
       resetDeckSelection();
     });
   }
