@@ -121,6 +121,11 @@ def test_tarot_spread_narrative_week(client: TestClient) -> None:
     assert body["spread"] == "week"
     assert len(body["positions"]) == 3
     assert len(body["narrative"]) > 80
+    assert "narrative_sections" in body
+    assert len(body["narrative_sections"]) >= 4
+    assert body.get("synthesis")
+    assert body.get("closing")
+    assert any(s["type"] == "act" for s in body["narrative_sections"])
 
 
 def test_tarot_spread_narrative_wrong_count(client: TestClient) -> None:

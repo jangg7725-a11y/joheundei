@@ -216,6 +216,28 @@
     return data;
   }
 
+  function renderNarrativeSections(sections) {
+    if (!els.readingText) return;
+    if (!sections?.length) {
+      renderNarrativeText("");
+      return;
+    }
+    els.readingText.innerHTML = sections
+      .map((block) => {
+        const typeClass = `tarot-narrative-${block.type || "scene"}`;
+        const title = block.title
+          ? `<h5 class="tarot-narrative-title ${typeClass}">${escapeHtml(block.title)}</h5>`
+          : "";
+        const text = String(block.text || "")
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => `<p>${escapeHtml(line)}</p>`)
+          .join("");
+        return `<section class="tarot-narrative-block ${typeClass}">${title}${text}</section>`;
+      })
+      .join("");
+  }
+
   function renderNarrativeText(text) {
     if (!els.readingText) return;
     const value = String(text || "").trim();
@@ -239,11 +261,20 @@
 
   function renderSpreadCards(positions) {
     if (!els.spreadCards || !positions?.length) return;
+    els.spreadCards.dataset.spread = activeSpread;
+    els.spreadCards.dataset.count = String(positions.length);
     els.spreadCards.innerHTML = positions
       .map((pos, idx) => {
         const rev = pos.is_reversed ? " card-reversed" : "";
         const orient = pos.is_reversed ? " · 역방향" : "";
-        return `<figure class="tarot-spread-card">
+        const summary = pos.scene_summary
+          ? `<p class="tarot-spread-card-summary">${escapeHtml(pos.scene_summary)}</p>`
+          : "";
+        const quarterBreak =
+          activeSpread === "year" && idx > 0 && idx % 3 === 0
+            ? '<span class="tarot-spread-quarter" aria-hidden="true"></span>'
+            : "";
+        return `${quarterBreak}<figure class="tarot-spread-card">
           <span class="tarot-spread-card-order">${idx + 1}</span>
           <div class="tarot-spread-card-img">
             <img src="${escapeHtml(pos.image_url)}" alt="${escapeHtml(pos.name)}" class="${rev.trim()}" />
@@ -252,6 +283,7 @@
             <strong>${escapeHtml(pos.position_label)}</strong>
             <span>${escapeHtml(pos.position_role)}</span>
             <em>${escapeHtml(pos.name)}${orient}</em>
+            ${summary}
           </figcaption>
         </figure>`;
       })
@@ -632,9 +664,17 @@
       const data = await fetchSpreadReading();
       if (els.spreadTitle) els.spreadTitle.textContent = data.spread_label || spreadLabel();
       renderSpreadCards(data.positions || []);
-      renderNarrativeText(data.narrative || "");
+      if (data.narrative_sections?.length) {
+        const displaySections = data.narrative_sections.filter((s) => s.type !== "closing");
+        renderNarrativeSections(displaySections);
+      } else {
+        renderNarrativeText(data.narrative || "");
+      }
       if (els.spreadClosingText) {
         els.spreadClosingText.textContent = data.closing || "";
+      }
+      if (els.spreadClosing) {
+        els.spreadClosing.hidden = !(data.closing || "").trim();
       }
     } catch (err) {
       setStatus(err.message || "스프레드 해석을 불러오지 못했습니다.", true);

@@ -9,6 +9,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from saju import tarot_narrative as tn
+
 _DATA_ROOT = Path(__file__).resolve().parent.parent / "data"
 _TAROT_JSON = _DATA_ROOT / "tarot_cards.json"
 _TAROT_PACKS = Path(__file__).resolve().parent / "data" / "tarot"
@@ -288,76 +290,6 @@ def spreads_meta() -> dict[str, Any]:
     }
 
 
-def _position_connector(index: int, total: int) -> str:
-    if total <= 1:
-        return ""
-    if index == 0:
-        return "먼저"
-    if index == total - 1:
-        return "마침내"
-    if index == 1:
-        return "이어서"
-    return "그다음"
-
-
-def _compose_spread_closing(spread_key: str, sections: list[dict[str, Any]]) -> str:
-    if not sections:
-        return ""
-    first = sections[0]["name"]
-    last = sections[-1]["name"]
-    if spread_key == "today":
-        return sections[0].get("excerpt", "")
-    if spread_key == "year":
-        return (
-            f"올해는 「{first}」의 기운으로 문을 연 뒤 「{last}」의 에너지로 마무리되는 흐름입니다. "
-            "각 달의 카드를 순서대로 살피며, 시기에 맞는 준비와 조율을 이어가 보세요."
-        )
-    if spread_key in ("week", "worry") or len(sections) == 3:
-        return (
-            f"시작의 「{first}」에서 출발한 이야기는 중간의 변화를 거쳐 「{last}」로 향합니다. "
-            "각 장면을 따로 읽기보다, 앞 카드에서 뒤 카드로 이어지는 흐름 속에서 "
-            "지금 필요한 태도와 마무리 방향을 찾아보세요."
-        )
-    if spread_key == "month":
-        return (
-            f"한 달의 운세는 「{first}」로 시작해 「{last}」로 정리됩니다. "
-            "초반의 기운, 중간의 이슈, 후반의 전망이 하나의 이야기이니 "
-            "순서를 따라 전체 그림을 먼저 짚은 뒤 행동에 옮기면 좋습니다."
-        )
-    if spread_key == "love":
-        return (
-            f"나와 상대, 그리고 관계의 흐름이 「{first}」에서 「{last}」까지 이어집니다. "
-            "한 장만 단정하기보다, 장애와 조언 카드가 알려주는 균형을 참고해 "
-            "관계를 천천히 가다듬어 보세요."
-        )
-    return (
-        f"「{first}」에서 시작된 흐름은 여러 장의 카드를 거치며 「{last}」로 수렴합니다. "
-        "각 카드는 독립된 답이 아니라 하나의 이야기 속 장면입니다. "
-        "앞뒤 흐름을 함께 읽으며 지금 필요한 선택을 정리해 보세요."
-    )
-
-
-def compose_spread_narrative(spread_key: str, sections: list[dict[str, Any]]) -> str:
-    info = SPREADS[spread_key]
-    parts = [
-        f"「{info['label']}」 — 카드를 뽑은 순서대로 이야기를 풀어 봅니다.",
-    ]
-    total = len(sections)
-    for i, sec in enumerate(sections):
-        conn = _position_connector(i, total)
-        rev = f" ({sec['orient']})" if sec.get("is_reversed") else ""
-        pos = sec["position_label"]
-        role = sec["position_role"]
-        name = sec["name"]
-        kw = sec.get("keyword") or ""
-        text = sec["excerpt"]
-        head = f"{conn + ' ' if conn else ''}{pos}({role})에는 「{name}」{rev} 카드가 놓였습니다."
-        if kw:
-            head += f" 핵심 키워드는 {kw}입니다."
-        parts.append(f"{head} {text}")
-    return "\n\n".join(parts)
-
-
 def spread_reading(
     spread: str,
     cards: list[dict[str, Any]],
@@ -398,11 +330,11 @@ def spread_reading(
                 "orient": "역방향" if is_rev else "정방향",
                 "image_url": card.get("image_url"),
                 "excerpt": excerpt,
+                "today_message": card.get("today_message", ""),
             }
         )
 
-    narrative = compose_spread_narrative(spread_key, sections)
-    closing = _compose_spread_closing(spread_key, sections)
+    narrative = tn.build_spread_story(spread_key, info["label"], cat, sections)
 
     return {
         "ok": True,
@@ -411,6 +343,9 @@ def spread_reading(
         "category": cat,
         "count": expected,
         "positions": sections,
-        "narrative": narrative,
-        "closing": closing,
+        "opening": narrative["opening"],
+        "narrative_sections": narrative["narrative_sections"],
+        "narrative": narrative["narrative"],
+        "synthesis": narrative["synthesis"],
+        "closing": narrative["closing"],
     }

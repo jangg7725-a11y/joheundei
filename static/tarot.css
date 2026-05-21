@@ -1022,6 +1022,80 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   line-height: 1.65;
 }
 
+.tarot-spread-cards[data-spread="year"] {
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem 0.55rem;
+}
+
+.tarot-spread-cards[data-count="7"] {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+.tarot-spread-quarter {
+  flex: 0 0 100%;
+  height: 0;
+  border: 0;
+  margin: 0.15rem 0 0.05rem;
+}
+
+.tarot-spread-card-summary {
+  margin: 0.15rem 0 0;
+  color: var(--text-sub);
+  font-size: 0.58rem;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.tarot-narrative-block {
+  margin-bottom: 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid rgba(212, 175, 55, 0.1);
+}
+
+.tarot-narrative-block:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.tarot-narrative-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.tarot-narrative-opening .tarot-narrative-title,
+.tarot-narrative-act .tarot-narrative-title {
+  color: var(--gold);
+}
+
+.tarot-narrative-synthesis .tarot-narrative-title {
+  color: #c9dff5;
+}
+
+.tarot-narrative-closing .tarot-narrative-title {
+  color: var(--gold);
+}
+
+.tarot-narrative-block p {
+  margin: 0 0 0.55rem;
+  color: var(--text);
+  line-height: 1.78;
+  font-size: 0.92rem;
+}
+
+.tarot-narrative-block p:last-child {
+  margin-bottom: 0;
+}
+
 .tarot-reading-text p {
   margin: 0 0 0.85rem;
   color: var(--text);
