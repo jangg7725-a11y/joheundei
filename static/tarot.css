@@ -103,7 +103,7 @@ body.tarot-mode .footer {
     radial-gradient(ellipse 55% 42% at 18% 22%, rgba(88, 118, 180, 0.28) 0%, transparent 62%),
     radial-gradient(ellipse 45% 38% at 82% 68%, rgba(72, 58, 120, 0.22) 0%, transparent 58%),
     radial-gradient(ellipse 70% 52% at 50% 100%, rgba(26, 48, 82, 0.5) 0%, transparent 55%);
-  animation: tarotNebulaDrift 100s ease-in-out infinite alternate;
+  animation: tarotNebulaDrift 38s ease-in-out infinite alternate;
   will-change: transform;
 }
 
@@ -113,7 +113,7 @@ body.tarot-mode .footer {
   background:
     radial-gradient(ellipse 40% 30% at 70% 18%, rgba(212, 175, 55, 0.1) 0%, transparent 58%),
     radial-gradient(ellipse 50% 40% at 25% 75%, rgba(100, 140, 220, 0.14) 0%, transparent 60%);
-  animation: tarotNebulaDriftAlt 130s ease-in-out infinite alternate;
+  animation: tarotNebulaDriftAlt 52s ease-in-out infinite alternate;
 }
 
 @keyframes tarotNebulaDrift {
@@ -121,7 +121,7 @@ body.tarot-mode .footer {
     transform: translate(0, 0) scale(1) rotate(0deg);
   }
   to {
-    transform: translate(-4%, 3%) scale(1.06) rotate(1.5deg);
+    transform: translate(-8%, 5%) scale(1.1) rotate(2deg);
   }
 }
 
@@ -152,7 +152,7 @@ body.tarot-mode .footer {
     rgba(130, 100, 200, 0.16) 62%,
     transparent 78%
   );
-  animation: tarotAuroraA 52s ease-in-out infinite alternate;
+  animation: tarotAuroraA 28s ease-in-out infinite alternate;
 }
 
 .tarot-sky-aurora--b {
@@ -163,7 +163,7 @@ body.tarot-mode .footer {
     rgba(180, 140, 255, 0.12) 58%,
     transparent 72%
   );
-  animation: tarotAuroraB 68s ease-in-out infinite alternate;
+  animation: tarotAuroraB 36s ease-in-out infinite alternate;
 }
 
 @keyframes tarotAuroraA {
@@ -222,114 +222,30 @@ body.tarot-mode .footer {
 
 @keyframes tarotMeteorFall {
   0%,
-  78%,
+  72%,
   100% {
     opacity: 0;
     transform: rotate(-38deg) translate(0, 0);
   }
-  80% {
+  74% {
     opacity: 1;
     transform: rotate(-38deg) translate(0, 0);
+  }
+  88% {
+    opacity: 0.95;
+    transform: rotate(-38deg) translate(-280px, 280px);
   }
   92% {
-    opacity: 0.85;
-    transform: rotate(-38deg) translate(-220px, 220px);
-  }
-  95% {
     opacity: 0;
   }
 }
 
-.tarot-stars-track {
-  position: absolute;
-  left: -5%;
-  width: 110%;
-  height: 200%;
-  top: -100%;
-  will-change: transform;
-}
-
-.tarot-stars-layer {
+.tarot-sky-canvas {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.95);
-}
-
-.tarot-stars-track--far {
-  animation: tarotStarDriftFar 90s linear infinite;
-}
-
-.tarot-stars-track--mid {
-  animation: tarotStarDriftMid 58s linear infinite;
-}
-
-.tarot-stars-track--near {
-  animation: tarotStarDriftNear 34s linear infinite;
-}
-
-@keyframes tarotStarDriftFar {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(-3%, 55%);
-  }
-}
-
-@keyframes tarotStarDriftMid {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(4%, 55%);
-  }
-}
-
-@keyframes tarotStarDriftNear {
-  from {
-    transform: translate(0, 0);
-  }
-  to {
-    transform: translate(-5%, 55%);
-  }
-}
-
-.tarot-sky-twinkles {
-  position: absolute;
-  inset: 0;
-}
-
-.tarot-twinkle {
-  position: absolute;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow:
-    0 0 6px 2px rgba(255, 255, 255, 0.85),
-    0 0 16px 3px rgba(200, 220, 255, 0.35);
-  animation: tarotTwinkle ease-in-out infinite;
-}
-
-.tarot-twinkle--gold {
-  box-shadow:
-    0 0 7px 2px rgba(255, 255, 255, 0.9),
-    0 0 18px 4px rgba(212, 175, 55, 0.45);
-}
-
-@keyframes tarotTwinkle {
-  0%,
-  100% {
-    opacity: 0.15;
-    transform: scale(0.65);
-  }
-  40% {
-    opacity: 1;
-    transform: scale(1.25);
-  }
-  70% {
-    opacity: 0.55;
-    transform: scale(0.95);
-  }
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .tarot-sky-glow {
@@ -412,8 +328,6 @@ body.tarot-mode .footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .tarot-stars-track,
-  .tarot-twinkle,
   .tarot-sky-glow,
   .tarot-sky-shimmer,
   .tarot-sky-nebula,

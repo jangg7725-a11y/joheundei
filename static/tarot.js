@@ -10,7 +10,7 @@
     sajuMain: document.getElementById("saju-main"),
     tarotMain: document.getElementById("tarot-main"),
     tarotSky: document.getElementById("tarot-sky"),
-    tarotTwinkles: document.getElementById("tarot-sky-twinkles"),
+    tarotSkyCanvas: document.getElementById("tarot-sky-canvas"),
     tarotMeteors: document.getElementById("tarot-sky-meteors"),
     bottomNav: document.getElementById("bottom-nav"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
@@ -81,13 +81,20 @@
 
   const RANDOM_PICK_DELAY_MS = 520;
 
-  const STAR_LAYERS = {
-    far: { count: 220, size: 1, spread: 2800, opacity: [0.3, 0.62] },
-    mid: { count: 140, size: 1.6, spread: 2800, opacity: [0.45, 0.82] },
-    near: { count: 70, size: 2.2, spread: 2800, opacity: [0.6, 1] },
-  };
+  const METEOR_COUNT = 9;
+  const STAR_COUNT = 420;
 
-  const METEOR_COUNT = 7;
+  /** @type {{ ctx: CanvasRenderingContext2D | null, stars: Array<Record<string, number | boolean>>, rafId: number | null, drift: number, reduceMotion: boolean, width: number, height: number, dpr: number }} */
+  const skyAnim = {
+    ctx: null,
+    stars: [],
+    rafId: null,
+    drift: 0,
+    reduceMotion: false,
+    width: 0,
+    height: 0,
+    dpr: 1,
+  };
 
   function delay(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -106,74 +113,155 @@
     });
   }
 
-  function buildStarShadows(count, spread, size, opacityRange) {
-    const parts = [];
+  function buildSkyStars(count) {
+    const stars = [];
     for (let i = 0; i < count; i++) {
-      const x = Math.random() * spread;
-      const y = Math.random() * spread;
-      const alpha = opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0]);
-      const s = size * (0.7 + Math.random() * 0.6);
-      parts.push(`${x}px ${y}px 0 ${s}px rgba(236, 242, 255, ${alpha.toFixed(3)})`);
+      const isBright = Math.random() < 0.12;
+      stars.push({
+        x: Math.random(),
+        y: Math.random(),
+        size: isBright ? 2 + Math.random() * 2.8 : 0.7 + Math.random() * 1.8,
+        phase: Math.random() * Math.PI * 2,
+        speed: isBright ? 2.4 + Math.random() * 5.5 : 0.9 + Math.random() * 3.2,
+        depth: 0.25 + Math.random() * 0.75,
+        gold: Math.random() > 0.68,
+        flash: Math.random() > 0.82,
+      });
     }
-    return parts.join(", ");
+    return stars;
+  }
+
+  function resizeTarotSkyCanvas() {
+    const canvas = els.tarotSkyCanvas;
+    if (!canvas) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = Math.floor(w * dpr);
+    canvas.height = Math.floor(h * dpr);
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    skyAnim.width = w;
+    skyAnim.height = h;
+    skyAnim.dpr = dpr;
+    const ctx = canvas.getContext("2d");
+    if (ctx) ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    skyAnim.ctx = ctx;
+  }
+
+  function starBlink(star, t) {
+    const waveA = Math.sin(t * star.speed + star.phase);
+    const waveB = Math.sin(t * star.speed * 1.7 + star.phase * 2.1);
+    let mix = (waveA * 0.55 + waveB * 0.45 + 1) * 0.5;
+    if (star.flash) {
+      const flashGate = Math.sin(t * star.speed * 3.4 + star.phase * 0.6);
+      mix = flashGate > 0.82 ? 1 : mix * 0.35;
+    }
+    return Math.max(0, Math.min(1, mix));
+  }
+
+  function drawSkyStar(ctx, star, t) {
+    const blink = starBlink(star, t);
+    const minAlpha = star.size > 2.2 ? 0.06 : 0.02;
+    const alpha = minAlpha + blink * (star.flash ? 0.98 : 0.92);
+    if (alpha < 0.03) return;
+
+    const driftX = skyAnim.drift * star.depth * 18;
+    const driftY = skyAnim.drift * star.depth * 12;
+    const x = ((star.x * skyAnim.width + driftX) % skyAnim.width + skyAnim.width) % skyAnim.width;
+    const y = ((star.y * skyAnim.height + driftY) % skyAnim.height + skyAnim.height) % skyAnim.height;
+    const r = star.size * (0.75 + blink * 0.55);
+    const glow = star.gold ? `rgba(255, 228, 170, ${alpha})` : `rgba(230, 242, 255, ${alpha})`;
+
+    ctx.save();
+    ctx.shadowBlur = r * (star.gold ? 7 : 5);
+    ctx.shadowColor = star.gold ? `rgba(255, 210, 130, ${alpha * 0.85})` : `rgba(190, 215, 255, ${alpha * 0.75})`;
+    ctx.fillStyle = glow;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+
+    if (blink > 0.45 && r > 1.4) {
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = glow;
+      ctx.lineWidth = 0.6;
+      const flare = r * (1.2 + blink * 2.8);
+      ctx.beginPath();
+      ctx.moveTo(x - flare, y);
+      ctx.lineTo(x + flare, y);
+      ctx.moveTo(x, y - flare);
+      ctx.lineTo(x, y + flare);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function renderTarotSkyFrame(ts) {
+    if (!skyAnim.ctx || !els.tarotSky || els.tarotSky.hidden) {
+      skyAnim.rafId = null;
+      return;
+    }
+    const t = ts * 0.001;
+    skyAnim.drift += skyAnim.reduceMotion ? 0 : 0.012;
+    skyAnim.ctx.clearRect(0, 0, skyAnim.width, skyAnim.height);
+    skyAnim.stars.forEach((star) => drawSkyStar(skyAnim.ctx, star, t));
+    skyAnim.rafId = window.requestAnimationFrame(renderTarotSkyFrame);
+  }
+
+  function startTarotSkyAnim() {
+    if (skyAnim.rafId != null || !skyAnim.ctx) return;
+    if (skyAnim.reduceMotion) {
+      renderTarotSkyFrame(performance.now());
+      return;
+    }
+    skyAnim.rafId = window.requestAnimationFrame(renderTarotSkyFrame);
+  }
+
+  function stopTarotSkyAnim() {
+    if (skyAnim.rafId != null) {
+      window.cancelAnimationFrame(skyAnim.rafId);
+      skyAnim.rafId = null;
+    }
+  }
+
+  function initTarotMeteors() {
+    if (!els.tarotMeteors) return;
+    els.tarotMeteors.innerHTML = "";
+    for (let i = 0; i < METEOR_COUNT; i++) {
+      const meteor = document.createElement("span");
+      meteor.className = "tarot-meteor";
+      if (Math.random() > 0.4) meteor.classList.add("tarot-meteor--gold");
+      meteor.style.left = `${5 + Math.random() * 78}%`;
+      meteor.style.top = `${-10 + Math.random() * 42}%`;
+      meteor.style.animationDuration = `${5 + Math.random() * 10}s`;
+      meteor.style.animationDelay = `${Math.random() * 12}s`;
+      els.tarotMeteors.appendChild(meteor);
+    }
   }
 
   function initTarotSky() {
     if (!els.tarotSky || els.tarotSky.dataset.ready === "1") return;
-
-    Object.entries(STAR_LAYERS).forEach(([key, cfg]) => {
-      const track = els.tarotSky.querySelector(`[data-stars="${key}"]`);
-      if (!track) return;
-      track.innerHTML = "";
-      for (let layer = 0; layer < 2; layer++) {
-        const el = document.createElement("div");
-        el.className = "tarot-stars-layer";
-        el.style.width = `${cfg.size}px`;
-        el.style.height = `${cfg.size}px`;
-        el.style.boxShadow = buildStarShadows(cfg.count, cfg.spread, cfg.size, cfg.opacity);
-        track.appendChild(el);
-      }
-    });
-
-    if (els.tarotTwinkles) {
-      const twinkleCount = 64;
-      els.tarotTwinkles.innerHTML = "";
-      for (let i = 0; i < twinkleCount; i++) {
-        const star = document.createElement("span");
-        star.className = "tarot-twinkle";
-        const size = 1.5 + Math.random() * 3.2;
-        star.style.width = `${size}px`;
-        star.style.height = `${size}px`;
-        star.style.left = `${Math.random() * 100}%`;
-        star.style.top = `${Math.random() * 100}%`;
-        star.style.animationDuration = `${1.6 + Math.random() * 3.2}s`;
-        star.style.animationDelay = `${Math.random() * 6}s`;
-        if (Math.random() > 0.55) star.classList.add("tarot-twinkle--gold");
-        els.tarotTwinkles.appendChild(star);
-      }
-    }
-
-    if (els.tarotMeteors) {
-      els.tarotMeteors.innerHTML = "";
-      for (let i = 0; i < METEOR_COUNT; i++) {
-        const meteor = document.createElement("span");
-        meteor.className = "tarot-meteor";
-        if (Math.random() > 0.45) meteor.classList.add("tarot-meteor--gold");
-        meteor.style.left = `${8 + Math.random() * 72}%`;
-        meteor.style.top = `${-8 + Math.random() * 38}%`;
-        meteor.style.animationDuration = `${7 + Math.random() * 14}s`;
-        meteor.style.animationDelay = `${Math.random() * 18}s`;
-        els.tarotMeteors.appendChild(meteor);
-      }
-    }
-
+    skyAnim.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    skyAnim.stars = buildSkyStars(STAR_COUNT);
+    resizeTarotSkyCanvas();
+    initTarotMeteors();
+    window.addEventListener("resize", resizeTarotSkyCanvas);
     els.tarotSky.dataset.ready = "1";
+    if (!els.tarotSky.hidden) startTarotSkyAnim();
   }
 
   function setTarotSkyVisible(visible) {
     if (!els.tarotSky) return;
     els.tarotSky.hidden = !visible;
     els.tarotSky.setAttribute("aria-hidden", visible ? "false" : "true");
+    if (visible) {
+      if (els.tarotSky.dataset.ready === "1") {
+        resizeTarotSkyCanvas();
+        startTarotSkyAnim();
+      }
+    } else {
+      stopTarotSkyAnim();
+    }
   }
 
   function needCount() {
