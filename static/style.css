@@ -5,6 +5,11 @@
   --gold: #d4af37;
   --gold-dim: rgba(212, 175, 55, 0.35);
   --gold-glow: rgba(212, 175, 55, 0.12);
+  /* 산수화 밝은 배경용 헤더 (먹색·고동금) */
+  --hero-ink: #1e3238;
+  --hero-ink-soft: #3d5560;
+  --hero-bronze: #6b5340;
+  --hero-bronze-light: #8f7355;
   --text: #e8ecf1;
   --muted: #8b97a8;
   --line: rgba(255, 255, 255, 0.07);
@@ -368,6 +373,52 @@ body.tarot-mode .sansuhwa-bg {
   line-height: 1.65;
   color: var(--text);
   opacity: 0.92;
+}
+
+/* 산수화 배경 위 헤더 — 밝은 금색 대신 먹·고동금 (가독 + 고급) */
+body:not(.tarot-mode) .hero-badge {
+  color: var(--hero-ink-soft);
+  opacity: 1;
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+}
+
+body:not(.tarot-mode) .hero-brand {
+  color: var(--hero-ink);
+  font-weight: 700;
+  text-shadow:
+    0 0 24px rgba(255, 255, 255, 0.55),
+    0 1px 0 rgba(255, 255, 255, 0.9),
+    0 2px 6px rgba(30, 50, 56, 0.12);
+}
+
+body:not(.tarot-mode) .hero-poom {
+  color: var(--hero-bronze);
+  font-weight: 800;
+  text-shadow:
+    0 0 20px rgba(255, 255, 255, 0.5),
+    0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+body:not(.tarot-mode) .hero-meaning,
+body:not(.tarot-mode) .hero .lead {
+  color: var(--hero-ink);
+  opacity: 0.88;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
+body:not(.tarot-mode) .btn-more-menu {
+  color: var(--hero-bronze);
+  border-color: rgba(107, 83, 64, 0.45);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(6px);
+}
+
+body:not(.tarot-mode) .btn-more-menu:hover,
+body:not(.tarot-mode) .btn-more-menu[aria-expanded="true"] {
+  color: var(--hero-ink);
+  border-color: var(--hero-bronze);
+  background: rgba(255, 255, 255, 0.88);
 }
 
 .layout {
