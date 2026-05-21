@@ -1,0 +1,20 @@
+---
+description: Always commit and push to main after completing implementation work
+alwaysApply: true
+---
+
+# Commit & Push After Work
+
+When code or UI changes are completed in this project:
+
+1. Run `git status` and `git diff` to review what changed.
+2. Stage only files related to the task (do not commit secrets, `.env`, or unrelated untracked files).
+3. Commit with a concise message focused on **why** the change was made.
+4. Push to `origin main` unless the user specifies another branch.
+5. Confirm commit hash and push success in the final reply.
+
+Skip commit/push only when:
+- The user explicitly says not to commit yet, or
+- There are no staged/unstaged changes from the task.
+
+Do not leave completed work uncommitted on the user's machine.
