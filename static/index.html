@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
   <link rel="stylesheet" href="/static/style.css?v=20260516-sewoon-center" />
-  <link rel="stylesheet" href="/static/tarot.css?v=20260519-pickfix" />
+  <link rel="stylesheet" href="/static/tarot.css?v=20260519-railhead" />
 </head>
 <body>
   <div class="tarot-sky" id="tarot-sky" hidden aria-hidden="true">
@@ -333,16 +333,16 @@
       <div class="tarot-phase tarot-phase-draw" id="tarot-draw-phase">
         <div class="tarot-draw-layout">
           <nav class="tarot-spread-rail" aria-label="타로 스프레드">
+            <header class="tarot-head tarot-head--rail">
+              <p class="tarot-badge">오행·천간·운명</p>
+              <h2 id="tarot-heading">오행 타로</h2>
+            </header>
             <div class="tarot-spread-tabs tab-bar" id="tarot-spread-tabs" role="tablist"></div>
             <div class="tarot-rail-actions">
               <button type="button" class="btn tarot-btn-redraw" id="tarot-redraw" disabled>↺ 다시 뽑기</button>
             </div>
           </nav>
           <div class="tarot-deck-stage">
-            <header class="tarot-head tarot-head--inline">
-              <p class="tarot-badge">오행·천간·운명</p>
-              <h2 id="tarot-heading">오행 타로</h2>
-            </header>
             <p class="tarot-instruction" id="tarot-instruction">카드를 직접 골라 주세요.</p>
             <div class="tarot-deck-area" id="tarot-deck-area" aria-live="polite"></div>
           </div>
