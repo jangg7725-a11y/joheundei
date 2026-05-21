@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "manifest": "static/tarot/manifest.json",
+  "card_count": 60,
+  "packs": [
+    {
+      "category": "wood",
+      "category_kr": "木 오행",
+      "range": "01-09",
+      "file": "wood_01_09.json",
+      "count": 9
+    },
+    {
+      "category": "fire",
+      "category_kr": "火 오행",
+      "range": "10-18",
+      "file": "fire_10_18.json",
+      "count": 9
+    },
+    {
+      "category": "earth",
+      "category_kr": "土 오행",
+      "range": "19-27",
+      "file": "earth_19_27.json",
+      "count": 9
+    },
+    {
+      "category": "metal",
+      "category_kr": "金 오행",
+      "range": "28-36",
+      "file": "metal_28_36.json",
+      "count": 9
+    },
+    {
+      "category": "water",
+      "category_kr": "水 오행",
+      "range": "37-45",
+      "file": "water_37_45.json",
+      "count": 9
+    },
+    {
+      "category": "stems",
+      "category_kr": "천간",
+      "range": "46-55",
+      "file": "stems_46_55.json",
+      "count": 10
+    },
+    {
+      "category": "fate",
+      "category_kr": "운명",
+      "range": "56-60",
+      "file": "fate_56_60.json",
+      "count": 5
+    }
+  ]
+}

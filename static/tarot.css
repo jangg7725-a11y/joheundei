@@ -1,0 +1,458 @@
+/* ── 앱 모드 (사주 / 오행 타로) ── */
+.app-mode-nav {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.28);
+  max-width: 22rem;
+  margin: 0 auto;
+}
+
+.app-mode-btn {
+  flex: 1;
+  padding: 0.55rem 1rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+}
+
+.app-mode-btn:hover {
+  color: var(--text);
+}
+
+.app-mode-btn.active {
+  color: var(--gold);
+  background: var(--gold-glow);
+  box-shadow: inset 0 0 0 1px var(--gold-dim);
+}
+
+body.tarot-mode .hero {
+  padding-bottom: 0.75rem;
+}
+
+body.tarot-mode .footer {
+  margin-top: 0;
+}
+
+/* ── 오행 타로 메인 ── */
+.tarot-app {
+  position: relative;
+  overflow: hidden;
+}
+
+.tarot-app::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 55%;
+  background: radial-gradient(ellipse at 50% 0%, rgba(212, 175, 55, 0.08) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.tarot-head {
+  position: relative;
+  text-align: center;
+  margin-bottom: 1.1rem;
+}
+
+.tarot-badge {
+  display: inline-block;
+  margin: 0 0 0.35rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+.tarot-head h2 {
+  margin: 0 0 0.35rem;
+  font-size: clamp(1.25rem, 4vw, 1.55rem);
+  color: var(--gold);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.tarot-lead {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: 0.88rem;
+}
+
+.tarot-spread-tabs {
+  position: relative;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+}
+
+.tarot-spread-tabs .tab {
+  font-size: clamp(0.72rem, 2.6vw, 0.82rem);
+}
+
+.tarot-instruction {
+  text-align: center;
+  margin: 0 0 1rem;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.tarot-deck-area {
+  min-height: 12rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 0.65rem 0.5rem;
+  padding: 0.5rem 0 1rem;
+  perspective: 1200px;
+}
+
+.tarot-deck-area.is-loading {
+  min-height: 14rem;
+  align-items: center;
+}
+
+.tarot-deck-loading {
+  color: var(--gold);
+  font-size: 0.9rem;
+  animation: tarotPulse 1.4s ease-in-out infinite;
+}
+
+@keyframes tarotPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ── 카드 flip ── */
+.tarot-card-slot {
+  --tarot-card-w: clamp(4.5rem, 18vw, 6.5rem);
+  --tarot-card-h: calc(var(--tarot-card-w) * 1.55);
+  width: var(--tarot-card-w);
+  height: var(--tarot-card-h);
+  perspective: 900px;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  touch-action: manipulation;
+}
+
+.tarot-card-slot--large {
+  --tarot-card-w: clamp(9rem, 42vw, 13.5rem);
+  cursor: default;
+  margin: 0 auto;
+}
+
+.tarot-card-slot:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 4px;
+  border-radius: 8px;
+}
+
+.card-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.6s;
+  transform-style: preserve-3d;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(212, 175, 55, 0.12);
+}
+
+.card-flip.flipped {
+  transform: rotateY(180deg);
+}
+
+.card-flip.is-flipping {
+  pointer-events: none;
+}
+
+.card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.card-face-back {
+  z-index: 2;
+}
+
+.card-face-front {
+  transform: rotateY(180deg);
+}
+
+.card-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 10px;
+}
+
+.card-reversed {
+  transform: rotate(180deg);
+}
+
+.tarot-card-slot:not(.is-disabled):hover .card-flip:not(.flipped) {
+  transform: translateY(-4px);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(212, 175, 55, 0.15);
+}
+
+.tarot-card-slot:not(.is-disabled):hover .card-flip.flipped {
+  transform: rotateY(180deg) translateY(-3px);
+}
+
+.tarot-card-slot.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: default;
+}
+
+.tarot-card-slot .tarot-card-index {
+  position: absolute;
+  bottom: 0.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  padding: 0.1rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(10, 14, 20, 0.75);
+  color: var(--gold);
+  font-size: 0.65rem;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.tarot-deck-area[data-count="7"]:not([data-picked-display]) .tarot-card-slot {
+  --fan-i: 0;
+  --fan-n: 7;
+}
+
+.tarot-deck-area[data-count="7"] .tarot-card-slot {
+  transform: rotate(calc((var(--fan-i) - 3) * 4.5deg));
+}
+
+.tarot-deck-area[data-count="7"] .tarot-card-slot:has(.card-flip.flipped) {
+  transform: rotate(0deg) translateY(-6px);
+  z-index: 2;
+}
+
+.tarot-deck-area[data-count="10"] .tarot-card-slot,
+.tarot-deck-area[data-count="12"] .tarot-card-slot {
+  --tarot-card-w: clamp(3.6rem, 14vw, 5.2rem);
+}
+
+.tarot-draw-actions,
+.tarot-result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.tarot-btn-auto {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.1);
+}
+
+.tarot-btn-auto:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: var(--gold);
+}
+
+.tarot-btn-redraw,
+.tarot-btn-back-draw {
+  color: var(--muted);
+}
+
+.tarot-btn-auto:disabled,
+.tarot-btn-redraw:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── 결과 화면 ── */
+.tarot-phase-result {
+  animation: fadeIn 0.35s ease;
+}
+
+.tarot-result-nav {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.tarot-result-thumb {
+  width: 2.6rem;
+  height: 4rem;
+  padding: 0;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  overflow: hidden;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.65;
+  transition: opacity 0.15s, border-color 0.15s, transform 0.15s;
+}
+
+.tarot-result-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.tarot-result-thumb img.card-reversed {
+  transform: rotate(180deg);
+}
+
+.tarot-result-thumb.active {
+  opacity: 1;
+  border-color: var(--gold);
+  transform: translateY(-2px);
+}
+
+.tarot-result-body {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.tarot-card-hero {
+  margin-bottom: 0.85rem;
+}
+
+.tarot-orientation {
+  margin: 0.5rem 0 0;
+  font-size: 0.82rem;
+  color: var(--warn);
+  letter-spacing: 0.04em;
+}
+
+.tarot-card-name {
+  margin: 0 0 0.25rem;
+  font-size: clamp(1.1rem, 3.5vw, 1.35rem);
+  color: var(--gold);
+  font-weight: 700;
+}
+
+.tarot-card-tags {
+  margin: 0 0 0.35rem;
+  color: var(--text-sub);
+  font-size: 0.88rem;
+}
+
+.tarot-card-keyword {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.tarot-cat-tabs {
+  margin-bottom: 0.85rem;
+  max-height: 6.5rem;
+  overflow-y: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-dim) transparent;
+}
+
+.tarot-reading-block {
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: rgba(0, 0, 0, 0.22);
+  margin-bottom: 1rem;
+}
+
+.tarot-reading-title {
+  margin: 0 0 0.55rem;
+  font-size: 0.95rem;
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.tarot-reading-text {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(0.88rem, 2.8vw, 0.96rem);
+  line-height: 1.72;
+  white-space: pre-wrap;
+}
+
+.tarot-today {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border-left: 3px solid var(--gold);
+  border-radius: 0 10px 10px 0;
+  background: var(--gold-glow);
+}
+
+.tarot-today-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+.tarot-today-text {
+  margin: 0;
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.65;
+}
+
+.tarot-status {
+  text-align: center;
+  margin-top: 0.75rem;
+  min-height: 1.2rem;
+}
+
+.tarot-status.error {
+  color: var(--danger);
+}
+
+@media (max-width: 480px) {
+  .tarot-spread-tabs {
+    gap: 0.28rem;
+  }
+
+  .tarot-spread-tabs .tab {
+    padding: 0.4rem 0.55rem;
+  }
+
+  .tarot-deck-area {
+    gap: 0.45rem 0.35rem;
+  }
+}
+
+@media (min-width: 640px) {
+  .tarot-deck-area[data-count="1"] {
+    min-height: 16rem;
+  }
+}

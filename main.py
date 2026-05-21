@@ -33,7 +33,7 @@ from saju import saju_calc as sc
 from saju import sewoon as sw
 from saju import timeline as tl
 from saju import wolwoon as ww
-from saju import yongsin as ys
+from saju import tarot as tr
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -520,6 +520,48 @@ async def api_ai_config() -> dict[str, Any]:
         "free_daily_limit": int(os.getenv("SAJU_AI_FREE_DAILY", "6")),
         "admin_emails": admin_emails,
     }
+
+
+@app.get("/data/tarot_cards.json")
+async def data_tarot_cards() -> JSONResponse:
+    """타로 덱 전체 JSON (카드·해석·스프레드 메타)."""
+    deck = tr.load_deck()
+    return JSONResponse(deck)
+
+
+@app.get("/api/tarot/spreads")
+async def api_tarot_spreads() -> dict[str, Any]:
+    """스프레드·해석 카테고리 메타."""
+    return tr.spreads_meta()
+
+
+@app.get("/api/tarot/draw/{spread}")
+async def api_tarot_draw(
+    spread: str,
+    category: str = "종합운",
+) -> dict[str, Any]:
+    """타로 카드 뽑기 (스프레드별 1·3·7·10·12장, 역방향 30%)."""
+    try:
+        return tr.draw_cards(spread, category)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@app.get("/api/tarot/reading/{card_id}")
+async def api_tarot_reading(
+    card_id: str,
+    category: str = "종합운",
+    reversed: bool = False,
+) -> dict[str, Any]:
+    """카드 id + 해석 카테고리 → 정/역방향 해석."""
+    try:
+        return tr.lookup_reading(card_id, category, reversed=reversed)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

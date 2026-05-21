@@ -1,0 +1,646 @@
+{
+  "version": 3,
+  "deck_name": "오행 타로",
+  "back_image": "back/back.png",
+  "card_count": 60,
+  "note": "zip +3 추출 후 카테고리 내 1칸 시프트. 木 1~9 별도.",
+  "categories": {
+    "wood": {
+      "kr": "木 오행",
+      "range": "01-09",
+      "count": 9
+    },
+    "fire": {
+      "kr": "火 오행",
+      "range": "10-18",
+      "count": 9
+    },
+    "earth": {
+      "kr": "土 오행",
+      "range": "19-27",
+      "count": 9
+    },
+    "metal": {
+      "kr": "金 오행",
+      "range": "28-36",
+      "count": 9
+    },
+    "water": {
+      "kr": "水 오행",
+      "range": "37-45",
+      "count": 9
+    },
+    "stems": {
+      "kr": "천간",
+      "range": "46-55",
+      "count": 10
+    },
+    "fate": {
+      "kr": "운명",
+      "range": "56-60",
+      "count": 5
+    }
+  },
+  "cards": [
+    {
+      "id": 1,
+      "file": "cards/wood/01.png",
+      "filename": "01.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "씨앗",
+      "label_en": "Seed",
+      "title": "씨앗 Seed"
+    },
+    {
+      "id": 2,
+      "file": "cards/wood/02.png",
+      "filename": "02.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "새싹",
+      "label_en": "Sprout",
+      "title": "새싹 Sprout"
+    },
+    {
+      "id": 3,
+      "file": "cards/wood/03.png",
+      "filename": "03.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "나무",
+      "label_en": "Tree",
+      "title": "나무 Tree"
+    },
+    {
+      "id": 4,
+      "file": "cards/wood/04.png",
+      "filename": "04.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "꽃",
+      "label_en": "Blossom",
+      "title": "꽃 Blossom"
+    },
+    {
+      "id": 5,
+      "file": "cards/wood/05.png",
+      "filename": "05.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "열매",
+      "label_en": "Fruit",
+      "title": "열매 Fruit"
+    },
+    {
+      "id": 6,
+      "file": "cards/wood/06.png",
+      "filename": "06.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "뿌리",
+      "label_en": "Root",
+      "title": "뿌리 Root"
+    },
+    {
+      "id": 7,
+      "file": "cards/wood/07.png",
+      "filename": "07.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "바람",
+      "label_en": "Wind",
+      "title": "바람 Wind"
+    },
+    {
+      "id": 8,
+      "file": "cards/wood/08.png",
+      "filename": "08.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "숲",
+      "label_en": "Forest",
+      "title": "숲 Forest"
+    },
+    {
+      "id": 9,
+      "file": "cards/wood/09.png",
+      "filename": "09.png",
+      "category": "wood",
+      "category_kr": "木 오행",
+      "label_kr": "봄비",
+      "label_en": "Spring Rain",
+      "title": "봄비 Spring Rain"
+    },
+    {
+      "id": 10,
+      "file": "cards/fire/10.png",
+      "filename": "10.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "태양",
+      "label_en": "Sun",
+      "title": "태양 Sun"
+    },
+    {
+      "id": 11,
+      "file": "cards/fire/11.png",
+      "filename": "11.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "촛불",
+      "label_en": "Candle",
+      "title": "촛불 Candle"
+    },
+    {
+      "id": 12,
+      "file": "cards/fire/12.png",
+      "filename": "12.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "불꽃",
+      "label_en": "Flame",
+      "title": "불꽃 Flame"
+    },
+    {
+      "id": 13,
+      "file": "cards/fire/13.png",
+      "filename": "13.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "홍등",
+      "label_en": "Red Lantern",
+      "title": "홍등 Red Lantern"
+    },
+    {
+      "id": 14,
+      "file": "cards/fire/14.png",
+      "filename": "14.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "노을",
+      "label_en": "Sunset",
+      "title": "노을 Sunset"
+    },
+    {
+      "id": 15,
+      "file": "cards/fire/15.png",
+      "filename": "15.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "번개",
+      "label_en": "Lightning",
+      "title": "번개 Lightning"
+    },
+    {
+      "id": 16,
+      "file": "cards/fire/16.png",
+      "filename": "16.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "달빛",
+      "label_en": "Moonlight",
+      "title": "달빛 Moonlight"
+    },
+    {
+      "id": 17,
+      "file": "cards/fire/17.png",
+      "filename": "17.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "모닥불",
+      "label_en": "Bonfire",
+      "title": "모닥불 Bonfire"
+    },
+    {
+      "id": 18,
+      "file": "cards/fire/18.png",
+      "filename": "18.png",
+      "category": "fire",
+      "category_kr": "火 오행",
+      "label_kr": "등불",
+      "label_en": "Lantern",
+      "title": "등불 Lantern"
+    },
+    {
+      "id": 19,
+      "file": "cards/earth/19.png",
+      "filename": "19.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "대지",
+      "label_en": "Earth",
+      "title": "대지 Earth"
+    },
+    {
+      "id": 20,
+      "file": "cards/earth/20.png",
+      "filename": "20.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "산",
+      "label_en": "Mountain",
+      "title": "산 Mountain"
+    },
+    {
+      "id": 21,
+      "file": "cards/earth/21.png",
+      "filename": "21.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "논밭",
+      "label_en": "Field",
+      "title": "논밭 Field"
+    },
+    {
+      "id": 22,
+      "file": "cards/earth/22.png",
+      "filename": "22.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "황토",
+      "label_en": "Clay",
+      "title": "황토 Clay"
+    },
+    {
+      "id": 23,
+      "file": "cards/earth/23.png",
+      "filename": "23.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "돌",
+      "label_en": "Stone",
+      "title": "돌 Stone"
+    },
+    {
+      "id": 24,
+      "file": "cards/earth/24.png",
+      "filename": "24.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "집",
+      "label_en": "Home",
+      "title": "집 Home"
+    },
+    {
+      "id": 25,
+      "file": "cards/earth/25.png",
+      "filename": "25.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "다리",
+      "label_en": "Bridge",
+      "title": "다리 Bridge"
+    },
+    {
+      "id": 26,
+      "file": "cards/earth/26.png",
+      "filename": "26.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "길",
+      "label_en": "Path",
+      "title": "길 Path"
+    },
+    {
+      "id": 27,
+      "file": "cards/earth/27.png",
+      "filename": "27.png",
+      "category": "earth",
+      "category_kr": "土 오행",
+      "label_kr": "우물",
+      "label_en": "Well",
+      "title": "우물 Well"
+    },
+    {
+      "id": 28,
+      "file": "cards/metal/28.png",
+      "filename": "28.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "검",
+      "label_en": "Sword",
+      "title": "검 Sword"
+    },
+    {
+      "id": 29,
+      "file": "cards/metal/29.png",
+      "filename": "29.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "보석",
+      "label_en": "Gem",
+      "title": "보석 Gem"
+    },
+    {
+      "id": 30,
+      "file": "cards/metal/30.png",
+      "filename": "30.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "거울",
+      "label_en": "Mirror",
+      "title": "거울 Mirror"
+    },
+    {
+      "id": 31,
+      "file": "cards/metal/31.png",
+      "filename": "31.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "저울",
+      "label_en": "Scale",
+      "title": "저울 Scale"
+    },
+    {
+      "id": 32,
+      "file": "cards/metal/32.png",
+      "filename": "32.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "종",
+      "label_en": "Bell",
+      "title": "종 Bell"
+    },
+    {
+      "id": 33,
+      "file": "cards/metal/33.png",
+      "filename": "33.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "열쇠",
+      "label_en": "Key",
+      "title": "열쇠 Key"
+    },
+    {
+      "id": 34,
+      "file": "cards/metal/34.png",
+      "filename": "34.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "방패",
+      "label_en": "Shield",
+      "title": "방패 Shield"
+    },
+    {
+      "id": 35,
+      "file": "cards/metal/35.png",
+      "filename": "35.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "별",
+      "label_en": "Star",
+      "title": "별 Star"
+    },
+    {
+      "id": 36,
+      "file": "cards/metal/36.png",
+      "filename": "36.png",
+      "category": "metal",
+      "category_kr": "金 오행",
+      "label_kr": "왕관",
+      "label_en": "Crown",
+      "title": "왕관 Crown"
+    },
+    {
+      "id": 37,
+      "file": "cards/water/37.png",
+      "filename": "37.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "강",
+      "label_en": "River",
+      "title": "강 River"
+    },
+    {
+      "id": 38,
+      "file": "cards/water/38.png",
+      "filename": "38.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "바다",
+      "label_en": "Ocean",
+      "title": "바다 Ocean"
+    },
+    {
+      "id": 39,
+      "file": "cards/water/39.png",
+      "filename": "39.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "이슬",
+      "label_en": "Dew",
+      "title": "이슬 Dew"
+    },
+    {
+      "id": 40,
+      "file": "cards/water/40.png",
+      "filename": "40.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "빗물",
+      "label_en": "Rain",
+      "title": "빗물 Rain"
+    },
+    {
+      "id": 41,
+      "file": "cards/water/41.png",
+      "filename": "41.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "안개",
+      "label_en": "Fog",
+      "title": "안개 Fog"
+    },
+    {
+      "id": 42,
+      "file": "cards/water/42.png",
+      "filename": "42.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "얼음",
+      "label_en": "Ice",
+      "title": "얼음 Ice"
+    },
+    {
+      "id": 43,
+      "file": "cards/water/43.png",
+      "filename": "43.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "파도",
+      "label_en": "Wave",
+      "title": "파도 Wave"
+    },
+    {
+      "id": 44,
+      "file": "cards/water/44.png",
+      "filename": "44.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "샘물",
+      "label_en": "Spring",
+      "title": "샘물 Spring"
+    },
+    {
+      "id": 45,
+      "file": "cards/water/45.png",
+      "filename": "45.png",
+      "category": "water",
+      "category_kr": "水 오행",
+      "label_kr": "달",
+      "label_en": "Moon",
+      "title": "달 Moon"
+    },
+    {
+      "id": 46,
+      "file": "cards/stems/46.png",
+      "filename": "46.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "갑목",
+      "label_en": "甲木",
+      "title": "갑목 甲木"
+    },
+    {
+      "id": 47,
+      "file": "cards/stems/47.png",
+      "filename": "47.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "을목",
+      "label_en": "乙木",
+      "title": "을목 乙木"
+    },
+    {
+      "id": 48,
+      "file": "cards/stems/48.png",
+      "filename": "48.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "병화",
+      "label_en": "丙火",
+      "title": "병화 丙火"
+    },
+    {
+      "id": 49,
+      "file": "cards/stems/49.png",
+      "filename": "49.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "정화",
+      "label_en": "丁火",
+      "title": "정화 丁火"
+    },
+    {
+      "id": 50,
+      "file": "cards/stems/50.png",
+      "filename": "50.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "무토",
+      "label_en": "戊土",
+      "title": "무토 戊土"
+    },
+    {
+      "id": 51,
+      "file": "cards/stems/51.png",
+      "filename": "51.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "기토",
+      "label_en": "己土",
+      "title": "기토 己土"
+    },
+    {
+      "id": 52,
+      "file": "cards/stems/52.png",
+      "filename": "52.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "경금",
+      "label_en": "庚金",
+      "title": "경금 庚金"
+    },
+    {
+      "id": 53,
+      "file": "cards/stems/53.png",
+      "filename": "53.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "신금",
+      "label_en": "辛金",
+      "title": "신금 辛金"
+    },
+    {
+      "id": 54,
+      "file": "cards/stems/54.png",
+      "filename": "54.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "임수",
+      "label_en": "壬水",
+      "title": "임수 壬水"
+    },
+    {
+      "id": 55,
+      "file": "cards/stems/55.png",
+      "filename": "55.png",
+      "category": "stems",
+      "category_kr": "천간",
+      "label_kr": "계수",
+      "label_en": "癸水",
+      "title": "계수 癸水"
+    },
+    {
+      "id": 56,
+      "file": "cards/fate/56.png",
+      "filename": "56.png",
+      "category": "fate",
+      "category_kr": "운명",
+      "label_kr": "충",
+      "label_en": "沖",
+      "title": "충 沖"
+    },
+    {
+      "id": 57,
+      "file": "cards/fate/57.png",
+      "filename": "57.png",
+      "category": "fate",
+      "category_kr": "운명",
+      "label_kr": "합",
+      "label_en": "合",
+      "title": "합 合"
+    },
+    {
+      "id": 58,
+      "file": "cards/fate/58.png",
+      "filename": "58.png",
+      "category": "fate",
+      "category_kr": "운명",
+      "label_kr": "용신",
+      "label_en": "用神",
+      "title": "용신 用神"
+    },
+    {
+      "id": 59,
+      "file": "cards/fate/59.png",
+      "filename": "59.png",
+      "category": "fate",
+      "category_kr": "운명",
+      "label_kr": "공망",
+      "label_en": "空亡",
+      "title": "공망 空亡"
+    },
+    {
+      "id": 60,
+      "file": "cards/fate/60.png",
+      "filename": "60.png",
+      "category": "fate",
+      "category_kr": "운명",
+      "label_kr": "대운",
+      "label_en": "大運",
+      "title": "대운 大運"
+    }
+  ]
+}
