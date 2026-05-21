@@ -206,6 +206,23 @@ def lookup_reading(
     }
 
 
+def reveal_card(
+    card_id: str | int,
+    category: str = "종합운",
+    *,
+    rng: random.Random | None = None,
+) -> dict[str, Any]:
+    """사용자가 고른 카드 1장 — 역방향 확률 적용 후 해석."""
+    card = card_by_id(card_id)
+    cat = normalize_category(category)
+    r = rng or random.Random()
+    is_reversed = r.random() < REVERSED_PROBABILITY
+    return {
+        "ok": True,
+        "card": card_response(card, cat, is_reversed=is_reversed),
+    }
+
+
 def spreads_meta() -> dict[str, Any]:
     deck = load_deck()
     return {

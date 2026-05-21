@@ -549,6 +549,20 @@ async def api_tarot_draw(
         raise HTTPException(status_code=404, detail=str(e)) from e
 
 
+@app.get("/api/tarot/reveal/{card_id}")
+async def api_tarot_reveal(
+    card_id: str,
+    category: str = "종합운",
+) -> dict[str, Any]:
+    """사용자 직접 선택 카드 — 정/역방향 랜덤 적용 후 해석."""
+    try:
+        return tr.reveal_card(card_id, category)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+
 @app.get("/api/tarot/reading/{card_id}")
 async def api_tarot_reading(
     card_id: str,

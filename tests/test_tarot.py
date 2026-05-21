@@ -76,6 +76,21 @@ def test_tarot_invalid_spread(client: TestClient) -> None:
     assert r.status_code == 400
 
 
+def test_tarot_reveal_api(client: TestClient) -> None:
+    import saju.tarot as tr
+
+    tr.load_deck.cache_clear()
+    out = tr.reveal_card("01", "종합운", rng=random.Random(7))
+    card = out["card"]
+    assert card["card_id"] == "01"
+    assert card["reading"]["category"] == "종합운"
+    assert card["rotation"] in (0, 180)
+
+    r = client.get("/api/tarot/reveal/01", params={"category": "연애운"})
+    assert r.status_code == 200
+    assert r.json()["card"]["reading"]["category"] == "연애운"
+
+
 def test_tarot_invalid_category(client: TestClient) -> None:
     r = client.get("/api/tarot/draw/today", params={"category": "없는운"})
     assert r.status_code == 400
