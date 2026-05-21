@@ -2,7 +2,7 @@
   "use strict";
 
   const SPREAD_ORDER = ["today", "week", "month", "year", "worry", "love", "deep"];
-  const FAN_SPREAD_DEG = 179;
+  const FAN_SPREAD_DEG = 196;
   const DEAL_SHUFFLE_MS = 850;
   const DEAL_SPREAD_MS = 1400;
 
@@ -14,12 +14,9 @@
     bottomNav: document.getElementById("bottom-nav"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
     spreadTabs: document.getElementById("tarot-spread-tabs"),
-    deckDesc: document.getElementById("tarot-deck-desc"),
-    instruction: document.getElementById("tarot-instruction"),
     deckArea: document.getElementById("tarot-deck-area"),
     drawPhase: document.getElementById("tarot-draw-phase"),
     resultPhase: document.getElementById("tarot-result-phase"),
-    autoDraw: document.getElementById("tarot-auto-draw"),
     redraw: document.getElementById("tarot-redraw"),
     backDraw: document.getElementById("tarot-back-draw"),
     status: document.getElementById("tarot-status"),
@@ -61,9 +58,6 @@
 
   /** @type {number} */
   let activeCardIdx = 0;
-
-  /** @type {boolean} */
-  let autoRunning = false;
 
   /** @type {boolean} */
   let pickingLocked = false;
@@ -180,18 +174,6 @@
     return ((index - mid) / mid) * (FAN_SPREAD_DEG / 2);
   }
 
-  function updateInstruction() {
-    if (!els.instruction) return;
-    const need = needCount();
-    const picked = selectedCards.length;
-    const label = spreadLabel();
-    if (picked >= need) {
-      els.instruction.textContent = `${label} — 선택 완료. 해석을 확인해 주세요.`;
-      return;
-    }
-    els.instruction.textContent = `${label} — 60장 중 ${need}장을 직접 골라 주세요 (${picked}/${need})`;
-  }
-
   function setAppMode(mode) {
     const isTarot = mode === "tarot";
     if (isTarot) initTarotSky();
@@ -235,7 +217,7 @@
 
     els.spreadTabs.querySelectorAll("[data-spread]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (btn.dataset.spread === activeSpread || autoRunning || pickingLocked || dealing) return;
+        if (btn.dataset.spread === activeSpread || pickingLocked || dealing) return;
         activeSpread = btn.dataset.spread;
         renderSpreadTabs();
         resetDeckSelection();
@@ -278,7 +260,6 @@
     if (!els.deckArea) return;
     els.deckArea.className = "tarot-deck-area is-loading";
     els.deckArea.innerHTML = '<p class="tarot-deck-loading">60장을 모아 섞는 중…</p>';
-    if (els.autoDraw) els.autoDraw.disabled = true;
     if (els.redraw) els.redraw.disabled = true;
   }
 
@@ -298,7 +279,7 @@
         const flipClass = revealed ? " flipped" : "";
         const pickedClass = isPicked ? " is-picked" : "";
         const doneClass = isPicked && selectionDone ? " is-complete" : "";
-        const disabled = autoRunning || pickingLocked || dealing || (selectionDone && !isPicked) ? " is-disabled" : "";
+        const disabled = pickingLocked || dealing || (selectionDone && !isPicked) ? " is-disabled" : "";
         const angle = fanAngle(i, total).toFixed(2);
         const shuffleR = ((i % 13) - 6) * 2.8;
         const revClass = revealed?.is_reversed ? " card-reversed" : "";
@@ -327,7 +308,6 @@
       });
     });
 
-    updateInstruction();
     updateDrawButtons(selectionDone);
 
     if (selectedCards.length === 0) {
@@ -348,8 +328,7 @@
   }
 
   function updateDrawButtons(selectionDone) {
-    const locked = autoRunning || pickingLocked || dealing || !deckOrder.length;
-    if (els.autoDraw) els.autoDraw.disabled = locked || selectionDone;
+    const locked = pickingLocked || dealing || !deckOrder.length;
     if (els.redraw) els.redraw.disabled = locked;
   }
 
@@ -372,7 +351,6 @@
 
   async function onPickCard(cardId) {
     if (
-      autoRunning ||
       pickingLocked ||
       dealing ||
       pickedIds.has(cardId) ||
@@ -406,30 +384,6 @@
     } finally {
       pickingLocked = false;
     }
-  }
-
-  async function autoPickCards() {
-    if (autoRunning || !deckOrder.length) return;
-    const need = needCount();
-    const remaining = need - selectedCards.length;
-    if (remaining <= 0) return;
-
-    autoRunning = true;
-    if (els.autoDraw) els.autoDraw.disabled = true;
-    if (els.redraw) els.redraw.disabled = true;
-    setStatus("마음에 닿는 카드를 자동으로 고르는 중…");
-
-    const pool = deckOrder.map((c) => c.id).filter((id) => !pickedIds.has(id));
-    const picks = shuffle(pool).slice(0, remaining);
-
-    for (const cardId of picks) {
-      await onPickCard(cardId);
-      if (selectedCards.length >= need) break;
-      await new Promise((resolve) => window.setTimeout(resolve, 280));
-    }
-
-    autoRunning = false;
-    setStatus("");
   }
 
   function renderResultNav() {
@@ -539,9 +493,6 @@
       ]);
       meta = spreadMeta;
       deckOrder = shuffle((deckData.cards || []).map((c) => ({ id: c.id })));
-      if (els.deckDesc) {
-        els.deckDesc.textContent = `${meta.deck_name || "오행 타로"} · ${meta.card_count || deckOrder.length}장`;
-      }
       renderSpreadTabs();
       renderCategoryTabs();
       resetDeckSelection();
@@ -559,12 +510,9 @@
     btn.addEventListener("click", () => setAppMode(btn.dataset.appMode || "saju"));
   });
 
-  if (els.autoDraw) {
-    els.autoDraw.addEventListener("click", () => autoPickCards());
-  }
   if (els.redraw) {
     els.redraw.addEventListener("click", () => {
-      if (autoRunning || pickingLocked || dealing) return;
+      if (pickingLocked || dealing) return;
       resetDeckSelection();
     });
   }

@@ -73,7 +73,7 @@ body.tarot-mode .layout {
 }
 
 body.tarot-mode .footer {
-  margin-top: 0;
+  display: none;
 }
 
 /* ── 타로 별하늘 배경 ── */
@@ -504,26 +504,26 @@ body.tarot-mode .tarot-badge {
   perspective: 1400px;
 }
 
-/* 60장 부채꼴 — 화면 안에 보이도록 */
+/* 60장 부채꼴 — 크게·넓게 */
 .tarot-deck-fan {
   position: relative;
   display: block;
   width: 100%;
   max-width: 100%;
-  height: clamp(16rem, 42vh, 24rem);
-  min-height: clamp(16rem, 42vh, 24rem);
+  height: clamp(24rem, 58vh, 38rem);
+  min-height: clamp(24rem, 58vh, 38rem);
   margin: 0 auto;
   overflow: visible;
   padding: 0;
-  --fan-pivot: clamp(8.5rem, 22vh, 13.5rem);
+  --fan-pivot: clamp(14rem, 38vh, 24rem);
 }
 
 .tarot-deck-fan .tarot-card-slot {
-  --tarot-card-w: clamp(2.35rem, 4.2vw, 4.1rem);
+  --tarot-card-w: clamp(3.35rem, 6.8vw, 6.5rem);
   --tarot-card-h: calc(var(--tarot-card-w) * 1.55);
   position: absolute;
   left: 50%;
-  bottom: 18%;
+  bottom: 10%;
   margin-left: calc(var(--tarot-card-w) / -2);
   transform: rotate(var(--fan-angle, 0deg));
   transform-origin: 50% calc(100% + var(--fan-pivot));
@@ -560,7 +560,7 @@ body.tarot-mode .tarot-badge {
 .tarot-deck-fan.is-spreading .tarot-card-slot {
   animation: none;
   left: 50%;
-  bottom: 18%;
+  bottom: 10%;
   margin-left: calc(var(--tarot-card-w) / -2);
   transform: rotate(var(--fan-angle, 0deg));
   transform-origin: 50% calc(100% + var(--fan-pivot));
@@ -610,14 +610,14 @@ body.tarot-mode .tarot-badge {
   }
 
   .tarot-deck-fan {
-    height: clamp(18rem, 44vh, 26rem);
-    min-height: clamp(18rem, 44vh, 26rem);
-    --fan-pivot: clamp(10rem, 24vh, 15rem);
+    height: clamp(26rem, 60vh, 40rem);
+    min-height: clamp(26rem, 60vh, 40rem);
+    --fan-pivot: clamp(16rem, 40vh, 26rem);
   }
 
   .tarot-deck-fan .tarot-card-slot {
-    --tarot-card-w: clamp(2.5rem, 3.2vw, 4.25rem);
-    bottom: 20%;
+    --tarot-card-w: clamp(3.6rem, 4.8vw, 6.8rem);
+    bottom: 12%;
   }
 }
 
@@ -928,6 +928,12 @@ body.tarot-mode .tarot-badge {
   min-height: 1.2rem;
 }
 
+body.tarot-mode .tarot-status:empty {
+  display: none;
+  min-height: 0;
+  margin: 0;
+}
+
 .tarot-status.error {
   color: var(--danger);
 }
@@ -954,14 +960,14 @@ body.tarot-mode .tarot-badge {
   }
 
   .tarot-deck-fan {
-    height: clamp(14rem, 38vh, 20rem);
-    min-height: clamp(14rem, 38vh, 20rem);
-    --fan-pivot: clamp(7rem, 20vh, 11rem);
+    height: clamp(20rem, 50vh, 28rem);
+    min-height: clamp(20rem, 50vh, 28rem);
+    --fan-pivot: clamp(11rem, 28vh, 17rem);
   }
 
   .tarot-deck-fan .tarot-card-slot {
-    --tarot-card-w: clamp(2rem, 5.5vw, 2.85rem);
-    bottom: 16%;
+    --tarot-card-w: clamp(2.8rem, 7.5vw, 3.8rem);
+    bottom: 8%;
   }
 }
 
