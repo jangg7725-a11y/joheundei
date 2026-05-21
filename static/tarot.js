@@ -11,6 +11,7 @@
     tarotMain: document.getElementById("tarot-main"),
     tarotSky: document.getElementById("tarot-sky"),
     tarotTwinkles: document.getElementById("tarot-sky-twinkles"),
+    tarotMeteors: document.getElementById("tarot-sky-meteors"),
     bottomNav: document.getElementById("bottom-nav"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
     spreadTabs: document.getElementById("tarot-spread-tabs"),
@@ -81,10 +82,12 @@
   const RANDOM_PICK_DELAY_MS = 520;
 
   const STAR_LAYERS = {
-    far: { count: 180, size: 1, spread: 2800, opacity: [0.3, 0.62] },
-    mid: { count: 110, size: 1.6, spread: 2800, opacity: [0.45, 0.82] },
-    near: { count: 55, size: 2.2, spread: 2800, opacity: [0.6, 1] },
+    far: { count: 220, size: 1, spread: 2800, opacity: [0.3, 0.62] },
+    mid: { count: 140, size: 1.6, spread: 2800, opacity: [0.45, 0.82] },
+    near: { count: 70, size: 2.2, spread: 2800, opacity: [0.6, 1] },
   };
+
+  const METEOR_COUNT = 7;
 
   function delay(ms) {
     return new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -133,7 +136,7 @@
     });
 
     if (els.tarotTwinkles) {
-      const twinkleCount = 48;
+      const twinkleCount = 64;
       els.tarotTwinkles.innerHTML = "";
       for (let i = 0; i < twinkleCount; i++) {
         const star = document.createElement("span");
@@ -147,6 +150,20 @@
         star.style.animationDelay = `${Math.random() * 6}s`;
         if (Math.random() > 0.55) star.classList.add("tarot-twinkle--gold");
         els.tarotTwinkles.appendChild(star);
+      }
+    }
+
+    if (els.tarotMeteors) {
+      els.tarotMeteors.innerHTML = "";
+      for (let i = 0; i < METEOR_COUNT; i++) {
+        const meteor = document.createElement("span");
+        meteor.className = "tarot-meteor";
+        if (Math.random() > 0.45) meteor.classList.add("tarot-meteor--gold");
+        meteor.style.left = `${8 + Math.random() * 72}%`;
+        meteor.style.top = `${-8 + Math.random() * 38}%`;
+        meteor.style.animationDuration = `${7 + Math.random() * 14}s`;
+        meteor.style.animationDelay = `${Math.random() * 18}s`;
+        els.tarotMeteors.appendChild(meteor);
       }
     }
 
