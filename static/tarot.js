@@ -2,11 +2,13 @@
   "use strict";
 
   const SPREAD_ORDER = ["today", "week", "month", "year", "worry", "love", "deep"];
-  const FAN_SPREAD_DEG = 152;
+  const FAN_SPREAD_DEG = 172;
 
   const els = {
     sajuMain: document.getElementById("saju-main"),
     tarotMain: document.getElementById("tarot-main"),
+    tarotSky: document.getElementById("tarot-sky"),
+    tarotTwinkles: document.getElementById("tarot-sky-twinkles"),
     bottomNav: document.getElementById("bottom-nav"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
     spreadTabs: document.getElementById("tarot-spread-tabs"),
@@ -63,6 +65,67 @@
 
   /** @type {boolean} */
   let pickingLocked = false;
+
+  const STAR_LAYERS = {
+    far: { count: 140, size: 1, spread: 2400, opacity: [0.25, 0.55] },
+    mid: { count: 85, size: 1.6, spread: 2400, opacity: [0.4, 0.75] },
+    near: { count: 42, size: 2.2, spread: 2400, opacity: [0.55, 0.95] },
+  };
+
+  function buildStarShadows(count, spread, size, opacityRange) {
+    const parts = [];
+    for (let i = 0; i < count; i++) {
+      const x = Math.random() * spread;
+      const y = Math.random() * spread;
+      const alpha = opacityRange[0] + Math.random() * (opacityRange[1] - opacityRange[0]);
+      const s = size * (0.7 + Math.random() * 0.6);
+      parts.push(`${x}px ${y}px 0 ${s}px rgba(236, 242, 255, ${alpha.toFixed(3)})`);
+    }
+    return parts.join(", ");
+  }
+
+  function initTarotSky() {
+    if (!els.tarotSky || els.tarotSky.dataset.ready === "1") return;
+
+    Object.entries(STAR_LAYERS).forEach(([key, cfg]) => {
+      const track = els.tarotSky.querySelector(`[data-stars="${key}"]`);
+      if (!track) return;
+      track.innerHTML = "";
+      for (let layer = 0; layer < 2; layer++) {
+        const el = document.createElement("div");
+        el.className = "tarot-stars-layer";
+        el.style.width = `${cfg.size}px`;
+        el.style.height = `${cfg.size}px`;
+        el.style.boxShadow = buildStarShadows(cfg.count, cfg.spread, cfg.size, cfg.opacity);
+        track.appendChild(el);
+      }
+    });
+
+    if (els.tarotTwinkles) {
+      const twinkleCount = 22;
+      els.tarotTwinkles.innerHTML = "";
+      for (let i = 0; i < twinkleCount; i++) {
+        const star = document.createElement("span");
+        star.className = "tarot-twinkle";
+        const size = 2 + Math.random() * 2.5;
+        star.style.width = `${size}px`;
+        star.style.height = `${size}px`;
+        star.style.left = `${Math.random() * 100}%`;
+        star.style.top = `${Math.random() * 100}%`;
+        star.style.animationDuration = `${2.2 + Math.random() * 3.8}s`;
+        star.style.animationDelay = `${Math.random() * 5}s`;
+        els.tarotTwinkles.appendChild(star);
+      }
+    }
+
+    els.tarotSky.dataset.ready = "1";
+  }
+
+  function setTarotSkyVisible(visible) {
+    if (!els.tarotSky) return;
+    els.tarotSky.hidden = !visible;
+    els.tarotSky.setAttribute("aria-hidden", visible ? "false" : "true");
+  }
 
   function needCount() {
     return meta?.spreads?.[activeSpread]?.count ?? 1;
@@ -125,6 +188,8 @@
 
   function setAppMode(mode) {
     const isTarot = mode === "tarot";
+    if (isTarot) initTarotSky();
+    setTarotSkyVisible(isTarot);
     if (els.sajuMain) els.sajuMain.hidden = isTarot;
     if (els.tarotMain) els.tarotMain.hidden = !isTarot;
     document.body.classList.toggle("tarot-mode", isTarot);

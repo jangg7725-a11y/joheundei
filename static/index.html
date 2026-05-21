@@ -5,9 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>k-사주마당 품</title>
   <link rel="stylesheet" href="/static/style.css?v=20260516-sewoon-center" />
-  <link rel="stylesheet" href="/static/tarot.css?v=20260519-fan60" />
+  <link rel="stylesheet" href="/static/tarot.css?v=20260519-fanwide" />
 </head>
 <body>
+  <div class="tarot-sky" id="tarot-sky" hidden aria-hidden="true">
+    <div class="tarot-sky-nebula"></div>
+    <div class="tarot-stars-track tarot-stars-track--far" data-stars="far"></div>
+    <div class="tarot-stars-track tarot-stars-track--mid" data-stars="mid"></div>
+    <div class="tarot-stars-track tarot-stars-track--near" data-stars="near"></div>
+    <div class="tarot-sky-twinkles" id="tarot-sky-twinkles"></div>
+    <div class="tarot-sky-glow tarot-sky-glow--gold"></div>
+    <div class="tarot-sky-glow tarot-sky-glow--violet"></div>
+    <div class="tarot-sky-shimmer"></div>
+  </div>
   <header class="hero">
     <div class="hero-more" id="hero-more">
       <button
@@ -320,17 +330,24 @@
     </div>
 
     <section class="tarot-app card" id="tarot-main" hidden aria-labelledby="tarot-heading">
-      <header class="tarot-head">
-        <p class="tarot-badge">오행·천간·운명</p>
-        <h2 id="tarot-heading">오행 타로</h2>
-        <p class="tarot-lead" id="tarot-deck-desc">마음을 가다듬고 카드를 펼쳐 보세요.</p>
+      <header class="tarot-head tarot-head--compact">
+        <div class="tarot-head-text">
+          <p class="tarot-badge">오행·천간·운명</p>
+          <h2 id="tarot-heading">오행 타로</h2>
+          <p class="tarot-lead" id="tarot-deck-desc">마음을 가다듬고 카드를 펼쳐 보세요.</p>
+        </div>
       </header>
 
-      <div class="tarot-spread-tabs tab-bar" id="tarot-spread-tabs" role="tablist" aria-label="타로 스프레드"></div>
-
       <div class="tarot-phase tarot-phase-draw" id="tarot-draw-phase">
-        <p class="tarot-instruction" id="tarot-instruction">60장을 펼친 뒤, 스프레드에 맞게 카드를 직접 골라 주세요.</p>
-        <div class="tarot-deck-area" id="tarot-deck-area" aria-live="polite"></div>
+        <div class="tarot-draw-layout">
+          <nav class="tarot-spread-rail" aria-label="타로 스프레드">
+            <div class="tarot-spread-tabs tab-bar" id="tarot-spread-tabs" role="tablist"></div>
+          </nav>
+          <div class="tarot-deck-stage">
+            <p class="tarot-instruction" id="tarot-instruction">60장을 펼친 뒤, 스프레드에 맞게 카드를 직접 골라 주세요.</p>
+            <div class="tarot-deck-area" id="tarot-deck-area" aria-live="polite"></div>
+          </div>
+        </div>
         <div class="tarot-draw-actions">
           <button type="button" class="btn tarot-btn-auto" id="tarot-auto-draw" disabled>✨ 자동 뽑기</button>
           <button type="button" class="btn tarot-btn-redraw" id="tarot-redraw" disabled>↺ 다시 뽑기</button>
@@ -416,6 +433,6 @@
 
   <script src="/static/ai-story.js"></script>
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
-  <script src="/static/tarot.js?v=20260519-fan60"></script>
+  <script src="/static/tarot.js?v=20260519-stars"></script>
 </body>
 </html>
