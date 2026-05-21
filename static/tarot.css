@@ -410,6 +410,18 @@ body.tarot-mode .tarot-app {
   background: rgba(212, 175, 55, 0.12);
 }
 
+.tarot-rail-actions .tarot-btn-reading {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.16);
+  font-weight: 700;
+}
+
+.tarot-rail-actions .tarot-btn-reading:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.28);
+  border-color: var(--gold);
+}
+
 .tarot-rail-actions .tarot-btn-redraw {
   color: var(--text-sub);
   background: rgba(255, 255, 255, 0.06);
@@ -608,9 +620,21 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
 }
 
 .tarot-deck-fan .tarot-card-slot.is-picked {
+  pointer-events: none;
+}
+
+/* 1장 뽑기: 선택 카드를 중앙으로 */
+.tarot-deck-fan[data-pick-count="1"] .tarot-card-slot.is-picked {
   transform: rotate(0deg) translateY(-36px) scale(1.22);
   z-index: 180;
   filter: drop-shadow(0 12px 26px rgba(212, 175, 55, 0.4));
+}
+
+/* 여러 장: 부채꼴 위치 유지 */
+.tarot-deck-fan:not([data-pick-count="1"]) .tarot-card-slot.is-picked:not(.is-complete) {
+  transform: rotate(var(--fan-angle, 0deg)) translateY(-28px) scale(1.1);
+  z-index: calc(var(--fan-i) + 80);
+  filter: drop-shadow(0 10px 20px rgba(212, 175, 55, 0.35));
 }
 
 .tarot-deck-fan .tarot-card-slot.is-picked.is-complete {
@@ -810,11 +834,24 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   border-color: var(--gold);
 }
 
+.tarot-btn-reading {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.14);
+  font-weight: 700;
+}
+
+.tarot-btn-reading:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.26);
+  border-color: var(--gold);
+}
+
 .tarot-btn-redraw,
 .tarot-btn-back-draw {
   color: var(--muted);
 }
 
+.tarot-btn-reading:disabled,
 .tarot-btn-auto:disabled,
 .tarot-btn-redraw:disabled {
   opacity: 0.4;

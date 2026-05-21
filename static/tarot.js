@@ -19,6 +19,7 @@
     drawPhase: document.getElementById("tarot-draw-phase"),
     resultPhase: document.getElementById("tarot-result-phase"),
     redraw: document.getElementById("tarot-redraw"),
+    viewReading: document.getElementById("tarot-view-reading"),
     backDraw: document.getElementById("tarot-back-draw"),
     status: document.getElementById("tarot-status"),
     resultNav: document.getElementById("tarot-result-nav"),
@@ -181,7 +182,7 @@
     const picked = selectedCards.length;
     const label = spreadLabel();
     if (picked >= need) {
-      els.instruction.textContent = `${label} — 선택 완료. 해석을 확인해 주세요.`;
+      els.instruction.textContent = `${label} — 선택 완료. 「해석 보기」를 눌러 주세요.`;
       return;
     }
     els.instruction.textContent = `${label} — 60장 중 ${need}장을 직접 골라 주세요 (${picked}/${need})`;
@@ -290,11 +291,13 @@
 
   function renderFanDeck() {
     if (!els.deckArea || !meta || !deckOrder.length) return;
-    dealing = true;
-    els.deckArea.className = "tarot-deck-area tarot-deck-fan is-dealing";
+    const selectionDone = selectedCards.length >= needCount();
+    const isInitialDeal = selectedCards.length === 0;
+    dealing = isInitialDeal;
+    els.deckArea.className = `tarot-deck-area tarot-deck-fan${isInitialDeal ? " is-dealing" : ""}`;
+    els.deckArea.dataset.pickCount = String(needCount());
     const backUrl = meta.back_image_url || "/static/tarot/back/back.png";
     const total = deckOrder.length;
-    const selectionDone = selectedCards.length >= needCount();
 
     els.deckArea.innerHTML = deckOrder
       .map((card, i) => {
@@ -304,7 +307,7 @@
         const flipClass = revealed ? " flipped" : "";
         const pickedClass = isPicked ? " is-picked" : "";
         const doneClass = isPicked && selectionDone ? " is-complete" : "";
-        const disabled = pickingLocked || (selectionDone && !isPicked) ? " is-disabled" : "";
+        const disabled = selectionDone && !isPicked ? " is-disabled" : "";
         const angle = fanAngle(i, total).toFixed(2);
         const shuffleR = ((i % 13) - 6) * 2.8;
         const revClass = revealed?.is_reversed ? " card-reversed" : "";
@@ -336,7 +339,7 @@
     updateInstruction();
     updateDrawButtons(selectionDone);
 
-    if (selectedCards.length === 0) {
+    if (isInitialDeal) {
       window.setTimeout(() => {
         if (!els.deckArea) return;
         els.deckArea.classList.remove("is-dealing");
@@ -351,13 +354,19 @@
       }, DEAL_SHUFFLE_MS);
     } else {
       dealing = false;
-      els.deckArea.classList.remove("is-dealing");
+      els.deckArea.classList.remove("is-dealing", "is-spreading");
+      syncCardInteractivity();
+      updateDrawButtons(selectionDone);
     }
   }
 
   function updateDrawButtons(selectionDone) {
     const locked = pickingLocked || dealing || !deckOrder.length;
     if (els.redraw) els.redraw.disabled = locked;
+    if (els.viewReading) {
+      els.viewReading.disabled = locked || !selectionDone;
+      els.viewReading.hidden = selectedCards.length === 0;
+    }
   }
 
   function animateFlip(cardId, cardData) {
@@ -400,17 +409,14 @@
       animateFlip(cardId, card);
 
       await new Promise((resolve) => window.setTimeout(resolve, 620));
-
-      if (selectedCards.length >= needCount()) {
-        activeCardIdx = 0;
-        openResult(0);
-      } else {
-        renderFanDeck();
-      }
+      renderFanDeck();
     } catch (err) {
       setStatus(err.message || "카드를 열지 못했습니다.", true);
     } finally {
       pickingLocked = false;
+      syncCardInteractivity();
+      updateDrawButtons(selectedCards.length >= needCount());
+      updateInstruction();
     }
   }
 
@@ -542,6 +548,13 @@
     els.redraw.addEventListener("click", () => {
       if (pickingLocked || dealing) return;
       resetDeckSelection();
+    });
+  }
+  if (els.viewReading) {
+    els.viewReading.addEventListener("click", () => {
+      if (selectedCards.length < needCount() || pickingLocked || dealing) return;
+      activeCardIdx = 0;
+      openResult(0);
     });
   }
   if (els.backDraw) {
