@@ -631,10 +631,29 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   transition-delay: calc(var(--fan-i) * 0.009s);
 }
 
-.tarot-deck-fan .tarot-card-slot:hover:not(.is-disabled):not(.is-picked) {
-  transform: rotate(var(--fan-angle, 0deg)) translateY(-20px) scale(1.16);
+.tarot-deck-fan .tarot-card-slot:hover:not(.is-disabled):not(.is-picked),
+.tarot-deck-fan .tarot-card-slot:focus-visible:not(.is-disabled):not(.is-picked) {
   z-index: 120;
-  filter: drop-shadow(0 10px 20px rgba(212, 175, 55, 0.3));
+  filter: drop-shadow(0 6px 16px rgba(212, 175, 55, 0.28));
+}
+
+.tarot-deck-fan .tarot-card-slot:hover:not(.is-disabled):not(.is-picked) .card-flip,
+.tarot-deck-fan .tarot-card-slot:focus-visible:not(.is-disabled):not(.is-picked) .card-flip {
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.45),
+    0 0 0 2px rgba(212, 175, 55, 0.62),
+    0 0 18px rgba(212, 175, 55, 0.22);
+}
+
+/* 부채꼴: hover 시 위치·크기 변경 금지 — 클릭 어긋남 방지 */
+.tarot-deck-fan .tarot-card-slot:not(.is-disabled):hover .card-flip:not(.flipped),
+.tarot-deck-fan .tarot-card-slot:not(.is-disabled):focus-visible .card-flip:not(.flipped) {
+  transform: none;
+}
+
+.tarot-deck-fan .tarot-card-slot:not(.is-disabled):hover .card-flip.flipped,
+.tarot-deck-fan .tarot-card-slot:not(.is-disabled):focus-visible .card-flip.flipped {
+  transform: rotateY(180deg);
 }
 
 .tarot-deck-fan .tarot-card-slot.is-picked {
