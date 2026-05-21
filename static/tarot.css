@@ -410,6 +410,24 @@ body.tarot-mode .tarot-app {
   background: rgba(212, 175, 55, 0.12);
 }
 
+.tarot-rail-actions .tarot-btn-shuffle {
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--line);
+}
+
+.tarot-rail-actions .tarot-btn-random {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.12);
+  font-weight: 700;
+}
+
+.tarot-rail-actions .tarot-btn-random:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.24);
+  border-color: var(--gold);
+}
+
 .tarot-rail-actions .tarot-btn-reading {
   border-color: var(--gold-dim);
   color: var(--gold);
@@ -834,6 +852,24 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   border-color: var(--gold);
 }
 
+.tarot-btn-shuffle {
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--line);
+}
+
+.tarot-btn-random {
+  border-color: var(--gold-dim);
+  color: var(--gold);
+  background: rgba(212, 175, 55, 0.12);
+  font-weight: 700;
+}
+
+.tarot-btn-random:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: var(--gold);
+}
+
 .tarot-btn-reading {
   border-color: var(--gold-dim);
   color: var(--gold);
@@ -851,6 +887,8 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   color: var(--muted);
 }
 
+.tarot-btn-shuffle:disabled,
+.tarot-btn-random:disabled,
 .tarot-btn-reading:disabled,
 .tarot-btn-auto:disabled,
 .tarot-btn-redraw:disabled {

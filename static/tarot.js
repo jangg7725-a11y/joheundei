@@ -19,6 +19,8 @@
     drawPhase: document.getElementById("tarot-draw-phase"),
     resultPhase: document.getElementById("tarot-result-phase"),
     redraw: document.getElementById("tarot-redraw"),
+    shuffle: document.getElementById("tarot-shuffle"),
+    randomPick: document.getElementById("tarot-random-pick"),
     viewReading: document.getElementById("tarot-view-reading"),
     backDraw: document.getElementById("tarot-back-draw"),
     status: document.getElementById("tarot-status"),
@@ -67,11 +69,33 @@
   /** @type {boolean} */
   let dealing = false;
 
+  /** @type {boolean} */
+  let randomRunning = false;
+
+  const RANDOM_PICK_DELAY_MS = 520;
+
   const STAR_LAYERS = {
     far: { count: 180, size: 1, spread: 2800, opacity: [0.3, 0.62] },
     mid: { count: 110, size: 1.6, spread: 2800, opacity: [0.45, 0.82] },
     near: { count: 55, size: 2.2, spread: 2800, opacity: [0.6, 1] },
   };
+
+  function delay(ms) {
+    return new Promise((resolve) => window.setTimeout(resolve, ms));
+  }
+
+  function waitForDeckReady() {
+    return new Promise((resolve) => {
+      const check = () => {
+        if (!dealing) {
+          resolve();
+          return;
+        }
+        window.setTimeout(check, 80);
+      };
+      check();
+    });
+  }
 
   function buildStarShadows(count, spread, size, opacityRange) {
     const parts = [];
@@ -194,7 +218,7 @@
     els.deckArea.querySelectorAll(".tarot-card-slot").forEach((btn) => {
       const cardId = btn.dataset.cardId;
       const isPicked = cardId ? pickedIds.has(cardId) : false;
-      const shouldDisable = pickingLocked || dealing || (selectionDone && !isPicked);
+      const shouldDisable = pickingLocked || dealing || randomRunning || (selectionDone && !isPicked);
       btn.classList.toggle("is-disabled", shouldDisable);
     });
   }
@@ -242,7 +266,7 @@
 
     els.spreadTabs.querySelectorAll("[data-spread]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        if (btn.dataset.spread === activeSpread || pickingLocked || dealing) return;
+        if (btn.dataset.spread === activeSpread || pickingLocked || dealing || randomRunning) return;
         activeSpread = btn.dataset.spread;
         renderSpreadTabs();
         updateInstruction();
@@ -287,6 +311,8 @@
     els.deckArea.className = "tarot-deck-area is-loading";
     els.deckArea.innerHTML = '<p class="tarot-deck-loading">60장을 모아 섞는 중…</p>';
     if (els.redraw) els.redraw.disabled = true;
+    if (els.shuffle) els.shuffle.disabled = true;
+    if (els.randomPick) els.randomPick.disabled = true;
   }
 
   function renderFanDeck() {
@@ -361,11 +387,79 @@
   }
 
   function updateDrawButtons(selectionDone) {
-    const locked = pickingLocked || dealing || !deckOrder.length;
+    const locked = pickingLocked || dealing || randomRunning || !deckOrder.length;
+    if (els.shuffle) els.shuffle.disabled = locked;
+    if (els.randomPick) els.randomPick.disabled = locked || selectionDone;
     if (els.redraw) els.redraw.disabled = locked;
     if (els.viewReading) {
       els.viewReading.disabled = locked || !selectionDone;
       els.viewReading.hidden = selectedCards.length === 0;
+    }
+  }
+
+  function clearSelection() {
+    selectedCards = [];
+    pickedIds.clear();
+    revealedById.clear();
+  }
+
+  function shuffleDeck() {
+    if (pickingLocked || dealing || randomRunning || !deckOrder.length) return;
+    clearSelection();
+    deckOrder = shuffle(deckOrder);
+    setStatus("");
+    renderFanDeck();
+  }
+
+  async function randomPickCards() {
+    if (randomRunning || pickingLocked || dealing || !deckOrder.length) return;
+    if (selectedCards.length >= needCount()) return;
+
+    const need = needCount();
+    randomRunning = true;
+    pickingLocked = true;
+    setStatus("");
+    updateDrawButtons(false);
+
+    try {
+      clearSelection();
+      renderFanDeck();
+      await waitForDeckReady();
+
+      const picks = shuffle(deckOrder.map((c) => c.id)).slice(0, need);
+
+      for (let i = 0; i < picks.length; i++) {
+        if (els.instruction) {
+          els.instruction.textContent = `${spreadLabel()} — 무작위로 ${need}장 뽑는 중… (${i + 1}/${need})`;
+        }
+
+        const cardId = picks[i];
+        const url = `/api/tarot/reveal/${encodeURIComponent(cardId)}?category=${encodeURIComponent(activeCategory)}`;
+        const data = await fetchJson(url);
+        const card = data.card;
+        pickedIds.add(cardId);
+        revealedById.set(cardId, card);
+        selectedCards.push(card);
+
+        if (!els.deckArea?.querySelector(`.tarot-card-slot[data-card-id="${cardId}"]`)) {
+          renderFanDeck();
+          await waitForDeckReady();
+        }
+
+        animateFlip(cardId, card);
+        await delay(RANDOM_PICK_DELAY_MS);
+      }
+
+      renderFanDeck();
+    } catch (err) {
+      setStatus(err.message || "카드를 무작위로 뽑지 못했습니다.", true);
+      renderFanDeck();
+    } finally {
+      randomRunning = false;
+      pickingLocked = false;
+      syncCardInteractivity();
+      updateDrawButtons(selectedCards.length >= needCount());
+      updateInstruction();
     }
   }
 
@@ -390,6 +484,7 @@
     if (
       pickingLocked ||
       dealing ||
+      randomRunning ||
       pickedIds.has(cardId) ||
       selectedCards.length >= needCount()
     ) {
@@ -544,15 +639,21 @@
     btn.addEventListener("click", () => setAppMode(btn.dataset.appMode || "saju"));
   });
 
+  if (els.shuffle) {
+    els.shuffle.addEventListener("click", () => shuffleDeck());
+  }
+  if (els.randomPick) {
+    els.randomPick.addEventListener("click", () => randomPickCards());
+  }
   if (els.redraw) {
     els.redraw.addEventListener("click", () => {
-      if (pickingLocked || dealing) return;
+      if (pickingLocked || dealing || randomRunning) return;
       resetDeckSelection();
     });
   }
   if (els.viewReading) {
     els.viewReading.addEventListener("click", () => {
-      if (selectedCards.length < needCount() || pickingLocked || dealing) return;
+      if (selectedCards.length < needCount() || pickingLocked || dealing || randomRunning) return;
       activeCardIdx = 0;
       openResult(0);
     });
