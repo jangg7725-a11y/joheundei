@@ -394,9 +394,13 @@ function renderModal(item) {
     </div>
   `;
 
+  const modal = document.getElementById('detailModal');
+  const content = document.getElementById('modalContent');
   document.getElementById('modalBackdrop').classList.add('open');
-  document.getElementById('detailModal').classList.add('open');
+  modal.classList.add('open');
+  content.scrollTop = 0;
   document.body.style.overflow = 'hidden';
+  modal.focus({ preventScroll: true });
 }
 
 function closeModal() {

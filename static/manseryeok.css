@@ -43,7 +43,7 @@
   background: rgba(255, 248, 230, 0.72);
   z-index: 1;
 }
-.manseryeok-body > *:not(.sansuhwa-bg):not(.sansuhwa-overlay) {
+.manseryeok-body > *:not(.sansuhwa-bg):not(.sansuhwa-overlay):not(.ms-modal):not(.ms-modal-backdrop) {
   position: relative;
   z-index: 2;
 }
@@ -479,14 +479,15 @@
   font-size: 0.88rem;
 }
 
-/* ── 모달 ───────────────────────────────────────────── */
+/* ── 모달 (viewport 고정 · 본문 스크롤) ─────────────── */
 .ms-modal-backdrop {
   display: none;
   position: fixed;
   inset: 0;
   background: rgba(20,12,4,0.6);
   backdrop-filter: blur(3px);
-  z-index: 100;
+  z-index: 1000;
+  overscroll-behavior: contain;
 }
 .ms-modal-backdrop.open { display: block; }
 
@@ -496,22 +497,27 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: min(760px, 95vw);
-  max-height: 85vh;
+  width: min(760px, calc(100vw - 24px));
+  max-height: min(90vh, calc(100dvh - 32px));
   background: var(--ms-paper);
   border: 1px solid var(--ms-border);
   border-radius: 16px;
   box-shadow: 0 20px 60px rgba(40,20,5,0.35);
-  z-index: 101;
+  z-index: 1001;
   overflow: hidden;
   flex-direction: column;
+  min-height: 0;
 }
 .ms-modal.open { display: flex; }
 
 .ms-modal-content {
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   padding: 2rem 2rem 1rem;
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 .ms-modal-close {
   position: absolute;
