@@ -804,15 +804,37 @@ async def manseryeok_by_category(cat: str, limit: int = 50):
     )
 
 
+def _manseryeok_calendar_items(month: str = "") -> list[dict[str, Any]]:
+    results = [
+        r
+        for r in _MANSERYEOK_DB
+        if "달력" in (r.get("sub_category") or "")
+        or r.get("canonical_key") == "일진달력"
+    ]
+    if not month:
+        return results
+
+    def _month_match(item: dict[str, Any]) -> bool:
+        parts = [
+            item.get("chapter", ""),
+            item.get("korean_translation", ""),
+            item.get("modern_interpretation", ""),
+            item.get("embedding_text", ""),
+            " ".join(item.get("keywords", [])),
+        ]
+        haystack = " ".join(parts)
+        return month in haystack or month in item.get("chapter", "")
+
+    return [r for r in results if _month_match(r)]
+
+
 @app.get("/api/manseryeok/calendar")
 async def manseryeok_calendar(month: str = ""):
     """
     달력 데이터 조회
     - month: '1월' | '2월' ... 또는 절기명 (빈 값이면 전체 달력 항목 반환)
     """
-    results = [r for r in _MANSERYEOK_DB if "달력" in r.get("sub_category", "")]
-    if month:
-        results = [r for r in results if month in r.get("chapter", "")]
+    results = _manseryeok_calendar_items(month)
     return JSONResponse(content={"total": len(results), "data": results})
 
 
