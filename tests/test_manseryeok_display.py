@@ -64,7 +64,7 @@ def test_enrich_taekil_day():
         "display_title": "월별 일진 달력",
     }
     out = msd.enrich_taekil_day(day, src, month_hint="11월")
-    assert out["day_label_kr"] == "23일(금)"
+    assert out["day_label_kr"] == "11월 23일(금)"
     assert out["ganji_kr"] == "신미"
     assert "辛未" in out["ganji_display"]
     assert "결혼" in out["yi_display"]

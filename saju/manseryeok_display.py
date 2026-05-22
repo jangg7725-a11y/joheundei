@@ -534,6 +534,19 @@ def source_line_kr(item: dict[str, Any], month_hint: str = "") -> str:
     return title
 
 
+def format_taekil_day_heading(
+    day_label: str,
+    week_element: str = "",
+    month: str = "",
+) -> str:
+    """카드 제목: '1월 24일(월)'."""
+    base = day_label_kr(day_label, week_element)
+    m = (month or "").strip()
+    if m and not base.startswith(m):
+        return f"{m} {base}"
+    return base
+
+
 def enrich_taekil_day(
     day: dict[str, Any],
     source_item: dict[str, Any],
@@ -543,7 +556,13 @@ def enrich_taekil_day(
     """택일 길일·흉일 카드용 한글 표시 필드."""
     out = dict(day)
     wk = day.get("week_element") or ""
-    out["day_label_kr"] = day_label_kr(day.get("day_label") or "", wk)
+    month = (month_hint or day.get("calendar_month") or "").strip()
+    out["calendar_month"] = month
+    out["day_label_kr"] = format_taekil_day_heading(
+        day.get("day_label") or "",
+        wk,
+        month,
+    )
     gj = day.get("ganji") or ""
     gjk = ganji_kr(gj)
     out["ganji_kr"] = gjk

@@ -74,6 +74,8 @@ def test_taekil_api():
     if body["good_days"]:
         d = body["good_days"][0]
         assert d.get("day_label_kr")
+        assert d.get("calendar_month")
+        assert d["calendar_month"] in d["day_label_kr"]
         assert d.get("ganji_kr")
         assert d.get("yi_display") or d.get("yi_hits_kr")
 

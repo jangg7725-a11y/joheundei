@@ -468,7 +468,11 @@ function renderTaekilDayCard(d, isGood) {
     ? (d.yi_display || (d.yi_hits_kr || d.yi_hits || []).join(' · ') || d.yi_raw?.slice(0, 48) || '')
     : (d.ji_display || (d.ji_hits_kr || d.ji_hits || []).join(' · ') || d.ji_raw?.slice(0, 48) || '');
   const src = escHtml((d.source_display || d.source_chapter || '').slice(0, 48));
-  const dayLabel = d.day_label_kr || d.day_label || '';
+  let dayLabel = d.day_label_kr || d.day_label || '';
+  const calMonth = (d.calendar_month || '').trim();
+  if (calMonth && dayLabel && !dayLabel.startsWith(calMonth)) {
+    dayLabel = `${calMonth} ${dayLabel}`;
+  }
   const ganjiLine = d.ganji_display || d.ganji_kr || d.ganji || '';
   const yiJiTag = isGood ? '의(宜)' : '기(忌)';
   return `

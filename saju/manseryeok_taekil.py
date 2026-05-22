@@ -191,10 +191,10 @@ def rank_days_for_event(
             {
                 "id": item.get("id", ""),
                 "chapter": item.get("chapter", ""),
-                "month_hint": _month_hint(item),
+                "month_hint": _month_hint(item, month),
             }
         )
-        month_hint = _month_hint(item)
+        month_hint = _month_hint(item, month)
         for d in days:
             scored = score_day_for_event(d, event)
             row = {
@@ -227,15 +227,80 @@ def rank_days_for_event(
     }
 
 
-def _month_hint(item: dict[str, Any]) -> str:
+_CN_MONTH_NUM = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+    "十": 10,
+    "十一": 11,
+    "十二": 12,
+}
+
+
+def _cn_month_to_kr(token: str) -> str:
+    token = (token or "").strip()
+    if not token:
+        return ""
+    if token in _CN_MONTH_NUM:
+        return f"{_CN_MONTH_NUM[token]}월"
+    if token.endswith("月") and token[:-1] in _CN_MONTH_NUM:
+        return f"{_CN_MONTH_NUM[token[:-1]]}월"
+    if token.startswith("十") and len(token) > 1:
+        rest = token[1:]
+        if rest in _CN_MONTH_NUM:
+            return f"{10 + _CN_MONTH_NUM[rest]}월"
+    return ""
+
+
+def _month_hint(item: dict[str, Any], month_filter: str = "") -> str:
+    """양력 월 표기 (1월~12월). UI 월 필터가 있으면 우선."""
+    if month_filter:
+        return month_filter
+
+    for kw in item.get("keywords") or []:
+        if isinstance(kw, str) and re.fullmatch(r"(?:[1-9]|1[0-2])월", kw):
+            return kw
+
+    for key in (
+        "modern_interpretation",
+        "korean_translation",
+        "embedding_text",
+        "chapter",
+    ):
+        val = item.get(key) or ""
+        m = re.search(r"양력\s*(\d{1,2})월", val)
+        if m:
+            return f"{m.group(1)}월"
+        m = re.search(r"\d{4}년\s*(\d{1,2})월", val)
+        if m:
+            return f"{m.group(1)}월"
+
+    ot_head = ((item.get("original_text") or "").split("\n", 1)[0]).strip()
+    hm = re.search(r"^([一二三四五六七八九十]+)月", ot_head)
+    if hm:
+        mk = _cn_month_to_kr(hm.group(1))
+        if mk:
+            return mk
+
+    ch = item.get("chapter") or ""
+    hm = re.search(r"([一二三四五六七八九十]+)月", ch)
+    if hm:
+        mk = _cn_month_to_kr(hm.group(1))
+        if mk:
+            return mk
+
     for key in ("modern_interpretation", "korean_translation", "chapter"):
         val = item.get(key) or ""
         m = re.search(r"(\d{1,2})월", val)
         if m:
             return f"{m.group(1)}월"
-    for kw in item.get("keywords") or []:
-        if isinstance(kw, str) and kw.endswith("월") and len(kw) <= 4:
-            return kw
+
     return ""
 
 
