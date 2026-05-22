@@ -209,11 +209,8 @@ def rank_days_for_event(
             ranked.append(msd.enrich_taekil_day(row, item, month_hint=month_hint))
 
     ranked.sort(key=lambda x: x["score"], reverse=True)
-    good = [r for r in ranked if r["score"] >= 8][:limit]
-    bad = sorted(
-        [r for r in ranked if r["score"] < 0],
-        key=lambda x: x["score"],
-    )[: min(15, limit)]
+    good = _pick_good_days(ranked, limit, month)
+    bad = _pick_avoid_days(ranked, min(15, limit), month)
 
     payload: dict[str, Any] = {
         "event": event,
@@ -238,6 +235,93 @@ def _month_sort_key(month: str) -> int:
     return int(m.group(1)) if m else 99
 
 
+def _pick_good_days(
+    ranked: list[dict[str, Any]],
+    limit: int,
+    month_filter: str = "",
+) -> list[dict[str, Any]]:
+    """길일 목록. 전체 월일 때는 달마다 골고루 노출(1월만 몰리는 현상 방지)."""
+    candidates = [r for r in ranked if r.get("score", 0) >= 8]
+    if month_filter:
+        return candidates[:limit]
+
+    by_month: dict[str, list[dict[str, Any]]] = {}
+    for r in candidates:
+        m = (r.get("calendar_month") or "").strip()
+        if m:
+            by_month.setdefault(m, []).append(r)
+    if not by_month:
+        return candidates[:limit]
+
+    months = sorted(by_month.keys(), key=_month_sort_key)
+    per_month = max(2, (limit + len(months) - 1) // len(months))
+    picked: list[dict[str, Any]] = []
+    for m in months:
+        picked.extend(by_month[m][:per_month])
+
+    if len(picked) < limit:
+        seen = {id(x) for x in picked}
+        for r in candidates:
+            if len(picked) >= limit:
+                break
+            if id(r) not in seen:
+                picked.append(r)
+                seen.add(id(r))
+
+    picked.sort(
+        key=lambda x: (
+            _month_sort_key(x.get("calendar_month") or ""),
+            -int(x.get("score", 0)),
+        )
+    )
+    return picked[:limit]
+
+
+def _pick_avoid_days(
+    ranked: list[dict[str, Any]],
+    limit: int,
+    month_filter: str = "",
+) -> list[dict[str, Any]]:
+    """흉일 목록. 전체 월일 때 월별로 골고루 노출."""
+    candidates = sorted(
+        [r for r in ranked if r.get("score", 0) < 0],
+        key=lambda x: x.get("score", 0),
+    )
+    if month_filter:
+        return candidates[:limit]
+
+    by_month: dict[str, list[dict[str, Any]]] = {}
+    for r in candidates:
+        m = (r.get("calendar_month") or "").strip()
+        if m:
+            by_month.setdefault(m, []).append(r)
+    if not by_month:
+        return candidates[:limit]
+
+    months = sorted(by_month.keys(), key=_month_sort_key)
+    per_month = max(2, (limit + len(months) - 1) // len(months))
+    picked: list[dict[str, Any]] = []
+    for m in months:
+        picked.extend(by_month[m][:per_month])
+
+    if len(picked) < limit:
+        seen = {id(x) for x in picked}
+        for r in candidates:
+            if len(picked) >= limit:
+                break
+            if id(r) not in seen:
+                picked.append(r)
+                seen.add(id(r))
+
+    picked.sort(
+        key=lambda x: (
+            _month_sort_key(x.get("calendar_month") or ""),
+            int(x.get("score", 0)),
+        )
+    )
+    return picked[:limit]
+
+
 def _month_rating(
     good_count: int,
     avoid_count: int,
@@ -247,7 +331,7 @@ def _month_rating(
     """월 단위 한눈에 보기용 등급."""
     if good_count >= 2 and max_score >= 20:
         return "매우 좋음"
-    if good_count >= 1 and avoid_count == 0 and max_score >= 8:
+    if good_count >= 1 and max_score >= 8:
         return "좋음"
     if avoid_count >= 3 or min_score <= -25:
         return "피하세요"
@@ -334,13 +418,17 @@ def summarize_taekil_by_month(ranked: list[dict[str, Any]]) -> dict[str, Any]:
         )
 
     with_data = [x for x in months_out if x["has_data"]]
+    # 추천: 실제 길일(점수≥8)이 1일 이상인 달만
+    good_months = [x for x in with_data if x["good_count"] >= 1]
     best_sorted = sorted(
-        with_data,
-        key=lambda x: (x["max_score"], x["good_count"], -x["avoid_count"]),
+        good_months,
+        key=lambda x: (x["good_count"], x["max_score"], -x["avoid_count"]),
         reverse=True,
     )
+    # 주의: 피할 날이 있는 달만
+    avoid_months_data = [x for x in with_data if x["avoid_count"] >= 1]
     avoid_sorted = sorted(
-        with_data,
+        avoid_months_data,
         key=lambda x: (x["min_score"], -x["avoid_count"], -x["good_count"]),
     )
 

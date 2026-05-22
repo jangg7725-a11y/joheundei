@@ -13,6 +13,7 @@ from main import app
 from saju import manseryeok_profile as msp
 from saju.manseryeok_taekil import (
     EVENT_RULES,
+    _pick_good_days,
     parse_calendar_days,
     rank_days_for_event,
     score_day_for_event,
@@ -64,6 +65,21 @@ def test_rank_days_for_event():
     assert isinstance(pack["avoid_days"], list)
 
 
+def test_pick_good_days_spreads_by_month():
+    ranked = [
+        {"calendar_month": "1월", "score": 30, "id": "a"},
+        {"calendar_month": "1월", "score": 25, "id": "b"},
+        {"calendar_month": "1월", "score": 22, "id": "c"},
+        {"calendar_month": "1월", "score": 20, "id": "d"},
+        {"calendar_month": "3월", "score": 12, "id": "e"},
+        {"calendar_month": "3월", "score": 10, "id": "f"},
+    ]
+    picked = _pick_good_days(ranked, limit=6, month_filter="")
+    months = {d["calendar_month"] for d in picked}
+    assert "1월" in months
+    assert "3월" in months
+
+
 def test_summarize_taekil_by_month():
     ranked = [
         {"calendar_month": "1월", "score": 22, "grade": "대길", "day_label_kr": "1월 18일"},
@@ -75,7 +91,9 @@ def test_summarize_taekil_by_month():
     jan = next(m for m in ov["months"] if m["month"] == "1월")
     assert jan["has_data"] is True
     assert jan["good_count"] >= 1
-    assert "1월" in ov["best_months"] or "3월" in ov["best_months"]
+    assert "1월" in ov["best_months"]
+    assert "3월" in ov["best_months"]
+    assert "1월" not in ov["avoid_months"] or jan["avoid_count"] >= 1
     assert ov.get("summary_line")
 
 
