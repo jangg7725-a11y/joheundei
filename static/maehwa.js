@@ -256,12 +256,74 @@
     </div>`;
   }
 
-  function renderDailyPanel(f) {
+  function buildCalendarHtml(days, qy, qm, selectedDay) {
+    const weekHd = ["일", "월", "화", "수", "목", "금", "토"];
+    const firstWd = new Date(qy, qm - 1, 1).getDay();
+    let cells = "";
+    for (let i = 0; i < firstWd; i++) {
+      cells += '<div class="maehwa-cal-cell maehwa-cal-pad"></div>';
+    }
+    (days || []).forEach((cell) => {
+      const cls = [
+        "maehwa-cal-cell",
+        cell.is_today ? "is-today" : "",
+        selectedDay === cell.solar_day ? "is-selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      cells += `<button type="button" class="${cls}" data-day="${cell.solar_day}" aria-label="${cell.solar_day}일 ${cell.suri}수">
+        <span class="d">${cell.solar_day}</span>
+        <span class="s">${cell.suri}</span>
+      </button>`;
+    });
+    return `
+      <div class="maehwa-blk maehwa-blk--ben maehwa-cal-wrap">
+        <div class="maehwa-blk-label">일별 일운 · 달력</div>
+        <div class="maehwa-fortune-nav maehwa-fortune-nav--cal" data-fortune-nav="cal-month">
+          <button type="button" class="btn" data-cal-delta="-1">◀ 전달</button>
+          <span class="maehwa-fortune-date">${qy}년 ${qm}월</span>
+          <button type="button" class="btn" data-cal-this="1">이번 달</button>
+          <button type="button" class="btn" data-cal-delta="1">다음 달 ▶</button>
+        </div>
+        <div class="maehwa-cal-grid maehwa-cal-grid--head">
+          ${weekHd.map((w) => `<div class="maehwa-cal-hd">${w}</div>`).join("")}
+        </div>
+        <div class="maehwa-cal-grid">${cells}</div>
+        <p class="maehwa-dt-note" style="margin-top:0.65rem">날짜를 누르면 그날의 일운으로 위 내용이 바뀝니다.</p>
+      </div>`;
+  }
+
+  function bindDailyPanelEvents() {
+    if (!els.daily) return;
+    els.daily.querySelectorAll('[data-fortune-nav="daily"] button').forEach((btn) => {
+      btn.addEventListener("click", onDailyNav);
+    });
+    els.daily.querySelectorAll('[data-fortune-nav="cal-month"] button').forEach((btn) => {
+      btn.addEventListener("click", onDailyCalMonthNav);
+    });
+    els.daily.querySelectorAll(".maehwa-cal-cell[data-day]").forEach((btn) => {
+      btn.addEventListener("click", onCalendarDayClick);
+    });
+  }
+
+  function renderDailyPanel(f, calendarDays) {
     if (!f || !els.daily) return;
     const n = f.narrative || {};
     const ds = f.day_suri || {};
     const ms = f.month_suri || {};
     const q = f.solar || {};
+    queryDate = { y: q.year, m: q.month, d: q.day };
+    queryMonth = { y: q.year, m: q.month };
+    const days =
+      calendarDays ||
+      (fortuneMonthly?.solar?.year === q.year &&
+      fortuneMonthly?.solar?.month === q.month
+        ? fortuneMonthly.calendar_days
+        : []);
+    const calHtml = days.length
+      ? buildCalendarHtml(days, q.year, q.month, q.day)
+      : "";
+
     els.daily.innerHTML = `
       <div class="maehwa-fortune-nav" data-fortune-nav="daily">
         <button type="button" class="btn" data-delta="-1">◀ 하루 전</button>
@@ -279,18 +341,28 @@
       <p class="maehwa-fortune-story"><strong>${fmtStory(n.headline || "")}</strong><br><br>${fmtStory(n.body || "")}</p>
       ${ds.aspect ? `<div class="maehwa-blk maehwa-blk--ben"><div class="maehwa-blk-label">오늘 종합</div><p class="maehwa-hex-desc">${esc(ds.aspect)}</p></div>` : ""}
       ${renderGuaMini(f.gua_flow, "이날의 괘 (時局)")}
+      ${calHtml}
       <p class="maehwa-dt-note">음력 ${esc(f.lunar?.label || "")} · 평생 기본수와 세운·월운을 겹친 일운수입니다.</p>
     `;
-    queryDate = { y: q.year, m: q.month, d: q.day };
-    els.daily.querySelectorAll("[data-fortune-nav] button").forEach((btn) => {
-      btn.addEventListener("click", onDailyNav);
-    });
+    bindDailyPanelEvents();
+  }
+
+  async function ensureMonthCalendar(y, m) {
+    if (
+      fortuneMonthly?.solar?.year === y &&
+      fortuneMonthly?.solar?.month === m &&
+      fortuneMonthly.calendar_days?.length
+    ) {
+      return fortuneMonthly.calendar_days;
+    }
+    fortuneMonthly = await fetchFortune("month", y, m, 1);
+    return fortuneMonthly.calendar_days || [];
   }
 
   async function onDailyNav(ev) {
     const btn = ev.currentTarget;
     if (!queryDate) return;
-    let { y, m, d } = queryDate;
+    const { y, m, d } = queryDate;
     if (btn.dataset.today) {
       Object.assign(queryDate, todayYmd());
     } else {
@@ -299,8 +371,35 @@
     }
     setStatus("일운을 불러오는 중…");
     try {
-      fortuneDaily = await fetchFortune("day", queryDate.y, queryDate.m, queryDate.d);
-      renderDailyPanel(fortuneDaily);
+      const [dayFortune, calDays] = await Promise.all([
+        fetchFortune("day", queryDate.y, queryDate.m, queryDate.d),
+        ensureMonthCalendar(queryDate.y, queryDate.m),
+      ]);
+      fortuneDaily = dayFortune;
+      renderDailyPanel(fortuneDaily, calDays);
+      setStatus("");
+    } catch (e) {
+      setStatus(e.message, true);
+    }
+  }
+
+  async function onDailyCalMonthNav(ev) {
+    const btn = ev.currentTarget;
+    if (!queryMonth) return;
+    if (btn.dataset.calThis) {
+      const t = todayYmd();
+      queryMonth.y = t.y;
+      queryMonth.m = t.m;
+    } else {
+      const delta = Number(btn.dataset.calDelta) || 0;
+      Object.assign(queryMonth, shiftMonth(queryMonth.y, queryMonth.m, delta));
+    }
+    setStatus("달력을 불러오는 중…");
+    try {
+      const calDays = await ensureMonthCalendar(queryMonth.y, queryMonth.m);
+      if (fortuneDaily) {
+        renderDailyPanel(fortuneDaily, calDays);
+      }
       setStatus("");
     } catch (e) {
       setStatus(e.message, true);
@@ -311,29 +410,8 @@
     if (!f || !els.monthly) return;
     const n = f.narrative || {};
     const ms = f.month_suri || {};
-    const days = f.calendar_days || [];
     const qy = f.solar?.year;
     const qm = f.solar?.month;
-    const weekHd = ["일", "월", "화", "수", "목", "금", "토"];
-    const firstWd = new Date(qy, qm - 1, 1).getDay();
-    let cells = "";
-    for (let i = 0; i < firstWd; i++) {
-      cells += '<div class="maehwa-cal-cell maehwa-cal-pad"></div>';
-    }
-    const sel = queryDate && queryDate.y === qy && queryDate.m === qm ? queryDate.d : null;
-    days.forEach((cell) => {
-      const cls = [
-        "maehwa-cal-cell",
-        cell.is_today ? "is-today" : "",
-        sel === cell.solar_day ? "is-selected" : "",
-      ]
-        .filter(Boolean)
-        .join(" ");
-      cells += `<button type="button" class="${cls}" data-day="${cell.solar_day}" aria-label="${cell.solar_day}일 ${cell.suri}수">
-        <span class="d">${cell.solar_day}</span>
-        <span class="s">${cell.suri}</span>
-      </button>`;
-    });
 
     els.monthly.innerHTML = `
       <div class="maehwa-fortune-nav" data-fortune-nav="month">
@@ -352,21 +430,11 @@
       <p class="maehwa-fortune-story"><strong>${fmtStory(n.headline || "")}</strong><br><br>${fmtStory(n.body || "")}</p>
       ${ms.aspect ? `<div class="maehwa-blk maehwa-blk--ben"><div class="maehwa-blk-label">이달 종합</div><p class="maehwa-hex-desc">${esc(ms.aspect)}</p></div>` : ""}
       ${renderGuaMini(f.gua_flow, "이달 개관 괘 (음력 월초)")}
-      <div class="maehwa-blk maehwa-blk--ben">
-        <div class="maehwa-blk-label">일별 일운 · 달력</div>
-        <div class="maehwa-cal-grid maehwa-cal-grid--head">
-          ${weekHd.map((w) => `<div class="maehwa-cal-hd">${w}</div>`).join("")}
-        </div>
-        <div class="maehwa-cal-grid">${cells}</div>
-        <p class="maehwa-dt-note" style="margin-top:0.65rem">날짜를 누르면 「일별 운세」 탭에서 그날을 볼 수 있습니다.</p>
-      </div>
+      <p class="maehwa-dt-note" style="margin-top:0.75rem">한 달 전체의 흐름입니다. 날짜별 일운은 「일별 운세」 탭 달력에서 확인하세요.</p>
     `;
     queryMonth = { y: qy, m: qm };
     els.monthly.querySelectorAll("[data-fortune-nav] button").forEach((btn) => {
       btn.addEventListener("click", onMonthNav);
-    });
-    els.monthly.querySelectorAll(".maehwa-cal-cell[data-day]").forEach((btn) => {
-      btn.addEventListener("click", onCalendarDayClick);
     });
   }
 
@@ -395,11 +463,13 @@
     const day = Number(ev.currentTarget.dataset.day);
     if (!queryMonth || !day) return;
     queryDate = { y: queryMonth.y, m: queryMonth.m, d: day };
-    setTab("daily");
     setStatus("일운을 불러오는 중…");
     try {
       fortuneDaily = await fetchFortune("day", queryDate.y, queryDate.m, queryDate.d);
-      renderDailyPanel(fortuneDaily);
+      const calDays =
+        fortuneMonthly?.calendar_days ||
+        (await ensureMonthCalendar(queryMonth.y, queryMonth.m));
+      renderDailyPanel(fortuneDaily, calDays);
       setStatus("");
     } catch (e) {
       setStatus(e.message, true);
@@ -476,7 +546,7 @@
     renderFlow(d);
     renderSuri(d);
     renderSynth(d);
-    renderDailyPanel(fortuneDaily);
+    renderDailyPanel(fortuneDaily, fortuneMonthly?.calendar_days);
     renderMonthlyPanel(fortuneMonthly);
     if (els.result) els.result.classList.add("show");
     setTab(activeTab);

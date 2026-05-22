@@ -52,6 +52,17 @@ body.maehwa-mode .hero-meaning {
   margin-bottom: 1rem;
 }
 
+.maehwa-fortune-nav--cal {
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(201, 168, 76, 0.12);
+}
+
+.maehwa-cal-wrap {
+  margin-top: 1rem;
+}
+
 .maehwa-fortune-nav .btn {
   font-size: 0.82rem;
   padding: 0.45rem 0.75rem;
