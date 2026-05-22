@@ -12,10 +12,16 @@
     flow: document.getElementById("maehwa-panel-flow"),
     suri: document.getElementById("maehwa-panel-suri"),
     synth: document.getElementById("maehwa-panel-synth"),
+    daily: document.getElementById("maehwa-panel-daily"),
+    monthly: document.getElementById("maehwa-panel-monthly"),
   };
 
   let lastData = null;
   let activeTab = "flow";
+  let fortuneDaily = null;
+  let fortuneMonthly = null;
+  let queryDate = null;
+  let queryMonth = null;
 
   function esc(s) {
     if (s == null) return "";
@@ -212,6 +218,194 @@
     `;
   }
 
+  function shiftDate(y, m, d, deltaDays) {
+    const dt = new Date(y, m - 1, d);
+    dt.setDate(dt.getDate() + deltaDays);
+    return { y: dt.getFullYear(), m: dt.getMonth() + 1, d: dt.getDate() };
+  }
+
+  function shiftMonth(y, m, delta) {
+    const dt = new Date(y, m - 1 + delta, 1);
+    return { y: dt.getFullYear(), m: dt.getMonth() + 1 };
+  }
+
+  function todayYmd() {
+    const t = new Date();
+    return { y: t.getFullYear(), m: t.getMonth() + 1, d: t.getDate() };
+  }
+
+  async function fetchFortune(period, qy, qm, qd) {
+    const body = { ...collectPayload(), period, query_year: qy, query_month: qm, query_day: qd || 1 };
+    const res = await fetch("/api/maehwa/fortune", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.detail || res.statusText || "조회 실패");
+    return data.fortune;
+  }
+
+  function renderGuaMini(gua, label) {
+    if (!gua) return "";
+    const b = gua.ben;
+    const z = gua.zhi;
+    return `<div class="maehwa-fortune-gua-mini">
+      <span class="maehwa-blk-label" style="margin-bottom:0.35rem">${esc(label)}</span><br>
+      ${esc(b.name)} → ${gua.dong.index}효 → ${esc(z.name)} · ${esc(b.ti_yong?.label || "")}
+    </div>`;
+  }
+
+  function renderDailyPanel(f) {
+    if (!f || !els.daily) return;
+    const n = f.narrative || {};
+    const ds = f.day_suri || {};
+    const ms = f.month_suri || {};
+    const q = f.solar || {};
+    els.daily.innerHTML = `
+      <div class="maehwa-fortune-nav" data-fortune-nav="daily">
+        <button type="button" class="btn" data-delta="-1">◀ 하루 전</button>
+        <button type="button" class="btn" data-today="1">오늘</button>
+        <span class="maehwa-fortune-date" id="mh-daily-date">${esc(f.solar?.label || "")}</span>
+        <button type="button" class="btn" data-delta="1">하루 후 ▶</button>
+      </div>
+      ${f.is_today ? '<p class="maehwa-dt-note" style="text-align:center;margin-bottom:0.75rem">📍 오늘의 운세</p>' : ""}
+      <div class="maehwa-fortune-hero">
+        <div class="mh-num">${ds.num}</div>
+        <div class="mh-name">${esc(ds.name)}</div>
+        <div class="mh-kw">${esc(ds.kw)}</div>
+        <p class="maehwa-dt-note" style="margin-top:0.65rem">이달 ${ms.num}수 · ${esc(ms.name)}</p>
+      </div>
+      <p class="maehwa-fortune-story"><strong>${fmtStory(n.headline || "")}</strong><br><br>${fmtStory(n.body || "")}</p>
+      ${ds.aspect ? `<div class="maehwa-blk maehwa-blk--ben"><div class="maehwa-blk-label">오늘 종합</div><p class="maehwa-hex-desc">${esc(ds.aspect)}</p></div>` : ""}
+      ${renderGuaMini(f.gua_flow, "이날의 괘 (時局)")}
+      <p class="maehwa-dt-note">음력 ${esc(f.lunar?.label || "")} · 평생 기본수와 세운·월운을 겹친 일운수입니다.</p>
+    `;
+    queryDate = { y: q.year, m: q.month, d: q.day };
+    els.daily.querySelectorAll("[data-fortune-nav] button").forEach((btn) => {
+      btn.addEventListener("click", onDailyNav);
+    });
+  }
+
+  async function onDailyNav(ev) {
+    const btn = ev.currentTarget;
+    if (!queryDate) return;
+    let { y, m, d } = queryDate;
+    if (btn.dataset.today) {
+      Object.assign(queryDate, todayYmd());
+    } else {
+      const delta = Number(btn.dataset.delta) || 0;
+      Object.assign(queryDate, shiftDate(y, m, d, delta));
+    }
+    setStatus("일운을 불러오는 중…");
+    try {
+      fortuneDaily = await fetchFortune("day", queryDate.y, queryDate.m, queryDate.d);
+      renderDailyPanel(fortuneDaily);
+      setStatus("");
+    } catch (e) {
+      setStatus(e.message, true);
+    }
+  }
+
+  function renderMonthlyPanel(f) {
+    if (!f || !els.monthly) return;
+    const n = f.narrative || {};
+    const ms = f.month_suri || {};
+    const days = f.calendar_days || [];
+    const qy = f.solar?.year;
+    const qm = f.solar?.month;
+    const weekHd = ["일", "월", "화", "수", "목", "금", "토"];
+    const firstWd = new Date(qy, qm - 1, 1).getDay();
+    let cells = "";
+    for (let i = 0; i < firstWd; i++) {
+      cells += '<div class="maehwa-cal-cell maehwa-cal-pad"></div>';
+    }
+    const sel = queryDate && queryDate.y === qy && queryDate.m === qm ? queryDate.d : null;
+    days.forEach((cell) => {
+      const cls = [
+        "maehwa-cal-cell",
+        cell.is_today ? "is-today" : "",
+        sel === cell.solar_day ? "is-selected" : "",
+      ]
+        .filter(Boolean)
+        .join(" ");
+      cells += `<button type="button" class="${cls}" data-day="${cell.solar_day}" aria-label="${cell.solar_day}일 ${cell.suri}수">
+        <span class="d">${cell.solar_day}</span>
+        <span class="s">${cell.suri}</span>
+      </button>`;
+    });
+
+    els.monthly.innerHTML = `
+      <div class="maehwa-fortune-nav" data-fortune-nav="month">
+        <button type="button" class="btn" data-delta="-1">◀ 전달</button>
+        <button type="button" class="btn" data-this-month="1">이번 달</button>
+        <span class="maehwa-fortune-date">${qy}년 ${qm}월</span>
+        <button type="button" class="btn" data-delta="1">다음 달 ▶</button>
+      </div>
+      ${f.is_current_month ? '<p class="maehwa-dt-note" style="text-align:center;margin-bottom:0.75rem">📍 이번 달 운세</p>' : ""}
+      <div class="maehwa-fortune-hero">
+        <div class="mh-num">${ms.num}</div>
+        <div class="mh-name">${esc(ms.name)}</div>
+        <div class="mh-kw">${esc(ms.kw)}</div>
+        <p class="maehwa-dt-note" style="margin-top:0.65rem">올해 ${f.year_suri}수와 겹친 월운</p>
+      </div>
+      <p class="maehwa-fortune-story"><strong>${fmtStory(n.headline || "")}</strong><br><br>${fmtStory(n.body || "")}</p>
+      ${ms.aspect ? `<div class="maehwa-blk maehwa-blk--ben"><div class="maehwa-blk-label">이달 종합</div><p class="maehwa-hex-desc">${esc(ms.aspect)}</p></div>` : ""}
+      ${renderGuaMini(f.gua_flow, "이달 개관 괘 (음력 월초)")}
+      <div class="maehwa-blk maehwa-blk--ben">
+        <div class="maehwa-blk-label">일별 일운 · 달력</div>
+        <div class="maehwa-cal-grid maehwa-cal-grid--head">
+          ${weekHd.map((w) => `<div class="maehwa-cal-hd">${w}</div>`).join("")}
+        </div>
+        <div class="maehwa-cal-grid">${cells}</div>
+        <p class="maehwa-dt-note" style="margin-top:0.65rem">날짜를 누르면 「일별 운세」 탭에서 그날을 볼 수 있습니다.</p>
+      </div>
+    `;
+    queryMonth = { y: qy, m: qm };
+    els.monthly.querySelectorAll("[data-fortune-nav] button").forEach((btn) => {
+      btn.addEventListener("click", onMonthNav);
+    });
+    els.monthly.querySelectorAll(".maehwa-cal-cell[data-day]").forEach((btn) => {
+      btn.addEventListener("click", onCalendarDayClick);
+    });
+  }
+
+  async function onMonthNav(ev) {
+    const btn = ev.currentTarget;
+    if (!queryMonth) return;
+    if (btn.dataset.thisMonth) {
+      const t = todayYmd();
+      queryMonth.y = t.y;
+      queryMonth.m = t.m;
+    } else {
+      const delta = Number(btn.dataset.delta) || 0;
+      Object.assign(queryMonth, shiftMonth(queryMonth.y, queryMonth.m, delta));
+    }
+    setStatus("월운을 불러오는 중…");
+    try {
+      fortuneMonthly = await fetchFortune("month", queryMonth.y, queryMonth.m, 1);
+      renderMonthlyPanel(fortuneMonthly);
+      setStatus("");
+    } catch (e) {
+      setStatus(e.message, true);
+    }
+  }
+
+  async function onCalendarDayClick(ev) {
+    const day = Number(ev.currentTarget.dataset.day);
+    if (!queryMonth || !day) return;
+    queryDate = { y: queryMonth.y, m: queryMonth.m, d: day };
+    setTab("daily");
+    setStatus("일운을 불러오는 중…");
+    try {
+      fortuneDaily = await fetchFortune("day", queryDate.y, queryDate.m, queryDate.d);
+      renderDailyPanel(fortuneDaily);
+      setStatus("");
+    } catch (e) {
+      setStatus(e.message, true);
+    }
+  }
+
   function renderSynth(d) {
     const gf = d.gua_flow;
     const st = d.synthesis_story || {};
@@ -266,9 +460,24 @@
 
   function renderAll(d) {
     lastData = d;
+    const ft = d.fortune || {};
+    fortuneDaily = ft.daily || null;
+    fortuneMonthly = ft.monthly || null;
+    if (fortuneDaily?.solar) {
+      queryDate = {
+        y: fortuneDaily.solar.year,
+        m: fortuneDaily.solar.month,
+        d: fortuneDaily.solar.day,
+      };
+    }
+    if (fortuneMonthly?.solar) {
+      queryMonth = { y: fortuneMonthly.solar.year, m: fortuneMonthly.solar.month };
+    }
     renderFlow(d);
     renderSuri(d);
     renderSynth(d);
+    renderDailyPanel(fortuneDaily);
+    renderMonthlyPanel(fortuneMonthly);
     if (els.result) els.result.classList.add("show");
     setTab(activeTab);
   }
@@ -310,7 +519,7 @@
       const m = await res.json();
       if (els.intro && m.subtitle) {
         els.intro.textContent =
-          `${m.title || "매화역수"} — ${m.subtitle}. 위 「출생 정보 입력」을 채운 뒤 「매화역수 계산」을 누르시면 본괘·동효·변괘와 평생 9수를 함께 읽습니다.`;
+          `${m.title || "매화역수"} — ${m.subtitle}. 위 「출생 정보 입력」을 채운 뒤 「매화역수 계산」을 누르시면 본괘·평생 수리·통합 요약과 함께 일별·월별 운세를 확인할 수 있습니다.`;
       }
     } catch (_) {
       /* ignore */

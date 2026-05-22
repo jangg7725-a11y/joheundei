@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&family=Nanum+Brush+Script&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css?v=20260521-signboard" />
   <link rel="stylesheet" href="/static/tarot.css?v=20260521-signboard" />
-  <link rel="stylesheet" href="/static/maehwa.css?v=20260521-story" />
+  <link rel="stylesheet" href="/static/maehwa.css?v=20260521-fortune" />
   <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
@@ -435,10 +435,14 @@
           <button type="button" class="maehwa-rtab on" data-mh-tab="flow" role="tab" aria-selected="true">괘 흐름</button>
           <button type="button" class="maehwa-rtab" data-mh-tab="suri" role="tab" aria-selected="false">평생 수리</button>
           <button type="button" class="maehwa-rtab" data-mh-tab="synth" role="tab" aria-selected="false">통합 요약</button>
+          <button type="button" class="maehwa-rtab" data-mh-tab="daily" role="tab" aria-selected="false">일별 운세</button>
+          <button type="button" class="maehwa-rtab" data-mh-tab="monthly" role="tab" aria-selected="false">월별 운세</button>
         </nav>
         <div class="maehwa-panel show" id="maehwa-panel-flow" data-mh-panel="flow" role="tabpanel"></div>
         <div class="maehwa-panel" id="maehwa-panel-suri" data-mh-panel="suri" role="tabpanel"></div>
         <div class="maehwa-panel" id="maehwa-panel-synth" data-mh-panel="synth" role="tabpanel"></div>
+        <div class="maehwa-panel" id="maehwa-panel-daily" data-mh-panel="daily" role="tabpanel"></div>
+        <div class="maehwa-panel" id="maehwa-panel-monthly" data-mh-panel="monthly" role="tabpanel"></div>
       </div>
     </section>
   </main>
@@ -483,6 +487,6 @@
   <script src="/static/ai-story.js"></script>
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
   <script src="/static/tarot.js?v=20260521-maehwa"></script>
-  <script src="/static/maehwa.js?v=20260521-story"></script>
+  <script src="/static/maehwa.js?v=20260521-fortune"></script>
 </body>
 </html>

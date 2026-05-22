@@ -33,10 +33,144 @@ body.maehwa-mode .hero-meaning {
   max-width: 32rem;
 }
 
+.maehwa-result-tabs {
+  max-width: 100%;
+}
+
 @media (max-width: 520px) {
   .app-mode-nav.cols3 {
     grid-template-columns: 1fr;
   }
+}
+
+.maehwa-fortune-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.maehwa-fortune-nav .btn {
+  font-size: 0.82rem;
+  padding: 0.45rem 0.75rem;
+}
+
+.maehwa-fortune-date {
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.95rem;
+  color: #f0e8c8;
+  min-width: 10rem;
+  text-align: center;
+}
+
+.maehwa-fortune-hero {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  background: linear-gradient(135deg, #1a1408, #241808);
+  border: 1px solid rgba(201, 168, 76, 0.28);
+  border-radius: 16px;
+  margin-bottom: 1rem;
+}
+
+.maehwa-fortune-hero .mh-num {
+  font-family: "Noto Serif KR", serif;
+  font-size: 3.2rem;
+  color: #e8c86a;
+  line-height: 1;
+}
+
+.maehwa-fortune-hero .mh-name {
+  font-size: 1.05rem;
+  color: #f0e8c8;
+  font-weight: 600;
+  margin-top: 0.45rem;
+}
+
+.maehwa-fortune-hero .mh-kw {
+  font-size: 0.82rem;
+  color: #8a7a5a;
+  margin-top: 0.3rem;
+}
+
+.maehwa-fortune-story {
+  font-size: 0.88rem;
+  color: #c8b888;
+  line-height: 1.85;
+  margin-bottom: 1rem;
+}
+
+.maehwa-fortune-story strong {
+  color: #f0e8c8;
+}
+
+.maehwa-fortune-gua-mini {
+  font-size: 0.84rem;
+  color: #a89878;
+  text-align: center;
+  padding: 0.75rem;
+  background: rgba(13, 11, 6, 0.7);
+  border-radius: 12px;
+  margin-bottom: 0.85rem;
+}
+
+.maehwa-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+}
+
+.maehwa-cal-hd {
+  text-align: center;
+  font-size: 0.68rem;
+  color: #8a6a30;
+  padding: 0.25rem;
+}
+
+.maehwa-cal-cell {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(13, 11, 6, 0.75);
+  border: 1px solid rgba(42, 32, 16, 0.8);
+  border-radius: 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.maehwa-cal-cell:hover {
+  border-color: rgba(201, 168, 76, 0.45);
+}
+
+.maehwa-cal-cell.is-today {
+  border-color: #c9a84c;
+  box-shadow: 0 0 8px rgba(201, 168, 76, 0.25);
+}
+
+.maehwa-cal-cell.is-selected {
+  background: rgba(201, 168, 76, 0.15);
+  border-color: #e8c86a;
+}
+
+.maehwa-cal-cell .d {
+  color: #f0e8c8;
+  font-weight: 600;
+}
+
+.maehwa-cal-cell .s {
+  color: #c9a84c;
+  font-size: 0.65rem;
+  margin-top: 0.15rem;
+}
+
+.maehwa-cal-pad {
+  visibility: hidden;
+  pointer-events: none;
 }
 
 body.maehwa-mode .goonghap-panel,

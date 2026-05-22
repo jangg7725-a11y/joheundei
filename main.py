@@ -594,6 +594,19 @@ class MaehwaReadingIn(NativeChartRequest):
     """매화역수 + 수리 — 생년월일시·달력."""
 
     user_name: str = Field(default="", max_length=40)
+    fortune_year: int | None = Field(default=None, ge=1800, le=2100)
+    fortune_month: int | None = Field(default=None, ge=1, le=12)
+    fortune_day: int | None = Field(default=None, ge=1, le=31)
+
+
+class MaehwaFortuneIn(NativeChartRequest):
+    """일별·월별 운세 조회 (출생 정보 + 조회 연월일)."""
+
+    user_name: str = Field(default="", max_length=40)
+    period: str = Field(default="day", description="day | month")
+    query_year: int = Field(ge=1800, le=2100)
+    query_month: int = Field(ge=1, le=12)
+    query_day: int = Field(default=1, ge=1, le=31)
 
 
 @app.get("/api/maehwa/meta")
@@ -614,7 +627,38 @@ async def api_maehwa_reading(body: MaehwaReadingIn) -> dict[str, Any]:
             gender=body.gender,
             lunar_leap=body.lunar_leap,
             user_name=body.user_name.strip(),
+            fortune_year=body.fortune_year,
+            fortune_month=body.fortune_month,
+            fortune_day=body.fortune_day,
         )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@app.post("/api/maehwa/fortune")
+async def api_maehwa_fortune(body: MaehwaFortuneIn) -> dict[str, Any]:
+    """일별 또는 월별 운세만 조회 (날짜·월 이동용)."""
+    period = (body.period or "day").strip().lower()
+    if period not in ("day", "month"):
+        raise HTTPException(status_code=400, detail="period는 day 또는 month여야 합니다.")
+    try:
+        pack = mh.build_fortune_pack(
+            calendar=body.calendar,
+            year=body.year,
+            month=body.month,
+            day=body.day,
+            hour=body.hour,
+            minute=body.minute,
+            gender=body.gender,
+            lunar_leap=body.lunar_leap,
+            user_name=body.user_name.strip(),
+            query_year=body.query_year,
+            query_month=body.query_month,
+            query_day=body.query_day if period == "day" else None,
+        )
+        if period == "month":
+            return {"fortune": pack["monthly"], "basic_num": pack["basic_num"]}
+        return {"fortune": pack["daily"], "basic_num": pack["basic_num"]}
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
 

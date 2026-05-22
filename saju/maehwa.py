@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import calendar as cal_mod
 import json
 from datetime import date
 from pathlib import Path
@@ -126,6 +127,344 @@ def calc_year_suri(base: int, birth_year: int, target_year: int) -> int:
     age = target_year - birth_year + 1
     age_sum = sum(int(c) for c in str(age))
     return _mod9(age_sum + base - 1)
+
+
+def calc_month_suri(
+    base: int, birth_lunar_year: int, target_lunar_year: int, target_lunar_month: int
+) -> int:
+    """월운수 — 세운수 + 음력월 (9진)."""
+    ys = calc_year_suri(base, birth_lunar_year, target_lunar_year)
+    return _mod9(ys + target_lunar_month)
+
+
+def calc_day_suri(
+    base: int,
+    birth_lunar_year: int,
+    target_lunar_year: int,
+    target_lunar_month: int,
+    target_lunar_day: int,
+) -> int:
+    """일운수 — 월운수 + 음력일 (9진)."""
+    ms = calc_month_suri(base, birth_lunar_year, target_lunar_year, target_lunar_month)
+    return _mod9(ms + target_lunar_day)
+
+
+def _load_maehwa_data() -> dict[str, Any]:
+    trigrams = _load_json("trigrams.json")
+    gl_raw = _load_json("trigram_lines.json")
+    gl = {int(k): v for k, v in gl_raw.items()}
+    return {
+        "trigrams": trigrams,
+        "gl": gl,
+        "hex64": _load_json("hex64.json"),
+        "dong_db": {int(k): v for k, v in _load_json("dong_yao.json").items()},
+        "suri_db": {int(k): v for k, v in _load_json("suri.json").items()},
+        "imagery": {int(k): v for k, v in _load_json("imagery.json").items()},
+    }
+
+
+def _suri_summary(num: int, suri_db: dict[int, Any], aspect: str = "종합운") -> dict[str, Any]:
+    sd = suri_db.get(num, {})
+    return {
+        "num": num,
+        "name": sd.get("name", ""),
+        "kw": sd.get("kw", ""),
+        "tags": sd.get("tags", []),
+        "aspect": _suri_aspect_line(suri_db, num, aspect),
+    }
+
+
+def _build_gua_flow(
+    ly: int,
+    lm: int,
+    ld: int,
+    lh: int,
+    data: dict[str, Any],
+) -> dict[str, Any]:
+    """음력 年月日时 기준 본괘·동효·之卦."""
+    trigrams = data["trigrams"]
+    gl = data["gl"]
+    hex64 = data["hex64"]
+    dong_db = data["dong_db"]
+    imagery = data["imagery"]
+
+    yn = _year_digit_sum(ly)
+    upper_sum = yn + lm + ld
+    lower_sum = upper_sum + _hour_shi_index(lh)
+    yong = _mod8(upper_sum)
+    che = _mod8(lower_sum)
+    dong = _mod6(lower_sum)
+
+    hk = f"{yong}-{che}"
+    hd = hex64.get(hk, {"name": "준비중", "hanja": "", "desc": ""})
+
+    che_lines = list(gl[che])
+    yong_lines = list(gl[yong])
+    if dong <= 3:
+        che_lines = _flip_line(che_lines, dong)
+        changed_lower, changed_upper = _lines_to_gua(che_lines, gl), yong
+    else:
+        yong_lines = _flip_line(yong_lines, dong)
+        changed_lower, changed_upper = che, _lines_to_gua(yong_lines, gl)
+
+    ck = f"{changed_upper}-{changed_lower}"
+    cd = hex64.get(ck, {"name": "변괘 준비중", "hanja": "", "desc": ""})
+    rel = _ti_yong_relation(trigrams[str(che)]["ohaeng"], trigrams[str(yong)]["ohaeng"])
+    ch_rel = _ti_yong_relation(
+        trigrams[str(changed_lower)]["ohaeng"],
+        trigrams[str(changed_upper)]["ohaeng"],
+    )
+    rows = _hex_lines(che, yong, gl)
+    _apply_moving(rows, dong)
+    dd = dong_db[dong]
+
+    return {
+        "ben": {
+            "key": hk,
+            "name": hd.get("name"),
+            "hanja": hd.get("hanja"),
+            "desc": hd.get("desc"),
+            "upper": _trigram_payload(trigrams, imagery, yong, "용"),
+            "lower": _trigram_payload(trigrams, imagery, che, "체"),
+            "lines": rows,
+            "ti_yong": rel,
+        },
+        "dong": {**dd, "index": dong, "timing": _TIMING_HINTS.get(dong, "")},
+        "zhi": {
+            "key": ck,
+            "name": cd.get("name"),
+            "hanja": cd.get("hanja"),
+            "desc": cd.get("desc"),
+            "upper": _trigram_payload(trigrams, imagery, changed_upper, "변상"),
+            "lower": _trigram_payload(trigrams, imagery, changed_lower, "변하"),
+            "ti_yong": ch_rel,
+        },
+    }
+
+
+def _daily_narrative(
+    who: str,
+    solar_lbl: str,
+    lunar_lbl: str,
+    basic: int,
+    basic_name: str,
+    day_s: dict[str, Any],
+    month_s: dict[str, Any],
+    gua: dict[str, Any],
+) -> dict[str, str]:
+    ben = gua["ben"]
+    dong = gua["dong"]
+    zhi = gua["zhi"]
+    headline = f"{solar_lbl} — 오늘의 흐름은 **{day_s['num']}수 · {day_s['name']}**"
+    body = (
+        f"{who}의 **{solar_lbl}** 일운입니다. (음력 {lunar_lbl}) "
+        f"평생 {basic}수({basic_name}) 위에 이번 달 {month_s['num']}수가 깔리고, "
+        f"오늘은 **{day_s['num']}수({day_s['kw']})**가 맨 앞에 섭니다. "
+        f"{day_s.get('aspect', '')} "
+        f"이날의 괘는 **{ben['name']}**에서 {dong['index']}효를 거쳐 **{zhi['name']}**으로 이어집니다. "
+        f"{ben['ti_yong']['label']} — {_ti_yong_story(ben['ti_yong'], '오늘의 장면')} "
+        f"동효 {dong['index']}({dong.get('name', '')})는 {dong.get('desc', '')[:80]}… "
+        f"작은 선택 하나도 **{zhi['name']}** 쪽으로 기울 수 있으니, 서두르기보다 흐름을 맞추세요."
+    )
+    return {"headline": headline, "body": body}
+
+
+def _monthly_narrative(
+    who: str,
+    solar_ym: str,
+    lunar_ym: str,
+    basic: int,
+    basic_name: str,
+    month_s: dict[str, Any],
+    year_suri: int,
+) -> dict[str, str]:
+    headline = f"{solar_ym} — 이달의 결은 **{month_s['num']}수 · {month_s['name']}**"
+    body = (
+        f"{who}의 **{solar_ym}** 월운입니다. (음력 {lunar_ym}) "
+        f"올해 {year_suri}수 위에 이달 **{month_s['num']}수({month_s['kw']})**가 겹칩니다. "
+        f"{month_s.get('aspect', '')} "
+        f"한 달 전체를 이 결으로 읽되, 아래 달력에서 날마다 달라지는 **일운수**를 함께 보시면 "
+        f"‘이번 주·오늘’의 리듬까지 세밀하게 맞출 수 있습니다. "
+        f"평생 {basic}수({basic_name})의 큰 틀은 변하지 않습니다."
+    )
+    return {"headline": headline, "body": body}
+
+
+def build_month_calendar(
+    basic: int,
+    birth_lunar_year: int,
+    solar_year: int,
+    solar_month: int,
+    suri_db: dict[int, Any],
+) -> list[dict[str, Any]]:
+    """양력 한 달 — 일별 일운수 그리드."""
+    today = date.today()
+    last_day = cal_mod.monthrange(solar_year, solar_month)[1]
+    rows: list[dict[str, Any]] = []
+    for d in range(1, last_day + 1):
+        solar = cc.SolarDateTime(solar_year, solar_month, d, 12, 0)
+        lunar = cc.solar_to_lunar(solar)
+        ds = calc_day_suri(basic, birth_lunar_year, lunar.year, lunar.month, lunar.day)
+        rows.append(
+            {
+                "solar_day": d,
+                "lunar_label": f"{lunar.month}.{lunar.day}",
+                "suri": ds,
+                "kw": suri_db.get(ds, {}).get("kw", ""),
+                "is_today": (
+                    solar_year == today.year and solar_month == today.month and d == today.day
+                ),
+            }
+        )
+    return rows
+
+
+def build_daily_fortune(
+    *,
+    birth_lunar_year: int,
+    basic: int,
+    user_name: str,
+    gender: str,
+    query_year: int,
+    query_month: int,
+    query_day: int,
+    query_hour: int = 12,
+    data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    data = data or _load_maehwa_data()
+    suri_db = data["suri_db"]
+    solar = cc.SolarDateTime(query_year, query_month, query_day, query_hour, 0)
+    lunar = cc.solar_to_lunar(solar)
+    ly, lm, ld = lunar.year, lunar.month, lunar.day
+
+    day_s = _suri_summary(
+        calc_day_suri(basic, birth_lunar_year, ly, lm, ld), suri_db
+    )
+    month_s = _suri_summary(
+        calc_month_suri(basic, birth_lunar_year, ly, lm), suri_db
+    )
+    gua = _build_gua_flow(ly, lm, ld, query_hour, data)
+    who = _honorific(user_name, gender)
+    narr = _daily_narrative(
+        who,
+        cc.format_solar_string(solar),
+        cc.format_lunar_string(lunar),
+        basic,
+        suri_db.get(basic, {}).get("name", ""),
+        day_s,
+        month_s,
+        gua,
+    )
+    return {
+        "period": "day",
+        "solar": {
+            "year": query_year,
+            "month": query_month,
+            "day": query_day,
+            "label": cc.format_solar_string(solar),
+        },
+        "lunar": {
+            "year": ly,
+            "month": lm,
+            "day": ld,
+            "label": cc.format_lunar_string(lunar),
+        },
+        "is_today": (
+            query_year == date.today().year
+            and query_month == date.today().month
+            and query_day == date.today().day
+        ),
+        "day_suri": day_s,
+        "month_suri": month_s,
+        "gua_flow": gua,
+        "narrative": narr,
+    }
+
+
+def build_monthly_fortune(
+    *,
+    birth_lunar_year: int,
+    basic: int,
+    user_name: str,
+    gender: str,
+    query_year: int,
+    query_month: int,
+    data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    data = data or _load_maehwa_data()
+    suri_db = data["suri_db"]
+    solar_mid = cc.SolarDateTime(query_year, query_month, 15, 12, 0)
+    lunar_mid = cc.solar_to_lunar(solar_mid)
+    ly, lm = lunar_mid.year, lunar_mid.month
+    year_suri = calc_year_suri(basic, birth_lunar_year, ly)
+    month_s = _suri_summary(calc_month_suri(basic, birth_lunar_year, ly, lm), suri_db)
+    gua = _build_gua_flow(ly, lm, 1, 12, data)
+    who = _honorific(user_name, gender)
+    narr = _monthly_narrative(
+        who,
+        f"{query_year}년 {query_month}월",
+        f"{ly}년 {lm}월",
+        basic,
+        suri_db.get(basic, {}).get("name", ""),
+        month_s,
+        year_suri,
+    )
+    today = date.today()
+    return {
+        "period": "month",
+        "solar": {"year": query_year, "month": query_month},
+        "lunar": {"year": ly, "month": lm},
+        "is_current_month": query_year == today.year and query_month == today.month,
+        "year_suri": year_suri,
+        "month_suri": month_s,
+        "gua_flow": gua,
+        "calendar_days": build_month_calendar(
+            basic, birth_lunar_year, query_year, query_month, suri_db
+        ),
+        "narrative": narr,
+    }
+
+
+def build_fortune_pack(
+    calendar: str,
+    year: int,
+    month: int,
+    day: int,
+    hour: int,
+    minute: int,
+    gender: str,
+    lunar_leap: bool,
+    user_name: str,
+    *,
+    query_year: int | None = None,
+    query_month: int | None = None,
+    query_day: int | None = None,
+    data: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """출생 정보 + 조회일(기본=오늘/이번 달) 일·월 운세."""
+    data = data or _load_maehwa_data()
+    cal = resolve_lunar_input(calendar, year, month, day, hour, minute, lunar_leap)
+    birth_ly = cal["lunar"]["year"]
+    basic = calc_basic_suri(cal["lunar"]["month"], cal["lunar"]["day"])
+    today = date.today()
+    qy = query_year if query_year is not None else today.year
+    qm = query_month if query_month is not None else today.month
+    qd = query_day if query_day is not None else today.day
+    common = dict(
+        birth_lunar_year=birth_ly,
+        basic=basic,
+        user_name=user_name,
+        gender=gender,
+        data=data,
+    )
+    return {
+        "basic_num": basic,
+        "birth_lunar_year": birth_ly,
+        "daily": build_daily_fortune(
+            query_year=qy, query_month=qm, query_day=qd, query_hour=12, **common
+        ),
+        "monthly": build_monthly_fortune(query_year=qy, query_month=qm, **common),
+    }
 
 
 def _honorific(name: str, gender: str) -> str:
@@ -350,54 +689,34 @@ def build_reading(
     gender: str = "male",
     lunar_leap: bool = False,
     user_name: str = "",
+    fortune_year: int | None = None,
+    fortune_month: int | None = None,
+    fortune_day: int | None = None,
 ) -> dict[str, Any]:
     """통합 매화역수 + 수리 해석 payload."""
-    trigrams = _load_json("trigrams.json")
-    gl_raw = _load_json("trigram_lines.json")
-    gl = {int(k): v for k, v in gl_raw.items()}
-    hex64 = _load_json("hex64.json")
-    dong_db = {int(k): v for k, v in _load_json("dong_yao.json").items()}
-    suri_db = {int(k): v for k, v in _load_json("suri.json").items()}
-    imagery = {int(k): v for k, v in _load_json("imagery.json").items()}
+    data = _load_maehwa_data()
+    suri_db = data["suri_db"]
+    hex64 = data["hex64"]
 
     cal = resolve_lunar_input(calendar, year, month, day, hour, minute, lunar_leap)
     ly, lm, ld = cal["lunar"]["year"], cal["lunar"]["month"], cal["lunar"]["day"]
     lh = cal["lunar"]["hour"]
 
-    yn = _year_digit_sum(ly)
-    mn, dn = lm, ld
-    hn = _hour_shi_index(lh)
-    upper_sum = yn + mn + dn
-    lower_sum = upper_sum + hn
-
-    yong = _mod8(upper_sum)
-    che = _mod8(lower_sum)
-    dong = _mod6(lower_sum)
-
-    hk = f"{yong}-{che}"
-    hd = hex64.get(hk, {"name": "준비중", "hanja": "", "desc": ""})
-
-    che_lines = list(gl[che])
-    yong_lines = list(gl[yong])
-    if dong <= 3:
-        che_lines = _flip_line(che_lines, dong)
-        changed_lower, changed_upper = _lines_to_gua(che_lines, gl), yong
-    else:
-        yong_lines = _flip_line(yong_lines, dong)
-        changed_lower, changed_upper = che, _lines_to_gua(yong_lines, gl)
-
-    ck = f"{changed_upper}-{changed_lower}"
-    cd = hex64.get(ck, {"name": "변괘 준비중", "hanja": "", "desc": ""})
-
-    rel = _ti_yong_relation(trigrams[str(che)]["ohaeng"], trigrams[str(yong)]["ohaeng"])
-    ch_rel = _ti_yong_relation(
-        trigrams[str(changed_lower)]["ohaeng"],
-        trigrams[str(changed_upper)]["ohaeng"],
-    )
-
-    rows = _hex_lines(che, yong, gl)
-    _apply_moving(rows, dong)
-    dd = dong_db[dong]
+    gua_flow = _build_gua_flow(ly, lm, ld, lh, data)
+    hk = gua_flow["ben"]["key"]
+    hd = {
+        "name": gua_flow["ben"]["name"],
+        "hanja": gua_flow["ben"]["hanja"],
+        "desc": gua_flow["ben"]["desc"],
+    }
+    cd = {
+        "name": gua_flow["zhi"]["name"],
+        "hanja": gua_flow["zhi"]["hanja"],
+        "desc": gua_flow["zhi"]["desc"],
+    }
+    rel = gua_flow["ben"]["ti_yong"]
+    ch_rel = gua_flow["zhi"]["ti_yong"]
+    dong = gua_flow["dong"]["index"]
 
     basic = calc_basic_suri(lm, ld)
     sd = suri_db.get(basic, {})
@@ -431,14 +750,30 @@ def build_reading(
         cur_sd=cur_sd,
         hd=hd,
         cd=cd,
-        ben_upper=_trigram_payload(trigrams, imagery, yong, "용"),
-        ben_lower=_trigram_payload(trigrams, imagery, che, "체"),
+        ben_upper=gua_flow["ben"]["upper"],
+        ben_lower=gua_flow["ben"]["lower"],
         rel=rel,
         ch_rel=ch_rel,
-        dong={**dd, "index": dong, "timing": _TIMING_HINTS.get(dong, "")},
+        dong=gua_flow["dong"],
         dong_idx=dong,
     )
     synthesis = story["headline"]
+
+    fortune = build_fortune_pack(
+        calendar,
+        year,
+        month,
+        day,
+        hour,
+        minute,
+        gender,
+        lunar_leap,
+        user_name,
+        query_year=fortune_year,
+        query_month=fortune_month,
+        query_day=fortune_day,
+        data=data,
+    )
 
     return {
         "user_name": user_name or "의뢰인",
@@ -449,32 +784,8 @@ def build_reading(
             "상괘=용(외부), 하괘=체(내면). "
             "상괘=(년+월+일) mod 8, 하괘=(년+월+일+시) mod 8, 동효=(년+월+일+시) mod 6."
         ),
-        "gua_flow": {
-            "ben": {
-                "key": hk,
-                "name": hd.get("name"),
-                "hanja": hd.get("hanja"),
-                "desc": hd.get("desc"),
-                "upper": _trigram_payload(trigrams, imagery, yong, "용"),
-                "lower": _trigram_payload(trigrams, imagery, che, "체"),
-                "lines": rows,
-                "ti_yong": rel,
-            },
-            "dong": {
-                "index": dong,
-                **dd,
-                "timing": _TIMING_HINTS.get(dong, ""),
-            },
-            "zhi": {
-                "key": ck,
-                "name": cd.get("name"),
-                "hanja": cd.get("hanja"),
-                "desc": cd.get("desc"),
-                "upper": _trigram_payload(trigrams, imagery, changed_upper, "변상"),
-                "lower": _trigram_payload(trigrams, imagery, changed_lower, "변하"),
-                "ti_yong": ch_rel,
-            },
-        },
+        "gua_flow": gua_flow,
+        "fortune": fortune,
         "suri": {
             "basic_num": basic,
             "name": sd.get("name"),
@@ -524,6 +835,17 @@ def meta() -> dict[str, Any]:
     return {
         "title": "매화역수 · 수리역학",
         "subtitle": "梅花易數",
-        "features": ["gua", "xiang", "shu", "dong", "tiyong", "timing", "suri", "manseryeok"],
+        "features": [
+            "gua",
+            "xiang",
+            "shu",
+            "dong",
+            "tiyong",
+            "timing",
+            "suri",
+            "daily",
+            "monthly",
+            "manseryeok",
+        ],
         "manseryeok_status": "coming_soon",
     }
