@@ -34,6 +34,7 @@ from saju import sewoon as sw
 from saju import timeline as tl
 from saju import wolwoon as ww
 from saju import tarot as tr
+from saju import maehwa as mh
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -587,6 +588,35 @@ class TarotSpreadReadingIn(BaseModel):
     spread: str
     category: str = "종합운"
     cards: list[TarotSpreadCardIn] = Field(min_length=1)
+
+
+class MaehwaReadingIn(NativeChartRequest):
+    """매화역수 + 수리 — 생년월일시·달력."""
+
+    user_name: str = Field(default="", max_length=40)
+
+
+@app.get("/api/maehwa/meta")
+async def api_maehwa_meta() -> dict[str, Any]:
+    return mh.meta()
+
+
+@app.post("/api/maehwa/reading")
+async def api_maehwa_reading(body: MaehwaReadingIn) -> dict[str, Any]:
+    try:
+        return mh.build_reading(
+            calendar=body.calendar,
+            year=body.year,
+            month=body.month,
+            day=body.day,
+            hour=body.hour,
+            minute=body.minute,
+            gender=body.gender,
+            lunar_leap=body.lunar_leap,
+            user_name=body.user_name.strip(),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @app.post("/api/tarot/spread-reading")

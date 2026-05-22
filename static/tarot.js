@@ -9,6 +9,7 @@
   const els = {
     sajuMain: document.getElementById("saju-main"),
     tarotMain: document.getElementById("tarot-main"),
+    maehwaMain: document.getElementById("maehwa-main"),
     tarotSky: document.getElementById("tarot-sky"),
     tarotSkyCanvas: document.getElementById("tarot-sky-canvas"),
     tarotMeteors: document.getElementById("tarot-sky-meteors"),
@@ -435,13 +436,16 @@
 
   function setAppMode(mode) {
     const isTarot = mode === "tarot";
+    const isMaehwa = mode === "maehwa";
     if (isTarot) initTarotSky();
     setTarotSkyVisible(isTarot);
     if (els.sajuMain) els.sajuMain.hidden = isTarot;
     if (els.tarotMain) els.tarotMain.hidden = !isTarot;
+    if (els.maehwaMain) els.maehwaMain.hidden = !isMaehwa;
     document.body.classList.toggle("tarot-mode", isTarot);
+    document.body.classList.toggle("maehwa-mode", isMaehwa);
     if (els.bottomNav) {
-      if (isTarot) {
+      if (isTarot || isMaehwa) {
         els.bottomNav.dataset.sajuHidden = els.bottomNav.hidden ? "1" : "0";
         els.bottomNav.hidden = true;
         document.body.classList.remove("has-bottom-nav");
@@ -462,6 +466,9 @@
     });
     if (isTarot && !meta) {
       initTarot();
+    }
+    if (isMaehwa && window.MaehwaApp && typeof window.MaehwaApp.init === "function") {
+      window.MaehwaApp.init();
     }
   }
 

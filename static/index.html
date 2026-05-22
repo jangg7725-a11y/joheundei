@@ -9,6 +9,8 @@
   <link href="https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&family=Nanum+Brush+Script&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css?v=20260521-signboard" />
   <link rel="stylesheet" href="/static/tarot.css?v=20260521-signboard" />
+  <link rel="stylesheet" href="/static/maehwa.css?v=20260521-maehwa" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="tarot-sky" id="tarot-sky" hidden aria-hidden="true">
@@ -63,9 +65,10 @@
   </header>
 
   <main class="layout">
-    <nav class="app-mode-nav" aria-label="서비스 선택">
+    <nav class="app-mode-nav cols3" aria-label="서비스 선택">
       <button type="button" class="app-mode-btn active" data-app-mode="saju" aria-pressed="true">사주 분석</button>
       <button type="button" class="app-mode-btn" data-app-mode="tarot" aria-pressed="false">오행 타로</button>
+      <button type="button" class="app-mode-btn" data-app-mode="maehwa" aria-pressed="false">매화역수</button>
     </nav>
 
     <div id="saju-main">
@@ -416,6 +419,30 @@
 
       <p class="tarot-status status" id="tarot-status" aria-live="polite"></p>
     </section>
+
+    <section class="maehwa-app card panel" id="maehwa-main" hidden aria-labelledby="maehwa-heading">
+      <header class="maehwa-intro">
+        <p class="tarot-badge" style="margin-bottom:0.35rem">梅花易數 · 數理易學</p>
+        <h2 id="maehwa-heading">매화역수 · 수리역학</h2>
+        <p id="maehwa-intro-text">생년월일시로 본괘·동효·변괘와 평생 9수를 함께 읽습니다. 위 출생 정보를 입력한 뒤 계산하세요.</p>
+      </header>
+      <div class="maehwa-actions">
+        <button type="button" class="btn maehwa-calc-btn" id="maehwa-calc-btn">🌸 매화역수 계산</button>
+      </div>
+      <p class="maehwa-status status" id="maehwa-status" aria-live="polite"></p>
+      <div class="maehwa-result" id="maehwa-result">
+        <nav class="maehwa-result-tabs" role="tablist" aria-label="매화역수 결과">
+          <button type="button" class="maehwa-rtab on" data-mh-tab="flow" role="tab" aria-selected="true">괘 흐름</button>
+          <button type="button" class="maehwa-rtab" data-mh-tab="suri" role="tab" aria-selected="false">평생 수리</button>
+          <button type="button" class="maehwa-rtab" data-mh-tab="synth" role="tab" aria-selected="false">통합 요약</button>
+          <button type="button" class="maehwa-rtab" data-mh-tab="manse" role="tab" aria-selected="false">만세력</button>
+        </nav>
+        <div class="maehwa-panel show" id="maehwa-panel-flow" data-mh-panel="flow" role="tabpanel"></div>
+        <div class="maehwa-panel" id="maehwa-panel-suri" data-mh-panel="suri" role="tabpanel"></div>
+        <div class="maehwa-panel" id="maehwa-panel-synth" data-mh-panel="synth" role="tabpanel"></div>
+        <div class="maehwa-panel" id="maehwa-panel-manse" data-mh-panel="manse" role="tabpanel"></div>
+      </div>
+    </section>
   </main>
 
   <nav class="bottom-nav" id="bottom-nav" aria-label="주요 탭" hidden>
@@ -457,6 +484,7 @@
 
   <script src="/static/ai-story.js"></script>
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
-  <script src="/static/tarot.js?v=20260519-blink"></script>
+  <script src="/static/tarot.js?v=20260521-maehwa"></script>
+  <script src="/static/maehwa.js?v=20260521-maehwa"></script>
 </body>
 </html>
