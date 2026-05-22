@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from main import app
+from saju import manseryeok_profile as msp
 from saju.manseryeok_taekil import (
     EVENT_RULES,
     parse_calendar_days,
@@ -93,3 +94,22 @@ def test_manseryeok_compute_api():
     assert p["day_master"]
     assert p["match_params"]
     assert "matched_docs" in p
+
+
+def test_sikshin_rank_prefers_myungri_over_honin(db):
+    """월간 십신 식신일 때 명리·역법 문헌이 혼인보다 앞서 정렬된다."""
+    mp = {"shinsin": "식신", "sinsal": "", "gyeokguk": "", "ohaeng": ""}
+    scored, _ = msp.rank_manseryeok_matches(db, mp, limit=50)
+    assert scored
+    cats = [r.get("category") for r in scored]
+    if "혼인" in cats and "명리" in cats:
+        assert cats.index("명리") < cats.index("혼인")
+
+
+def test_sikshin_category_score_adjustment():
+    mc = {"십신": ["식신"], "신살": [], "격국": [], "five_elements": []}
+    mp = {"shinsin": "식신", "sinsal": "", "gyeokguk": "", "ohaeng": ""}
+    honin = {"category": "혼인", "match_conditions": mc, "practical": {"priority_rank": 1}}
+    myungri = {"category": "명리", "match_conditions": mc, "practical": {"priority_rank": 1}}
+    assert msp.score_manseryeok_item(myungri, mp) == 5
+    assert msp.score_manseryeok_item(honin, mp) == 1

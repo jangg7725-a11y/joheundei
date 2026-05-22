@@ -430,6 +430,21 @@
   font-size: 0.78rem;
   color: var(--ms-ink-light);
 }
+.ms-saju-linked-btn {
+  display: inline;
+  margin: 0;
+  padding: 0 2px;
+  border: none;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  color: var(--ms-gold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ms-saju-linked-btn:hover {
+  color: var(--ms-red);
+}
 
 /* ── 택일 탭 ────────────────────────────────────────── */
 .ms-taekil-form {

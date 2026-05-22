@@ -258,9 +258,21 @@ function renderSajuSummary(p) {
     <p class="ms-saju-meta">${escHtml(p.yongsin?.판단_요약 || '')}</p>
     <p class="ms-saju-meta"><strong>오늘 일운</strong> ${escHtml(il.간지 || '')} ${escHtml(il.간지한글 || '')} — ${escHtml(il.길흉등급 || '')} · ${escHtml((il.한줄판정 || '').slice(0, 80))}</p>
     ${sins ? `<p class="ms-saju-meta"><strong>신살</strong> ${sins}</p>` : ''}
-    <p class="ms-saju-linked">만세력 매칭: 십신 ${escHtml(mp.shinsin || '-')} · 신살 ${escHtml(mp.sinsal || '-')} · 격국 ${escHtml(mp.gyeokguk || '-')} · 용신 ${escHtml(mp.ohaeng || '-')} · 관련 문헌 ${p.matched_total ?? 0}건</p>
+    <p class="ms-saju-linked">만세력 매칭: 십신 ${escHtml(mp.shinsin || '-')} · 신살 ${escHtml(mp.sinsal || '-')} · 격국 ${escHtml(mp.gyeokguk || '-')} · 용신 ${escHtml(mp.ohaeng || '-')} ·
+      <button type="button" class="ms-saju-linked-btn" onclick="goToSajuMatchTab()">관련 문헌 ${p.matched_total ?? 0}건</button></p>
   `;
   box.classList.remove('fallback-hidden');
+}
+
+function goToSajuMatchTab() {
+  const tab = document.querySelector('[data-tab="saju"]');
+  if (tab) tab.click();
+  const target = document.getElementById('tab-saju') || document.getElementById('sajuGrid');
+  if (target) {
+    requestAnimationFrame(() => {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
 }
 
 function applyMatchDropdowns(mp) {
@@ -442,7 +454,7 @@ function renderTaekilDayCard(d, isGood) {
 }
 
 /* ══════════════════════════════════════════════════════
-   TAB 2: 문헌 검색
+   TAB: 찾아보기
 ══════════════════════════════════════════════════════ */
 function initSearchEnter() {
   document.getElementById('searchKeyword').addEventListener('keydown', e => {

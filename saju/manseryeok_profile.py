@@ -31,6 +31,74 @@ MATCH_SINSAL_NAMES = (
 
 MATCH_GYEOK_SUFFIX = "격"
 
+# 월간 십신이 식신일 때 카테고리 정렬·가중 (낮을수록 우선)
+_CATEGORY_RANK_SIKSHIN = {
+    "명리": 0,
+    "역법": 1,
+    "길흉": 2,
+    "풍수": 3,
+    "제례": 4,
+    "기타": 5,
+    "혼인": 9,
+}
+
+
+def score_manseryeok_item(
+    item: dict[str, Any],
+    match_params: dict[str, str],
+) -> int:
+    """문헌 1건 매칭 점수. 식신이면 혼인 감점·명리·역법 가점."""
+    mc = item.get("match_conditions", {})
+    mp = match_params
+    score = 0
+
+    if mp.get("shinsin") and mp["shinsin"] in mc.get("십신", []):
+        score += 3
+    if mp.get("sinsal") and mp["sinsal"] in mc.get("신살", []):
+        score += 3
+    if mp.get("gyeokguk") and mp["gyeokguk"] in mc.get("격국", []):
+        score += 2
+    if mp.get("ohaeng") and mp["ohaeng"] in mc.get("five_elements", []):
+        score += 1
+
+    if mp.get("shinsin") == "식신":
+        cat = item.get("category") or ""
+        if cat == "혼인":
+            score -= 2
+        elif cat in ("명리", "역법"):
+            score += 2
+
+    return score
+
+
+def _match_sort_key(item: dict[str, Any], shinsin: str) -> tuple:
+    """정렬: 점수 → (식신 시) 명리·역법 우선 → priority_rank."""
+    cat = item.get("category") or ""
+    if shinsin == "식신":
+        cat_rank = _CATEGORY_RANK_SIKSHIN.get(cat, 6)
+    else:
+        cat_rank = 0
+    pr = item.get("practical", {}).get("priority_rank", 0) or 0
+    return (item.get("_match_score", 0), -cat_rank, pr)
+
+
+def rank_manseryeok_matches(
+    db: list[dict[str, Any]],
+    match_params: dict[str, str],
+    *,
+    limit: int = 12,
+) -> tuple[list[dict[str, Any]], int]:
+    """전체 DB에서 매칭 점수·정렬 후 (상위 limit건, 전체 매칭 수)."""
+    shinsin = match_params.get("shinsin") or ""
+    scored: list[dict[str, Any]] = []
+    for r in db:
+        score = score_manseryeok_item(r, match_params)
+        if score > 0:
+            scored.append({**r, "_match_score": score})
+
+    scored.sort(key=lambda x: _match_sort_key(x, shinsin), reverse=True)
+    return scored[:limit], len(scored)
+
 
 def extract_match_params(
     day_master: str,

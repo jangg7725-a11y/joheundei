@@ -732,29 +732,9 @@ async def manseryeok_compute(req: ManseryeokComputeRequest):
             user_name=req.user_name,
         )
         mp = profile["match_params"]
-        scored = []
-        for r in _MANSERYEOK_DB:
-            mc = r.get("match_conditions", {})
-            score = 0
-            if mp.get("shinsin") and mp["shinsin"] in mc.get("십신", []):
-                score += 3
-            if mp.get("sinsal") and mp["sinsal"] in mc.get("신살", []):
-                score += 3
-            if mp.get("gyeokguk") and mp["gyeokguk"] in mc.get("격국", []):
-                score += 2
-            if mp.get("ohaeng") and mp["ohaeng"] in mc.get("five_elements", []):
-                score += 1
-            if score > 0:
-                scored.append({**r, "_match_score": score})
-        scored.sort(
-            key=lambda x: (
-                x["_match_score"],
-                x.get("practical", {}).get("priority_rank", 0),
-            ),
-            reverse=True,
-        )
-        profile["matched_docs"] = scored[:12]
-        profile["matched_total"] = len(scored)
+        docs, total = msp.rank_manseryeok_matches(_MANSERYEOK_DB, mp, limit=12)
+        profile["matched_docs"] = docs
+        profile["matched_total"] = total
         return JSONResponse(content={"ok": True, "profile": profile})
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -928,31 +908,13 @@ async def manseryeok_saju_match(
     사주 분석 결과 → 관련 만세력 문헌 자동 매칭
     사주 계산 후 프론트에서 호출: shinsin=정관&sinsal=역마살&ohaeng=목
     """
-    scored = []
-
-    for r in _MANSERYEOK_DB:
-        mc = r.get("match_conditions", {})
-        score = 0
-
-        if shinsin and shinsin in mc.get("십신", []):
-            score += 3
-        if sinsal and sinsal in mc.get("신살", []):
-            score += 3
-        if gyeokguk and gyeokguk in mc.get("격국", []):
-            score += 2
-        if ohaeng and ohaeng in mc.get("five_elements", []):
-            score += 1
-
-        if score > 0:
-            scored.append({**r, "_match_score": score})
-
-    scored.sort(
-        key=lambda x: (
-            x["_match_score"],
-            x.get("practical", {}).get("priority_rank", 0),
-        ),
-        reverse=True,
-    )
+    mp = {
+        "shinsin": shinsin,
+        "sinsal": sinsal,
+        "gyeokguk": gyeokguk,
+        "ohaeng": ohaeng,
+    }
+    data, total = msp.rank_manseryeok_matches(_MANSERYEOK_DB, mp, limit=limit)
 
     return JSONResponse(
         content={
@@ -962,8 +924,8 @@ async def manseryeok_saju_match(
                 "gyeokguk": gyeokguk,
                 "ohaeng": ohaeng,
             },
-            "total": len(scored),
-            "data": scored[:limit],
+            "total": total,
+            "data": data,
         }
     )
 
