@@ -182,7 +182,7 @@
       <div class="ms-taekil-field">
         <label>달력 월</label>
         <select id="taekilMonth">
-          <option value="">전체 월</option>
+          <option value="">전체 월 (연간 월별 비교)</option>
           <option value="1월">1월</option>
           <option value="2월">2월</option>
           <option value="3월">3월</option>
@@ -202,6 +202,14 @@
   </div>
 
   <div class="ms-result-info" id="taekilSummary" style="display:none"></div>
+
+  <div class="ms-taekil-month-overview" id="taekilMonthOverview" hidden>
+    <h3 class="ms-taekil-overview-title">📅 연간 월별 한눈에 보기</h3>
+    <p class="ms-taekil-overview-desc" id="taekilOverviewLine"></p>
+    <div class="ms-taekil-overview-picks" id="taekilOverviewPicks"></div>
+    <div class="ms-month-grid" id="taekilMonthGrid" role="list"></div>
+    <p class="ms-taekil-overview-hint">월 칸을 누르면 해당 월의 길일·흉일만 아래에 모아서 볼 수 있습니다.</p>
+  </div>
 
   <div class="ms-taekil-results">
     <div class="ms-taekil-col">

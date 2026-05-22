@@ -16,6 +16,7 @@ from saju.manseryeok_taekil import (
     parse_calendar_days,
     rank_days_for_event,
     score_day_for_event,
+    summarize_taekil_by_month,
 )
 
 DATA_PATH = Path(__file__).resolve().parents[1] / "saju" / "data" / "manseryeok_data.json"
@@ -63,6 +64,21 @@ def test_rank_days_for_event():
     assert isinstance(pack["avoid_days"], list)
 
 
+def test_summarize_taekil_by_month():
+    ranked = [
+        {"calendar_month": "1월", "score": 22, "grade": "대길", "day_label_kr": "1월 18일"},
+        {"calendar_month": "1월", "score": -18, "grade": "흉", "day_label_kr": "1월 20일"},
+        {"calendar_month": "3월", "score": 10, "grade": "길", "day_label_kr": "3월 5일"},
+    ]
+    ov = summarize_taekil_by_month(ranked)
+    assert len(ov["months"]) == 12
+    jan = next(m for m in ov["months"] if m["month"] == "1월")
+    assert jan["has_data"] is True
+    assert jan["good_count"] >= 1
+    assert "1월" in ov["best_months"] or "3월" in ov["best_months"]
+    assert ov.get("summary_line")
+
+
 def test_taekil_api():
     client = TestClient(app)
     r = client.get("/api/manseryeok/taekil", params={"event": "결혼", "month": "1월", "limit": 5})
@@ -78,6 +94,13 @@ def test_taekil_api():
         assert d["calendar_month"] in d["day_label_kr"]
         assert d.get("ganji_kr")
         assert d.get("yi_display") or d.get("yi_hits_kr")
+
+    r2 = client.get("/api/manseryeok/taekil", params={"event": "개업", "limit": 10})
+    assert r2.status_code == 200
+    full = r2.json()
+    assert "month_overview" in full
+    assert len(full["month_overview"]["months"]) == 12
+    assert full["month_overview"].get("summary_line")
 
 
 def test_manseryeok_compute_api():

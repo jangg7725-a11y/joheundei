@@ -581,6 +581,125 @@
 }
 .ms-taekil-theory { margin-top: 0.5rem; }
 
+/* 연간 월별 택일 요약 */
+.ms-taekil-month-overview {
+  margin: 1rem 0 1.25rem;
+  padding: 1rem 1.1rem;
+  background: var(--ms-paper, #faf8f4);
+  border: 1px solid var(--ms-border);
+  border-radius: 12px;
+}
+.ms-taekil-overview-title {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.ms-taekil-overview-desc {
+  margin: 0 0 0.65rem;
+  font-size: 0.88rem;
+  color: var(--ms-ink);
+  line-height: 1.5;
+}
+.ms-taekil-overview-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.85rem;
+  font-size: 0.82rem;
+}
+.ms-taekil-overview-picks .pick-label {
+  font-weight: 600;
+  color: var(--ms-ink-light);
+  margin-right: 0.25rem;
+}
+.ms-taekil-overview-picks .pick-good {
+  color: #1a6b4a;
+  font-weight: 600;
+}
+.ms-taekil-overview-picks .pick-bad {
+  color: var(--ms-red);
+  font-weight: 600;
+}
+.ms-month-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 0.45rem;
+}
+@media (max-width: 720px) {
+  .ms-month-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 420px) {
+  .ms-month-grid { grid-template-columns: repeat(3, 1fr); }
+}
+.ms-month-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.55rem 0.35rem;
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.ms-month-cell:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.ms-month-cell:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.ms-month-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+.ms-month-rating {
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+.ms-month-stats {
+  font-size: 0.68rem;
+  color: var(--ms-ink-light);
+}
+.ms-month-best {
+  font-size: 0.65rem;
+  color: var(--ms-ink-light);
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tk-month-best  { background: #e8f5ef; border-color: #1a6b4a; }
+.tk-month-best .ms-month-rating { color: #1a6b4a; }
+.tk-month-good  { background: #f0faf5; border-color: #2a9d6f; }
+.tk-month-good .ms-month-rating { color: #2a9d6f; }
+.tk-month-mid   { background: #faf8f4; }
+.tk-month-warn  { background: #fff8f0; border-color: #c9a227; }
+.tk-month-warn .ms-month-rating { color: #9a7b10; }
+.tk-month-bad   { background: #fdf0f0; border-color: var(--ms-red); }
+.tk-month-bad .ms-month-rating { color: var(--ms-red); }
+.tk-month-empty { background: #f5f5f5; }
+.ms-taekil-overview-hint {
+  margin: 0.65rem 0 0;
+  font-size: 0.75rem;
+  color: var(--ms-ink-light);
+}
+.ms-taekil-month-group {
+  margin-bottom: 1rem;
+}
+.ms-taekil-month-heading {
+  margin: 0 0 0.5rem;
+  padding-bottom: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ms-gold);
+  border-bottom: 1px dashed var(--ms-border);
+}
+
 /* ── 사주 매칭 폼 ───────────────────────────────────── */
 .ms-saju-form {
   background: var(--ms-paper);

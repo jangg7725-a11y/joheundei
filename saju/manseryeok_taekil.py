@@ -215,7 +215,7 @@ def rank_days_for_event(
         key=lambda x: x["score"],
     )[: min(15, limit)]
 
-    return {
+    payload: dict[str, Any] = {
         "event": event,
         "event_label": EVENT_RULES[event]["label"],
         "month_filter": month,
@@ -225,6 +225,150 @@ def rank_days_for_event(
         "all_ranked": ranked[: limit * 2],
         "calendar_sources": sources,
     }
+    if not month:
+        payload["month_overview"] = summarize_taekil_by_month(ranked)
+    return payload
+
+
+SOLAR_MONTHS: tuple[str, ...] = tuple(f"{i}월" for i in range(1, 13))
+
+
+def _month_sort_key(month: str) -> int:
+    m = re.match(r"(\d{1,2})월", month or "")
+    return int(m.group(1)) if m else 99
+
+
+def _month_rating(
+    good_count: int,
+    avoid_count: int,
+    max_score: int,
+    min_score: int,
+) -> str:
+    """월 단위 한눈에 보기용 등급."""
+    if good_count >= 2 and max_score >= 20:
+        return "매우 좋음"
+    if good_count >= 1 and avoid_count == 0 and max_score >= 8:
+        return "좋음"
+    if avoid_count >= 3 or min_score <= -25:
+        return "피하세요"
+    if avoid_count >= 2 or min_score <= -15:
+        return "주의"
+    if good_count == 0 and avoid_count >= 1:
+        return "주의"
+    return "보통"
+
+
+def _month_rating_class(rating: str) -> str:
+    return {
+        "매우 좋음": "best",
+        "좋음": "good",
+        "보통": "mid",
+        "주의": "warn",
+        "피하세요": "bad",
+    }.get(rating, "empty")
+
+
+def summarize_taekil_by_month(ranked: list[dict[str, Any]]) -> dict[str, Any]:
+    """
+    전체 월 택일 시 1~12월 길·흉을 한눈에 비교.
+    DB에 달력이 있는 월만 has_data=True.
+    """
+    buckets: dict[str, list[dict[str, Any]]] = {m: [] for m in SOLAR_MONTHS}
+    for r in ranked:
+        cm = (r.get("calendar_month") or "").strip()
+        if cm in buckets:
+            buckets[cm].append(r)
+
+    months_out: list[dict[str, Any]] = []
+    for m in SOLAR_MONTHS:
+        days = buckets[m]
+        if not days:
+            months_out.append(
+                {
+                    "month": m,
+                    "has_data": False,
+                    "day_count": 0,
+                    "good_count": 0,
+                    "avoid_count": 0,
+                    "avg_score": 0,
+                    "max_score": 0,
+                    "min_score": 0,
+                    "month_rating": "데이터 없음",
+                    "rating_class": "empty",
+                    "best_grade": "",
+                    "best_day": "",
+                    "worst_grade": "",
+                    "worst_day": "",
+                }
+            )
+            continue
+
+        scores = [int(d.get("score", 0)) for d in days]
+        good_list = [d for d in days if d.get("score", 0) >= 8]
+        bad_list = [d for d in days if d.get("score", 0) < 0]
+        best = max(days, key=lambda x: x.get("score", 0))
+        worst = min(days, key=lambda x: x.get("score", 0))
+        rating = _month_rating(
+            len(good_list),
+            len(bad_list),
+            max(scores),
+            min(scores),
+        )
+        months_out.append(
+            {
+                "month": m,
+                "has_data": True,
+                "day_count": len(days),
+                "good_count": len(good_list),
+                "avoid_count": len(bad_list),
+                "avg_score": round(sum(scores) / len(scores), 1),
+                "max_score": max(scores),
+                "min_score": min(scores),
+                "month_rating": rating,
+                "rating_class": _month_rating_class(rating),
+                "best_grade": best.get("grade") or "",
+                "best_day": best.get("day_label_kr") or "",
+                "worst_grade": worst.get("grade") or "",
+                "worst_day": worst.get("day_label_kr") or "",
+            }
+        )
+
+    with_data = [x for x in months_out if x["has_data"]]
+    best_sorted = sorted(
+        with_data,
+        key=lambda x: (x["max_score"], x["good_count"], -x["avoid_count"]),
+        reverse=True,
+    )
+    avoid_sorted = sorted(
+        with_data,
+        key=lambda x: (x["min_score"], -x["avoid_count"], -x["good_count"]),
+    )
+
+    return {
+        "months": months_out,
+        "best_months": [x["month"] for x in best_sorted[:3]],
+        "avoid_months": [x["month"] for x in avoid_sorted[:3]],
+        "summary_line": _overview_summary_line(best_sorted, avoid_sorted),
+    }
+
+
+def _overview_summary_line(
+    best_sorted: list[dict[str, Any]],
+    avoid_sorted: list[dict[str, Any]],
+) -> str:
+    parts: list[str] = []
+    if best_sorted:
+        top = best_sorted[0]
+        parts.append(
+            f"가장 좋은 달: {top['month']}({top['month_rating']}, 길일 {top['good_count']}일)"
+        )
+    if avoid_sorted:
+        low = avoid_sorted[0]
+        if low.get("avoid_count", 0) > 0 or low.get("min_score", 0) < 0:
+            parts.append(
+                f"가장 조심할 달: {low['month']}({low['month_rating']}, 피할 {low['avoid_count']}일)"
+            )
+    return " · ".join(parts) if parts else "월별 비교 데이터가 부족합니다."
 
 
 _CN_MONTH_NUM = {

@@ -434,19 +434,21 @@ async function runTaekil() {
     const json = await res.json();
     if (!res.ok) throw new Error(json.detail || '택일 계산 실패');
 
-    const monthLabel = month || '전체';
+    const monthLabel = month || '연간 전체';
     sumEl.style.display = 'block';
     sumEl.textContent =
       `${json.event_label || event} · ${monthLabel} — ` +
       `분석 ${json.total_parsed_days}일 · 길일 ${json.good_days.length} · 피할 날 ${json.avoid_days.length}`;
 
+    renderTaekilMonthOverview(json.month_overview, !month);
+
     goodEl.dataset.loaded = '1';
     goodEl.innerHTML = json.good_days.length
-      ? json.good_days.map(d => renderTaekilDayCard(d, true)).join('')
+      ? renderTaekilDaysGrouped(json.good_days, true, month)
       : '<div class="ms-empty">조건에 맞는 길일이 없습니다. 월을 바꾸거나 행사 유형을 조정해 보세요.</div>';
 
     badEl.innerHTML = json.avoid_days.length
-      ? json.avoid_days.map(d => renderTaekilDayCard(d, false)).join('')
+      ? renderTaekilDaysGrouped(json.avoid_days, false, month)
       : '<div class="ms-empty">강한 흉일 후보가 없습니다.</div>';
 
     const docs = json.related_docs || [];
@@ -459,7 +461,83 @@ async function runTaekil() {
     goodEl.innerHTML = `<div class="ms-empty">오류: ${escHtml(String(e.message || e))}</div>`;
     theory.innerHTML = '';
     sumEl.style.display = 'none';
+    renderTaekilMonthOverview(null, false);
   }
+}
+
+function filterTaekilMonth(month) {
+  const sel = document.getElementById('taekilMonth');
+  if (sel) sel.value = month || '';
+  runTaekil();
+}
+
+function renderTaekilMonthOverview(overview, show) {
+  const box = document.getElementById('taekilMonthOverview');
+  const grid = document.getElementById('taekilMonthGrid');
+  const line = document.getElementById('taekilOverviewLine');
+  const picks = document.getElementById('taekilOverviewPicks');
+  if (!box || !grid) return;
+
+  if (!show || !overview?.months?.length) {
+    box.hidden = true;
+    return;
+  }
+
+  box.hidden = false;
+  if (line) line.textContent = overview.summary_line || '';
+  if (picks) {
+    const best = (overview.best_months || []).map((m) => `<span class="pick-good">${escHtml(m)}</span>`).join('');
+    const avoid = (overview.avoid_months || []).map((m) => `<span class="pick-bad">${escHtml(m)}</span>`).join('');
+    picks.innerHTML =
+      (best ? `<span class="pick-label">추천 달</span> ${best}` : '') +
+      (avoid ? `<span class="pick-label">주의 달</span> ${avoid}` : '');
+  }
+
+  grid.innerHTML = overview.months.map((m) => {
+    const cls = m.has_data ? `ms-month-cell tk-month-${m.rating_class || 'mid'}` : 'ms-month-cell tk-month-empty';
+    const stats = m.has_data
+      ? `길 ${m.good_count} · 흉 ${m.avoid_count}`
+      : '달력 없음';
+    const sub = m.has_data && m.best_day
+      ? escHtml(String(m.best_day).replace(/^\d{1,2}월\s*/, '').slice(0, 18))
+      : '';
+    return `
+      <button type="button" class="${cls}" role="listitem"
+        ${m.has_data ? `onclick="filterTaekilMonth('${escHtml(m.month)}')"` : 'disabled'}
+        aria-label="${escHtml(m.month)} ${escHtml(m.month_rating)}">
+        <span class="ms-month-name">${escHtml(m.month)}</span>
+        <span class="ms-month-rating">${escHtml(m.month_rating)}</span>
+        <span class="ms-month-stats">${escHtml(stats)}</span>
+        ${sub ? `<span class="ms-month-best">${sub}</span>` : ''}
+      </button>`;
+  }).join('');
+}
+
+function _taekilMonthSortKey(month) {
+  const m = String(month || '').match(/^(\d{1,2})월/);
+  return m ? parseInt(m[1], 10) : 99;
+}
+
+function renderTaekilDaysGrouped(days, isGood, monthFilter) {
+  if (monthFilter) {
+    return days.map((d) => renderTaekilDayCard(d, isGood)).join('');
+  }
+  const groups = {};
+  days.forEach((d) => {
+    const m = (d.calendar_month || '기타').trim();
+    if (!groups[m]) groups[m] = [];
+    groups[m].push(d);
+  });
+  const keys = Object.keys(groups).sort((a, b) => _taekilMonthSortKey(a) - _taekilMonthSortKey(b));
+  if (keys.length <= 1) {
+    return days.map((d) => renderTaekilDayCard(d, isGood)).join('');
+  }
+  return keys.map((m) => `
+    <section class="ms-taekil-month-group">
+      <h4 class="ms-taekil-month-heading">${escHtml(m)}</h4>
+      ${groups[m].map((d) => renderTaekilDayCard(d, isGood)).join('')}
+    </section>
+  `).join('');
 }
 
 function renderTaekilDayCard(d, isGood) {
