@@ -279,6 +279,116 @@
 .ms-search-btn:hover { background: var(--ms-gold-lt); }
 .ms-search-btn:active { transform: scale(0.98); }
 
+/* ── 택일 탭 ────────────────────────────────────────── */
+.ms-taekil-form {
+  background: var(--ms-paper);
+  border: 1px solid var(--ms-border);
+  border-radius: var(--ms-radius);
+  padding: 1.4rem;
+  margin-bottom: 1.4rem;
+  box-shadow: var(--ms-shadow);
+}
+.ms-taekil-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+  margin-bottom: 1rem;
+}
+.ms-taekil-field label {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.ms-taekil-field select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  font-family: var(--ms-font-sans);
+  font-size: 0.88rem;
+  color: var(--ms-ink);
+  background: rgba(255, 252, 245, 0.9);
+  box-sizing: border-box;
+}
+.ms-taekil-results {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.6rem;
+}
+.ms-taekil-col-title {
+  font-family: var(--ms-font-serif);
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0 0 0.8rem;
+  color: var(--ms-ink);
+}
+.ms-taekil-col-title.good { color: #1a6b4a; }
+.ms-taekil-col-title.bad  { color: var(--ms-red); }
+.ms-taekil-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.ms-taekil-day {
+  background: var(--ms-paper);
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.ms-taekil-day:hover {
+  border-color: var(--ms-gold);
+  box-shadow: var(--ms-shadow);
+}
+.ms-taekil-day-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.ms-taekil-day-label {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.ms-taekil-ganji {
+  font-family: var(--ms-font-serif);
+  color: var(--ms-gold);
+  font-weight: 600;
+}
+.ms-taekil-grade {
+  margin-left: auto;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+.tk-grade-best  .ms-taekil-grade { background: #1a6b4a; color: #fff; }
+.tk-grade-good  .ms-taekil-grade { background: #2a9d6f; color: #fff; }
+.tk-grade-mid   .ms-taekil-grade { background: #e8e0d0; color: var(--ms-ink-light); }
+.tk-grade-bad   .ms-taekil-grade { background: #f4e0e0; color: var(--ms-red); }
+.tk-grade-worst .ms-taekil-grade { background: var(--ms-red); color: #fff; }
+.ms-taekil-verdict {
+  font-size: 0.8rem;
+  color: var(--ms-ink);
+  margin: 0 0 4px;
+  line-height: 1.5;
+}
+.ms-taekil-hits, .ms-taekil-src {
+  font-size: 0.72rem;
+  color: var(--ms-ink-light);
+  margin: 0;
+  line-height: 1.4;
+}
+.ms-taekil-theory { margin-top: 0.5rem; }
+
 /* ── 사주 매칭 폼 ───────────────────────────────────── */
 .ms-saju-form {
   background: var(--ms-paper);
@@ -664,5 +774,6 @@
   .ms-card-grid { grid-template-columns: 1fr; }
   .ms-search-row { grid-template-columns: 1fr; }
   .ms-saju-row { grid-template-columns: 1fr 1fr; }
+  .ms-taekil-results { grid-template-columns: 1fr; }
   .ms-modal-content { padding: 1.4rem 1.2rem 0.8rem; }
 }

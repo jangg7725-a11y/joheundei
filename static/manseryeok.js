@@ -9,6 +9,7 @@ const API = {
   all:      '/api/manseryeok/all',
   search:   '/api/manseryeok/search',
   calendar: '/api/manseryeok/calendar',
+  taekil:   '/api/manseryeok/taekil',
   saju:     '/api/manseryeok/saju-match',
   item:     (id) => `/api/manseryeok/item/${id}`,
   category: (cat) => `/api/manseryeok/category/${encodeURIComponent(cat)}`,
@@ -33,6 +34,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAllData();
   initTabs();
   initCalendarTab();
+  initTaekilTab();
   initCategoryTab();
   initSearchEnter();
 });
@@ -118,6 +120,97 @@ function searchByJeolgi(keyword) {
   document.querySelector('[data-tab="search"]').click();
   document.getElementById('searchKeyword').value = keyword;
   doSearch();
+}
+
+/* ══════════════════════════════════════════════════════
+   TAB 2: 택일 (만세력 宜·忌 계산)
+══════════════════════════════════════════════════════ */
+function initTaekilTab() {
+  const tab = document.querySelector('[data-tab="taekil"]');
+  if (!tab) return;
+  tab.addEventListener('click', () => {
+    const good = document.getElementById('taekilGoodList');
+    if (good && good.querySelector('.ms-empty') && !good.dataset.loaded) {
+      runTaekil();
+    }
+  });
+}
+
+const TAEKIL_GRADE_CLASS = {
+  '대길': 'tk-grade-best',
+  '길': 'tk-grade-good',
+  '평': 'tk-grade-mid',
+  '흉': 'tk-grade-bad',
+  '대흉': 'tk-grade-worst',
+};
+
+async function runTaekil() {
+  const event = document.getElementById('taekilEvent')?.value || '택일';
+  const month = document.getElementById('taekilMonth')?.value || '';
+  const goodEl = document.getElementById('taekilGoodList');
+  const badEl  = document.getElementById('taekilBadList');
+  const sumEl  = document.getElementById('taekilSummary');
+  const theory = document.getElementById('taekilTheoryGrid');
+
+  goodEl.innerHTML = '<div class="ms-loading">만세력 달력 분석 중…</div>';
+  badEl.innerHTML = '';
+  theory.innerHTML = '<div class="ms-loading">관련 문헌 불러오는 중…</div>';
+
+  try {
+    const params = new URLSearchParams({ event, limit: '30' });
+    if (month) params.set('month', month);
+    const res  = await fetch(`${API.taekil}?${params}`);
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.detail || '택일 계산 실패');
+
+    const monthLabel = month || '전체';
+    sumEl.style.display = 'block';
+    sumEl.textContent =
+      `${json.event_label || event} · ${monthLabel} — ` +
+      `분석 ${json.total_parsed_days}일 · 길일 ${json.good_days.length} · 피할 날 ${json.avoid_days.length}`;
+
+    goodEl.dataset.loaded = '1';
+    goodEl.innerHTML = json.good_days.length
+      ? json.good_days.map(d => renderTaekilDayCard(d, true)).join('')
+      : '<div class="ms-empty">조건에 맞는 길일이 없습니다. 월을 바꾸거나 행사 유형을 조정해 보세요.</div>';
+
+    badEl.innerHTML = json.avoid_days.length
+      ? json.avoid_days.map(d => renderTaekilDayCard(d, false)).join('')
+      : '<div class="ms-empty">강한 흉일 후보가 없습니다.</div>';
+
+    const docs = json.related_docs || [];
+    if (docs.length) {
+      renderCards(theory, docs, `관련 문헌 ${docs.length}건`);
+    } else {
+      theory.innerHTML = '<div class="ms-empty">관련 문헌이 없습니다.</div>';
+    }
+  } catch (e) {
+    goodEl.innerHTML = `<div class="ms-empty">오류: ${escHtml(String(e.message || e))}</div>`;
+    theory.innerHTML = '';
+    sumEl.style.display = 'none';
+  }
+}
+
+function renderTaekilDayCard(d, isGood) {
+  const cls = TAEKIL_GRADE_CLASS[d.grade] || 'tk-grade-mid';
+  const hits = (isGood ? d.yi_hits : d.ji_hits) || [];
+  const hitStr = hits.length ? hits.join(' · ') : (isGood ? d.yi_raw?.slice(0, 40) : d.ji_raw?.slice(0, 40)) || '';
+  const src = d.source_chapter ? escHtml(d.source_chapter.slice(0, 28)) : '';
+  const calMonth = d.calendar_month ? ` · ${escHtml(d.calendar_month)}` : '';
+  return `
+    <article class="ms-taekil-day ${cls}" role="button" tabindex="0"
+      onclick="openModal('${escHtml(d.source_id || '')}')"
+      onkeydown="if(event.key==='Enter')openModal('${escHtml(d.source_id || '')}')">
+      <div class="ms-taekil-day-head">
+        <span class="ms-taekil-day-label">${escHtml(d.day_label)}</span>
+        <span class="ms-taekil-ganji">${escHtml(d.ganji)}</span>
+        <span class="ms-taekil-grade">${escHtml(d.grade)}</span>
+      </div>
+      <p class="ms-taekil-verdict">${escHtml(d.verdict)}</p>
+      <p class="ms-taekil-hits">${isGood ? '宜' : '忌'}: ${escHtml(hitStr)}</p>
+      <p class="ms-taekil-src">${src}${calMonth}</p>
+    </article>
+  `;
 }
 
 /* ══════════════════════════════════════════════════════

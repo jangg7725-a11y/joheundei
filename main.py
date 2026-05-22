@@ -36,6 +36,7 @@ from saju import timeline as tl
 from saju import wolwoon as ww
 from saju import tarot as tr
 from saju import maehwa as mh
+from saju import manseryeok_taekil as mst
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -836,6 +837,25 @@ async def manseryeok_calendar(month: str = ""):
     """
     results = _manseryeok_calendar_items(month)
     return JSONResponse(content={"total": len(results), "data": results})
+
+
+@app.get("/api/manseryeok/taekil")
+async def manseryeok_taekil(
+    event: str = "택일",
+    month: str = "",
+    limit: int = 30,
+):
+    """
+    만세력 일진 달력 원문(宜·忌) 기반 행사별 택일.
+    - event: 결혼 | 이사 | 제사 | 장례 | 개업 | 건축 | 이장 | 기도 | 택일
+    - month: 1월 … 12월 (빈 값이면 전체 달력 항목 대상)
+    """
+    if event not in mst.EVENT_RULES:
+        event = "택일"
+    cal = _manseryeok_calendar_items(month)
+    pack = mst.rank_days_for_event(cal, event, month=month, limit=min(limit, 60))
+    pack["related_docs"] = mst.related_theory_items(_MANSERYEOK_DB, event, limit=8)
+    return JSONResponse(content=pack)
 
 
 @app.get("/api/manseryeok/saju-match")
