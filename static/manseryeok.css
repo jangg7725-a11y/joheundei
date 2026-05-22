@@ -446,6 +446,20 @@
   color: var(--ms-red);
 }
 
+.ms-modal-hanja-sub {
+  margin: -0.35rem 0 0.85rem;
+  font-size: 0.82rem;
+  color: var(--ms-ink-light);
+  letter-spacing: 0.02em;
+}
+.ms-original-body {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.75;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
+}
+
 /* ── 택일 탭 ────────────────────────────────────────── */
 .ms-taekil-form {
   background: var(--ms-paper);

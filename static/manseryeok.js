@@ -31,6 +31,37 @@ const CAT_CLASS = {
 const DIFF_LABEL = { beginner:'입문', intermediate:'중급', advanced:'고급' };
 const DIFF_CLASS = { beginner:'diff-beginner', intermediate:'diff-intermediate', advanced:'diff-advanced' };
 
+const MS_GENERIC_BEGINNER = new Set([
+  '사주팔자의 기초 이론입니다. 천간·지지·오행의 관계를 이해하면 내 사주를 스스로 분석할 수 있습니다.',
+  '포켓박스 사주팔자의 기초 이론입니다. 천간·지지·오행의 관계를 이해하면 내 사주를 스스로 분석할 수 있습니다.',
+]);
+
+function msTitle(item) {
+  return item.display_title || item.sub_category || item.chapter || '만세력 항목';
+}
+
+function msCardDesc(item) {
+  if (item.display_card_desc) return item.display_card_desc;
+  const beg = (item.beginner_explanation || '').trim();
+  if (MS_GENERIC_BEGINNER.has(beg)) return '';
+  if (beg) return beg;
+  return item.modern_interpretation || item.korean_translation || '';
+}
+
+function msModalBeginner(item) {
+  const b = item.display_beginner ?? item.beginner_explanation ?? '';
+  return MS_GENERIC_BEGINNER.has((b || '').trim()) ? '' : b;
+}
+
+function msBodyPrimary(item) {
+  return item.display_body_primary
+    || [item.korean_translation, item.modern_interpretation].filter(Boolean).join('\n\n');
+}
+
+function msOriginal(item) {
+  return item.display_original || item.original_text || '';
+}
+
 /* ══════════════════════════════════════════════════════
    초기화
 ══════════════════════════════════════════════════════ */
@@ -612,16 +643,17 @@ function buildCard(item) {
     `<span class="ms-card-tag">${escHtml(k)}</span>`
   ).join('');
 
-  const desc = item.beginner_explanation || item.modern_interpretation || item.korean_translation || '';
+  const title = msTitle(item);
+  const desc = msCardDesc(item);
 
   const events = (item.practical?.applicable_events || []).slice(0,3).join(' · ');
 
   return `
 <article class="ms-card" data-id="${escHtml(item.id)}" tabindex="0"
-  role="button" aria-label="${escHtml(item.chapter)}">
+  role="button" aria-label="${escHtml(title)}">
   <span class="ms-card-cat ${catCls}">${item.category}</span>
-  <h3 class="ms-card-title">${escHtml(item.chapter)}</h3>
-  <p class="ms-card-desc">${escHtml(desc)}</p>
+  <h3 class="ms-card-title">${escHtml(title)}</h3>
+  ${desc ? `<p class="ms-card-desc">${escHtml(desc)}</p>` : ''}
   ${events ? `<p style="font-size:0.75rem;color:var(--ms-gold);margin:0 0 8px">📌 ${escHtml(events)}</p>` : ''}
   <div class="ms-card-footer">
     <span class="ms-card-diff ${diffCls}">${diffLbl}</span>
@@ -677,23 +709,25 @@ function renderModal(item) {
       <span class="ms-card-cat ${catCls}">${item.category}</span>
       ${qualityBadge}
     </div>
-    <h2 class="ms-modal-title">${escHtml(item.chapter)}</h2>
+    <h2 class="ms-modal-title">${escHtml(msTitle(item))}</h2>
+    ${item.display_chapter_hanja ? `<p class="ms-modal-hanja-sub">${escHtml(item.display_chapter_hanja)}</p>` : ''}
 
-    ${item.beginner_explanation ? `
+    ${msModalBeginner(item) ? `
     <div class="ms-modal-section">
       <div class="ms-modal-section-label">💡 입문 해설</div>
-      <div class="ms-modal-beginner">${escHtml(item.beginner_explanation)}</div>
+      <div class="ms-modal-beginner">${escHtml(msModalBeginner(item))}</div>
     </div>` : ''}
 
     <div class="ms-modal-section">
-      <div class="ms-modal-section-label">📖 현대 해석</div>
-      <p class="ms-modal-text">${escHtml(item.modern_interpretation || item.korean_translation || '')}</p>
+      <div class="ms-modal-section-label">📖 한글 해석</div>
+      <p class="ms-modal-text">${escHtml(msBodyPrimary(item))}</p>
     </div>
 
+    ${msOriginal(item) ? `
     <div class="ms-modal-section">
-      <div class="ms-modal-section-label">📜 원문 (한문·한글)</div>
-      <div class="ms-modal-text hanja">${escHtml(truncate(item.original_text, 600))}</div>
-    </div>
+      <div class="ms-modal-section-label">📜 원문 (한글 병기)</div>
+      <div class="ms-modal-text ms-original-body">${escHtml(msOriginal(item))}</div>
+    </div>` : ''}
 
     ${allConds ? `
     <div class="ms-modal-section">
@@ -715,7 +749,7 @@ function renderModal(item) {
           const rel = _allData.find(d => d.id === rid);
           return rel
             ? `<button class="ms-cond-tag" style="cursor:pointer;border-color:var(--ms-gold);color:var(--ms-gold)"
-                onclick="openModal('${rid}')">${escHtml(rel.chapter.slice(0,20))}…</button>`
+                onclick="openModal('${rid}')">${escHtml(msTitle(rel).slice(0,24))}…</button>`
             : '';
         }).join('')}
       </div>
@@ -761,7 +795,7 @@ function printModal() {
   win.document.write(`
     <!DOCTYPE html><html lang="ko"><head>
     <meta charset="UTF-8">
-    <title>${_curModal.chapter}</title>
+    <title>${msTitle(_curModal)}</title>
     <style>
       body { font-family: 'Noto Serif KR', serif; padding: 2rem; color: #1a1209; line-height:1.8; }
       h1 { font-size: 1.4rem; margin-bottom: 0.5rem; }
@@ -774,14 +808,14 @@ function printModal() {
               border-top: 1px solid #eee; }
     </style>
     </head><body>
-    <h1>${escHtml(_curModal.chapter)}</h1>
+    <h1>${escHtml(msTitle(_curModal))}</h1>
     <p style="color:#888;font-size:0.82rem">${escHtml(_curModal.category)} · ${escHtml(_curModal.sub_category)}</p>
-    ${_curModal.beginner_explanation
-      ? `<div class="label">입문 해설</div><p>${escHtml(_curModal.beginner_explanation)}</p>` : ''}
-    <div class="label">현대 해석</div>
-    <p>${escHtml(_curModal.modern_interpretation || _curModal.korean_translation || '')}</p>
-    <div class="label">원문</div>
-    <div class="hanja">${escHtml(_curModal.original_text || '')}</div>
+    ${msModalBeginner(_curModal)
+      ? `<div class="label">입문 해설</div><p>${escHtml(msModalBeginner(_curModal))}</p>` : ''}
+    <div class="label">한글 해석</div>
+    <p>${escHtml(msBodyPrimary(_curModal))}</p>
+    <div class="label">원문 (한글 병기)</div>
+    <div class="hanja">${escHtml(msOriginal(_curModal))}</div>
     <div class="meta">출처: ${escHtml(_curModal.source_book || '')} · ${escHtml(_curModal.page_filename || '')}</div>
     </body></html>
   `);
@@ -796,8 +830,8 @@ function printModal() {
 function shareItem() {
   if (!_curModal) return;
   const url   = `${location.origin}/manseryeok#${_curModal.id}`;
-  const title = _curModal.ux_meta?.share_format?.kakao_title || _curModal.chapter;
-  const desc  = _curModal.ux_meta?.share_format?.kakao_desc  || _curModal.beginner_explanation || '';
+  const title = _curModal.ux_meta?.share_format?.kakao_title || msTitle(_curModal);
+  const desc  = _curModal.ux_meta?.share_format?.kakao_desc  || msCardDesc(_curModal) || msBodyPrimary(_curModal).slice(0, 120);
 
   if (navigator.share) {
     navigator.share({ title, text: desc, url }).catch(() => copyToClipboard(url));

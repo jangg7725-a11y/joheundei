@@ -37,6 +37,7 @@ from saju import wolwoon as ww
 from saju import tarot as tr
 from saju import maehwa as mh
 from saju import manseryeok_taekil as mst
+from saju import manseryeok_display as msd
 from saju import manseryeok_profile as msp
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -254,7 +255,7 @@ def _load_manseryeok():
         return []
 
 
-_MANSERYEOK_DB: list = _load_manseryeok()
+_MANSERYEOK_DB: list = [msd.enrich_item(r) for r in _load_manseryeok()]
 
 app.add_middleware(
     CORSMiddleware,
