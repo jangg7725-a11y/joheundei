@@ -10,6 +10,12 @@
   margin: 0 auto;
 }
 
+.app-mode-nav--services {
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 36rem;
+}
+
 .app-mode-btn {
   flex: 1;
   padding: 0.55rem 1rem;

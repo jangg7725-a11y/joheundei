@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Iterator
@@ -231,6 +232,21 @@ app = FastAPI(
     version="1.0.0",
     description="四柱八字 계산 및 종합 분석",
 )
+
+_MANSERYEOK_PATH = os.path.join(
+    os.path.dirname(__file__), "saju", "data", "manseryeok_data.json"
+)
+
+
+def _load_manseryeok():
+    try:
+        with open(_MANSERYEOK_PATH, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return []
+
+
+_MANSERYEOK_DB: list = _load_manseryeok()
 
 app.add_middleware(
     CORSMiddleware,
@@ -676,6 +692,180 @@ async def api_tarot_spread_reading(body: TarotSpreadReadingIn) -> dict[str, Any]
         raise HTTPException(status_code=400, detail=str(e)) from e
     except KeyError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
+
+
+@app.get("/manseryeok", include_in_schema=False)
+async def manseryeok_page():
+    """만세력 전용 HTML 페이지"""
+    page = STATIC_DIR / "manseryeok.html"
+    if not page.is_file():
+        raise HTTPException(status_code=500, detail="static/manseryeok.html 파일이 없습니다.")
+    return FileResponse(page)
+
+
+@app.get("/api/manseryeok/all")
+async def manseryeok_all():
+    """전체 만세력 데이터 반환"""
+    return JSONResponse(content={"total": len(_MANSERYEOK_DB), "data": _MANSERYEOK_DB})
+
+
+@app.get("/api/manseryeok/search")
+async def manseryeok_search(
+    category: str = "",
+    keyword: str = "",
+    event: str = "",
+    difficulty: str = "",
+    shinsin: str = "",
+    sinsal: str = "",
+    limit: int = 20,
+    offset: int = 0,
+):
+    """
+    만세력 검색 API
+    - category  : 역법 | 명리 | 혼인 | 풍수 | 길흉 | 제례 | 기타
+    - keyword   : 키워드 자유 검색 (한글/한자)
+    - event     : applicable_events 필터 (결혼|이사|제사|장례|개업 등)
+    - difficulty: beginner | intermediate | advanced
+    - shinsin   : 십신 필터 (정관|편재 등)
+    - sinsal    : 신살 필터 (삼재|역마살 등)
+    - limit/offset : 페이징
+    """
+    results = _MANSERYEOK_DB[:]
+
+    if category:
+        results = [r for r in results if r.get("category") == category]
+
+    if difficulty:
+        results = [r for r in results if r.get("difficulty_level") == difficulty]
+
+    if event:
+        results = [
+            r
+            for r in results
+            if event in r.get("practical", {}).get("applicable_events", [])
+        ]
+
+    if shinsin:
+        results = [
+            r for r in results if shinsin in r.get("match_conditions", {}).get("십신", [])
+        ]
+
+    if sinsal:
+        results = [
+            r for r in results if sinsal in r.get("match_conditions", {}).get("신살", [])
+        ]
+
+    if keyword:
+        kw = keyword.strip().lower()
+        results = [
+            r
+            for r in results
+            if (
+                kw in r.get("chapter", "").lower()
+                or kw in r.get("original_text", "").lower()
+                or kw in r.get("korean_translation", "").lower()
+                or kw in r.get("embedding_text", "").lower()
+                or any(kw in k.lower() for k in r.get("keywords", []))
+            )
+        ]
+
+    results.sort(
+        key=lambda x: x.get("practical", {}).get("priority_rank", 0),
+        reverse=True,
+    )
+
+    total = len(results)
+    paged = results[offset : offset + limit]
+
+    return JSONResponse(
+        content={"total": total, "offset": offset, "limit": limit, "data": paged}
+    )
+
+
+@app.get("/api/manseryeok/item/{item_id}")
+async def manseryeok_item(item_id: str):
+    """단일 항목 상세 조회"""
+    for item in _MANSERYEOK_DB:
+        if item.get("id") == item_id:
+            return JSONResponse(content=item)
+    raise HTTPException(status_code=404, detail=f"항목 '{item_id}'을 찾을 수 없습니다.")
+
+
+@app.get("/api/manseryeok/category/{cat}")
+async def manseryeok_by_category(cat: str, limit: int = 50):
+    """카테고리별 항목 조회"""
+    results = [r for r in _MANSERYEOK_DB if r.get("category") == cat]
+    results.sort(
+        key=lambda x: x.get("practical", {}).get("priority_rank", 0),
+        reverse=True,
+    )
+    return JSONResponse(
+        content={"category": cat, "total": len(results), "data": results[:limit]}
+    )
+
+
+@app.get("/api/manseryeok/calendar")
+async def manseryeok_calendar(month: str = ""):
+    """
+    달력 데이터 조회
+    - month: '1월' | '2월' ... 또는 절기명 (빈 값이면 전체 달력 항목 반환)
+    """
+    results = [r for r in _MANSERYEOK_DB if "달력" in r.get("sub_category", "")]
+    if month:
+        results = [r for r in results if month in r.get("chapter", "")]
+    return JSONResponse(content={"total": len(results), "data": results})
+
+
+@app.get("/api/manseryeok/saju-match")
+async def manseryeok_saju_match(
+    shinsin: str = "",
+    sinsal: str = "",
+    gyeokguk: str = "",
+    ohaeng: str = "",
+    limit: int = 10,
+):
+    """
+    사주 분석 결과 → 관련 만세력 문헌 자동 매칭
+    사주 계산 후 프론트에서 호출: shinsin=정관&sinsal=역마살&ohaeng=목
+    """
+    scored = []
+
+    for r in _MANSERYEOK_DB:
+        mc = r.get("match_conditions", {})
+        score = 0
+
+        if shinsin and shinsin in mc.get("십신", []):
+            score += 3
+        if sinsal and sinsal in mc.get("신살", []):
+            score += 3
+        if gyeokguk and gyeokguk in mc.get("격국", []):
+            score += 2
+        if ohaeng and ohaeng in mc.get("five_elements", []):
+            score += 1
+
+        if score > 0:
+            scored.append({**r, "_match_score": score})
+
+    scored.sort(
+        key=lambda x: (
+            x["_match_score"],
+            x.get("practical", {}).get("priority_rank", 0),
+        ),
+        reverse=True,
+    )
+
+    return JSONResponse(
+        content={
+            "query": {
+                "shinsin": shinsin,
+                "sinsal": sinsal,
+                "gyeokguk": gyeokguk,
+                "ohaeng": ohaeng,
+            },
+            "total": len(scored),
+            "data": scored[:limit],
+        }
+    )
 
 
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")

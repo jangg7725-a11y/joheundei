@@ -65,10 +65,14 @@
   </header>
 
   <main class="layout">
-    <nav class="app-mode-nav cols3" aria-label="서비스 선택">
+    <nav class="app-mode-nav app-mode-nav--services" aria-label="서비스 선택">
       <button type="button" class="app-mode-btn active" data-app-mode="saju" aria-pressed="true">사주 분석</button>
       <button type="button" class="app-mode-btn" data-app-mode="tarot" aria-pressed="false">오행 타로</button>
       <button type="button" class="app-mode-btn" data-app-mode="maehwa" aria-pressed="false">매화역수</button>
+      <a href="/manseryeok" class="manseryeok-entry-btn">
+        <span class="entry-icon" aria-hidden="true">📅</span>
+        <span class="entry-label">萬歲曆</span>
+      </a>
     </nav>
 
     <div id="saju-main">
@@ -488,5 +492,10 @@
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
   <script src="/static/tarot.js?v=20260521-maehwa"></script>
   <script src="/static/maehwa.js?v=20260521-cal-daily"></script>
+
+  <a href="/manseryeok" class="ms-float-btn" title="만세력 바로가기">
+    <span aria-hidden="true">📅</span>
+    <span class="ms-float-label">萬歲曆</span>
+  </a>
 </body>
 </html>

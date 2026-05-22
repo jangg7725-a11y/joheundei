@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>萬歲曆 — K 사주마당 품</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/manseryeok.css">
+</head>
+<body class="manseryeok-body">
+
+<!-- 산수화 배경 (기존 style.css 변수 재사용) -->
+<div class="sansuhwa-bg" aria-hidden="true"></div>
+<div class="sansuhwa-overlay" aria-hidden="true"></div>
+
+<!-- ── 헤더 (기존 간판체 계승) ── -->
+<header class="ms-header">
+  <a href="/" class="ms-back-btn" aria-label="메인으로">
+    <span class="ms-back-icon">←</span>
+    <span>K 사주마당 품</span>
+  </a>
+  <div class="ms-title-wrap">
+    <h1 class="ms-main-title">萬歲曆</h1>
+    <p class="ms-subtitle">丙午年 明文堂 大韓民曆 · 고전 문헌 데이터베이스</p>
+  </div>
+  <button class="ms-pdf-btn" id="pdfBtn" onclick="printPage()">
+    🖨 인쇄 · PDF
+  </button>
+</header>
+
+<!-- ── 탭 네비게이션 ── -->
+<nav class="ms-tab-nav" role="tablist">
+  <button class="ms-tab active" data-tab="calendar" role="tab" aria-selected="true">
+    <span class="ms-tab-icon">📅</span> 달력 · 절기
+  </button>
+  <button class="ms-tab" data-tab="search" role="tab" aria-selected="false">
+    <span class="ms-tab-icon">🔍</span> 문헌 검색
+  </button>
+  <button class="ms-tab" data-tab="saju" role="tab" aria-selected="false">
+    <span class="ms-tab-icon">🌙</span> 사주 매칭
+  </button>
+  <button class="ms-tab" data-tab="category" role="tab" aria-selected="false">
+    <span class="ms-tab-icon">📚</span> 카테고리
+  </button>
+</nav>
+
+<!-- ══════════════════════════════════════ -->
+<!-- TAB 1: 달력·절기                       -->
+<!-- ══════════════════════════════════════ -->
+<section class="ms-tab-panel active" id="tab-calendar" role="tabpanel">
+  <div class="ms-section-header">
+    <h2>2026 丙午年 달력 · 절기</h2>
+    <p class="ms-section-desc">날짜를 선택하면 해당 월의 음력·일진·절기 정보를 확인합니다</p>
+  </div>
+
+  <!-- 절기표 요약 카드 -->
+  <div class="ms-jeolgi-strip" id="jeolgiStrip">
+    <div class="ms-jeolgi-loading">절기 정보 불러오는 중…</div>
+  </div>
+
+  <!-- 월 선택 -->
+  <div class="ms-month-selector">
+    <button class="ms-month-btn" data-month="">전체</button>
+    <button class="ms-month-btn" data-month="1월">1월</button>
+    <button class="ms-month-btn" data-month="2월">2월</button>
+    <button class="ms-month-btn" data-month="3월">3월</button>
+    <button class="ms-month-btn" data-month="4월">4월</button>
+    <button class="ms-month-btn" data-month="5월">5월</button>
+    <button class="ms-month-btn" data-month="6월">6월</button>
+    <button class="ms-month-btn" data-month="7월">7월</button>
+    <button class="ms-month-btn" data-month="8월">8월</button>
+    <button class="ms-month-btn" data-month="9월">9월</button>
+    <button class="ms-month-btn" data-month="10월">10월</button>
+    <button class="ms-month-btn" data-month="11월">11월</button>
+    <button class="ms-month-btn" data-month="12월">12월</button>
+  </div>
+
+  <!-- 결과 카드 그리드 -->
+  <div class="ms-card-grid" id="calendarGrid">
+    <div class="ms-empty">월을 선택하거나 전체를 클릭하세요</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<!-- TAB 2: 문헌 검색                       -->
+<!-- ══════════════════════════════════════ -->
+<section class="ms-tab-panel" id="tab-search" role="tabpanel">
+  <div class="ms-section-header">
+    <h2>고전 문헌 검색</h2>
+    <p class="ms-section-desc">키워드·카테고리·행사 유형으로 관련 문헌을 찾습니다</p>
+  </div>
+
+  <div class="ms-search-box">
+    <div class="ms-search-row">
+      <div class="ms-search-field">
+        <label>키워드</label>
+        <input type="text" id="searchKeyword" placeholder="예) 대한, 결혼, 이사, 동지…" />
+      </div>
+      <div class="ms-search-field">
+        <label>카테고리</label>
+        <select id="searchCategory">
+          <option value="">전체</option>
+          <option value="역법">역법 (달력·절기)</option>
+          <option value="명리">명리 (사주·오행)</option>
+          <option value="혼인">혼인 (결혼·궁합)</option>
+          <option value="풍수">풍수 (방위·택지)</option>
+          <option value="길흉">길흉 (길신·흉신)</option>
+          <option value="제례">제례 (제사·장례)</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="ms-search-field">
+        <label>행사 유형</label>
+        <select id="searchEvent">
+          <option value="">전체</option>
+          <option value="결혼">결혼</option>
+          <option value="이사">이사</option>
+          <option value="제사">제사</option>
+          <option value="장례">장례</option>
+          <option value="개업">개업</option>
+          <option value="건축">건축</option>
+          <option value="이장">이장</option>
+          <option value="기도">기도</option>
+          <option value="택일">택일</option>
+        </select>
+      </div>
+      <div class="ms-search-field">
+        <label>난이도</label>
+        <select id="searchDifficulty">
+          <option value="">전체</option>
+          <option value="beginner">입문</option>
+          <option value="intermediate">중급</option>
+          <option value="advanced">고급</option>
+        </select>
+      </div>
+    </div>
+    <button class="ms-search-btn" id="searchBtn" onclick="doSearch()">
+      🔍 검색
+    </button>
+  </div>
+
+  <div class="ms-result-info" id="searchInfo" style="display:none"></div>
+  <div class="ms-card-grid" id="searchGrid">
+    <div class="ms-empty">검색어를 입력하거나 필터를 선택하세요</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<!-- TAB 3: 사주 매칭                       -->
+<!-- ══════════════════════════════════════ -->
+<section class="ms-tab-panel" id="tab-saju" role="tabpanel">
+  <div class="ms-section-header">
+    <h2>사주 기반 문헌 매칭</h2>
+    <p class="ms-section-desc">십신·신살·격국을 입력하면 관련 고전 문헌을 자동으로 연결합니다</p>
+  </div>
+
+  <div class="ms-saju-form">
+    <div class="ms-saju-row">
+      <div class="ms-saju-field">
+        <label>주요 십신</label>
+        <select id="matchShinsin">
+          <option value="">선택</option>
+          <option value="비견">비견</option>
+          <option value="겁재">겁재</option>
+          <option value="식신">식신</option>
+          <option value="상관">상관</option>
+          <option value="편재">편재</option>
+          <option value="정재">정재</option>
+          <option value="편관">편관</option>
+          <option value="정관">정관</option>
+          <option value="편인">편인</option>
+          <option value="정인">정인</option>
+        </select>
+      </div>
+      <div class="ms-saju-field">
+        <label>주요 신살</label>
+        <select id="matchSinsal">
+          <option value="">선택</option>
+          <option value="삼재">삼재</option>
+          <option value="역마살">역마살</option>
+          <option value="도화살">도화살</option>
+          <option value="괴강살">괴강살</option>
+          <option value="공망">공망</option>
+          <option value="겁살">겁살</option>
+          <option value="원진살">원진살</option>
+          <option value="고과살">고과살</option>
+          <option value="태양도림">태양도림</option>
+        </select>
+      </div>
+      <div class="ms-saju-field">
+        <label>격국</label>
+        <select id="matchGyeok">
+          <option value="">선택</option>
+          <option value="정관격">정관격</option>
+          <option value="편관격">편관격</option>
+          <option value="정재격">정재격</option>
+          <option value="편재격">편재격</option>
+          <option value="식신격">식신격</option>
+          <option value="상관격">상관격</option>
+          <option value="정인격">정인격</option>
+          <option value="편인격">편인격</option>
+        </select>
+      </div>
+      <div class="ms-saju-field">
+        <label>용신 오행</label>
+        <select id="matchOhaeng">
+          <option value="">선택</option>
+          <option value="목">목 (木)</option>
+          <option value="화">화 (火)</option>
+          <option value="토">토 (土)</option>
+          <option value="금">금 (金)</option>
+          <option value="수">수 (水)</option>
+        </select>
+      </div>
+    </div>
+    <button class="ms-search-btn" onclick="doSajuMatch()">🌙 관련 문헌 찾기</button>
+  </div>
+
+  <div class="ms-result-info" id="sajuInfo" style="display:none"></div>
+  <div class="ms-card-grid" id="sajuGrid">
+    <div class="ms-empty">조건을 선택하고 문헌 찾기를 눌러주세요</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<!-- TAB 4: 카테고리 전체                   -->
+<!-- ══════════════════════════════════════ -->
+<section class="ms-tab-panel" id="tab-category" role="tabpanel">
+  <div class="ms-section-header">
+    <h2>카테고리 전체 보기</h2>
+    <p class="ms-section-desc">분야별로 정리된 58개 고전 문헌 항목을 확인합니다</p>
+  </div>
+
+  <div class="ms-cat-tabs">
+    <button class="ms-cat-btn active" data-cat="">전체 <span class="ms-count" id="cnt-all"></span></button>
+    <button class="ms-cat-btn" data-cat="역법">역법 <span class="ms-count" id="cnt-역법"></span></button>
+    <button class="ms-cat-btn" data-cat="명리">명리 <span class="ms-count" id="cnt-명리"></span></button>
+    <button class="ms-cat-btn" data-cat="혼인">혼인 <span class="ms-count" id="cnt-혼인"></span></button>
+    <button class="ms-cat-btn" data-cat="풍수">풍수 <span class="ms-count" id="cnt-풍수"></span></button>
+    <button class="ms-cat-btn" data-cat="길흉">길흉 <span class="ms-count" id="cnt-길흉"></span></button>
+    <button class="ms-cat-btn" data-cat="제례">제례 <span class="ms-count" id="cnt-제례"></span></button>
+  </div>
+
+  <div class="ms-card-grid" id="categoryGrid">
+    <div class="ms-loading">데이터 불러오는 중…</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════ -->
+<!-- 상세 모달                              -->
+<!-- ══════════════════════════════════════ -->
+<div class="ms-modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="ms-modal" id="detailModal" role="dialog" aria-modal="true" aria-label="문헌 상세">
+  <button class="ms-modal-close" onclick="closeModal()" aria-label="닫기">✕</button>
+  <div class="ms-modal-content" id="modalContent"></div>
+  <div class="ms-modal-actions">
+    <button class="ms-modal-pdf-btn" onclick="printModal()">🖨 이 항목 인쇄</button>
+    <button class="ms-modal-share-btn" onclick="shareItem()">🔗 공유</button>
+  </div>
+</div>
+
+<script src="/static/manseryeok.js"></script>
+</body>
+</html>
