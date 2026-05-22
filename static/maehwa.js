@@ -12,7 +12,6 @@
     flow: document.getElementById("maehwa-panel-flow"),
     suri: document.getElementById("maehwa-panel-suri"),
     synth: document.getElementById("maehwa-panel-synth"),
-    manse: document.getElementById("maehwa-panel-manse"),
   };
 
   let lastData = null;
@@ -23,6 +22,10 @@
     const d = document.createElement("div");
     d.textContent = String(s);
     return d.innerHTML;
+  }
+
+  function fmtStory(s) {
+    return esc(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
   }
 
   function collectPayload() {
@@ -211,53 +214,53 @@
 
   function renderSynth(d) {
     const gf = d.gua_flow;
+    const st = d.synthesis_story || {};
+    const sections = (st.sections || [])
+      .map(
+        (sec) => `<article class="maehwa-story-ch">
+          <h3 class="maehwa-story-ch-title"><span class="maehwa-story-ch-icon" aria-hidden="true">${esc(sec.icon || "")}</span> ${esc(sec.title)}</h3>
+          <p class="maehwa-story-ch-text">${fmtStory(sec.text)}</p>
+        </article>`
+      )
+      .join("");
+
     els.synth.innerHTML = `
-      <div class="maehwa-summary-box">
-        <p>${esc(d.synthesis)}</p>
-        <div class="maehwa-sum-flow">
-          <div class="maehwa-sum-box">
-            <div style="color:#8a6a30;font-size:0.65rem">평생 수</div>
-            <div style="font-size:1.4rem;color:#e8c86a;font-weight:700">${d.suri.basic_num}</div>
-            <div>${esc(d.suri.name)}</div>
-          </div>
-          <div class="maehwa-sum-arr">→</div>
-          <div class="maehwa-sum-box">
-            <div style="color:#8a6a30;font-size:0.65rem">본괘</div>
-            <div style="font-size:1rem;color:#f0e8c8">${esc(gf.ben.name)}</div>
-          </div>
-          <div class="maehwa-sum-arr">→</div>
-          <div class="maehwa-sum-box">
-            <div style="color:#8a6a30;font-size:0.65rem">동효</div>
-            <div style="font-size:1rem;color:#c9a84c">${gf.dong.index}효</div>
-          </div>
-          <div class="maehwa-sum-arr">→</div>
-          <div class="maehwa-sum-box">
-            <div style="color:#8a6a30;font-size:0.65rem">之卦</div>
-            <div style="font-size:1rem;color:#f0e8c8">${esc(gf.zhi.name)}</div>
-          </div>
+      <div class="maehwa-story-hero">
+        <p class="maehwa-story-headline">${fmtStory(st.headline || d.synthesis)}</p>
+        <p class="maehwa-story-opening">${fmtStory(st.opening || "")}</p>
+      </div>
+      <div class="maehwa-sum-flow maehwa-sum-flow--story">
+        <div class="maehwa-sum-box">
+          <div class="maehwa-sum-lbl">평생 수</div>
+          <div class="maehwa-sum-val">${d.suri.basic_num}</div>
+          <div class="maehwa-sum-sub">${esc(d.suri.name)}</div>
+        </div>
+        <div class="maehwa-sum-arr">→</div>
+        <div class="maehwa-sum-box">
+          <div class="maehwa-sum-lbl">본괘</div>
+          <div class="maehwa-sum-val maehwa-sum-val--sm">${esc(gf.ben.name)}</div>
+        </div>
+        <div class="maehwa-sum-arr">→</div>
+        <div class="maehwa-sum-box">
+          <div class="maehwa-sum-lbl">동효</div>
+          <div class="maehwa-sum-val maehwa-sum-val--sm">${gf.dong.index}효</div>
+        </div>
+        <div class="maehwa-sum-arr">→</div>
+        <div class="maehwa-sum-box">
+          <div class="maehwa-sum-lbl">之卦</div>
+          <div class="maehwa-sum-val maehwa-sum-val--sm">${esc(gf.zhi.name)}</div>
         </div>
       </div>
-      <p class="maehwa-dt-note" style="margin-top:1rem">
-        ${esc(d.user_name)}님 · ${d.calendar_input === "lunar" ? "음력" : "양력"} 입력 ·
-        체용 ${esc(gf.ben.ti_yong?.label)}
-      </p>
-    `;
-  }
-
-  function renderManse(d) {
-    const m = d.manseryeok || {};
-    const tabs = (m.placeholder_tabs || [])
-      .map((t) => `<span>${esc(t)}</span>`)
-      .join("");
-    els.manse.innerHTML = `
-      <div class="maehwa-manse">
-        <h3>${esc(m.label || "만세력")}</h3>
-        <p>${esc(m.message)}</p>
-        <div class="maehwa-manse-tags">${tabs}</div>
-        <p class="maehwa-dt-note" style="margin-top:1.25rem">
-          사주 원국·절기·월령·일진·시진과 연동되어 한 화면에서 보실 수 있도록 준비 중입니다.
-        </p>
+      <div class="maehwa-story-body">${sections}</div>
+      <div class="maehwa-story-closing">
+        <h3 class="maehwa-story-ch-title">마무리 · 한 줄기로 읽기</h3>
+        <p class="maehwa-story-ch-text">${fmtStory(st.closing || "")}</p>
       </div>
+      <p class="maehwa-dt-note maehwa-story-meta">
+        ${esc(d.user_name)}님 · ${d.calendar_input === "lunar" ? "음력" : "양력"} ·
+        본괘 ${esc(gf.ben.ti_yong?.label)} · 之卦 ${esc(gf.zhi.ti_yong?.label)} ·
+        올해 ${new Date().getFullYear()}년 ${d.suri.current_year_suri}수
+      </p>
     `;
   }
 
@@ -266,7 +269,6 @@
     renderFlow(d);
     renderSuri(d);
     renderSynth(d);
-    renderManse(d);
     if (els.result) els.result.classList.add("show");
     setTab(activeTab);
   }

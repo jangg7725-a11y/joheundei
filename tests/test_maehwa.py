@@ -17,6 +17,17 @@ def test_build_reading_structure():
     assert r["manseryeok"]["status"] == "coming_soon"
 
 
+def test_synthesis_story_narrative():
+    r = build_reading("lunar", 1985, 8, 15, hour=14, user_name="테스트")
+    story = r.get("synthesis_story") or {}
+    assert story.get("headline")
+    assert story.get("opening")
+    assert len(story.get("sections") or []) >= 5
+    assert story.get("closing")
+    assert "테스트" in story["opening"]
+    assert r["suri"].get("current_year_name")
+
+
 def test_solar_calendar_conversion():
     r = build_reading("solar", 1990, 5, 15, hour=10)
     assert r["datetime"]["solar"]["year"] == 1990

@@ -347,14 +347,33 @@ body.maehwa-mode #saju-form .btn-submit {
   color: #a08040;
 }
 
-.maehwa-summary-box {
-  background: linear-gradient(135deg, rgba(26, 18, 8, 0.95), rgba(20, 16, 8, 0.98));
-  border: 1px solid rgba(201, 168, 76, 0.25);
-  border-radius: 14px;
-  padding: 1.1rem 1.25rem;
-  font-size: 0.9rem;
-  color: #c8b888;
+.maehwa-story-hero {
+  background: linear-gradient(135deg, rgba(26, 18, 8, 0.98), rgba(14, 12, 8, 0.99));
+  border: 1px solid rgba(201, 168, 76, 0.3);
+  border-radius: 16px;
+  padding: 1.25rem 1.35rem;
+  margin-bottom: 1rem;
+}
+
+.maehwa-story-headline {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.05rem;
+  color: #f0e8c8;
+  line-height: 1.75;
+  margin: 0 0 0.85rem;
+  font-weight: 600;
+}
+
+.maehwa-story-headline strong {
+  color: #e8c86a;
+  font-weight: 700;
+}
+
+.maehwa-story-opening {
+  font-size: 0.88rem;
+  color: #a89878;
   line-height: 1.8;
+  margin: 0;
 }
 
 .maehwa-sum-flow {
@@ -364,13 +383,99 @@ body.maehwa-mode #saju-form .btn-submit {
   gap: 0;
 }
 
+.maehwa-sum-flow--story {
+  margin-top: 0;
+  margin-bottom: 1.25rem;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid rgba(42, 32, 16, 0.9);
+}
+
 .maehwa-sum-box {
   flex: 1;
   text-align: center;
-  padding: 0.65rem 0.4rem;
+  padding: 0.75rem 0.4rem;
   background: rgba(13, 11, 6, 0.85);
-  border: 1px solid rgba(42, 32, 16, 0.8);
+  border: none;
   font-size: 0.78rem;
+}
+
+.maehwa-sum-lbl {
+  color: #8a6a30;
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+}
+
+.maehwa-sum-val {
+  font-family: "Noto Serif KR", serif;
+  font-size: 1.35rem;
+  color: #e8c86a;
+  font-weight: 700;
+  margin-top: 0.25rem;
+}
+
+.maehwa-sum-val--sm {
+  font-size: 0.92rem;
+  color: #f0e8c8;
+}
+
+.maehwa-sum-sub {
+  color: #8a7a5a;
+  font-size: 0.72rem;
+  margin-top: 0.2rem;
+}
+
+.maehwa-story-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.maehwa-story-ch {
+  background: rgba(13, 11, 6, 0.75);
+  border: 1px solid rgba(201, 168, 76, 0.15);
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+}
+
+.maehwa-story-ch-title {
+  font-family: "Noto Serif KR", serif;
+  font-size: 0.95rem;
+  color: #e8c86a;
+  margin: 0 0 0.65rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.maehwa-story-ch-icon {
+  font-size: 1rem;
+}
+
+.maehwa-story-ch-text {
+  font-size: 0.88rem;
+  color: #c8b888;
+  line-height: 1.85;
+  margin: 0;
+}
+
+.maehwa-story-ch-text strong {
+  color: #f0e8c8;
+  font-weight: 600;
+}
+
+.maehwa-story-closing {
+  margin-top: 0.85rem;
+  padding: 1.1rem 1.15rem;
+  background: linear-gradient(135deg, rgba(30, 20, 8, 0.9), rgba(20, 16, 8, 0.95));
+  border: 1px solid rgba(201, 168, 76, 0.28);
+  border-radius: 14px;
+}
+
+.maehwa-story-meta {
+  margin-top: 1rem;
+  text-align: center;
 }
 
 .maehwa-sum-arr {
