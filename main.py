@@ -37,6 +37,7 @@ from saju import wolwoon as ww
 from saju import tarot as tr
 from saju import maehwa as mh
 from saju import manseryeok_taekil as mst
+from saju import manseryeok_profile as msp
 
 BASE_DIR = Path(__file__).resolve().parent
 STATIC_DIR = BASE_DIR / "static"
@@ -106,6 +107,12 @@ class IlwoonChartRequest(NativeChartRequest):
         default=None,
         description="일운 기준일(미입력 시 서버 오늘 날짜)",
     )
+
+
+class ManseryeokComputeRequest(NativeChartRequest):
+    """만세력 단독 페이지 — 사주 원국 + 문헌 매칭."""
+
+    user_name: str = Field(default="", description="표시 이름(선택)")
 
 
 class TimelineChartRequest(NativeChartRequest):
@@ -702,6 +709,57 @@ async def manseryeok_page():
     if not page.is_file():
         raise HTTPException(status_code=500, detail="static/manseryeok.html 파일이 없습니다.")
     return FileResponse(page)
+
+
+@app.post("/api/manseryeok/compute")
+async def manseryeok_compute(req: ManseryeokComputeRequest):
+    """
+    만세력 단독 — 생년월일시로 사주 계산 후 문헌 매칭·택일 연동용 요약 반환.
+    메인 페이지(/api/saju) 없이 /manseryeok 에서만 사용.
+    """
+    try:
+        profile = msp.compute_manseryeok_profile(
+            calendar=req.calendar,
+            year=req.year,
+            month=req.month,
+            day=req.day,
+            hour=req.hour,
+            minute=req.minute,
+            gender=req.gender,
+            lunar_leap=req.lunar_leap,
+            ya_jasi=req.ya_jasi,
+            hour_unknown=req.hour_unknown,
+            user_name=req.user_name,
+        )
+        mp = profile["match_params"]
+        scored = []
+        for r in _MANSERYEOK_DB:
+            mc = r.get("match_conditions", {})
+            score = 0
+            if mp.get("shinsin") and mp["shinsin"] in mc.get("십신", []):
+                score += 3
+            if mp.get("sinsal") and mp["sinsal"] in mc.get("신살", []):
+                score += 3
+            if mp.get("gyeokguk") and mp["gyeokguk"] in mc.get("격국", []):
+                score += 2
+            if mp.get("ohaeng") and mp["ohaeng"] in mc.get("five_elements", []):
+                score += 1
+            if score > 0:
+                scored.append({**r, "_match_score": score})
+        scored.sort(
+            key=lambda x: (
+                x["_match_score"],
+                x.get("practical", {}).get("priority_rank", 0),
+            ),
+            reverse=True,
+        )
+        profile["matched_docs"] = scored[:12]
+        profile["matched_total"] = len(scored)
+        return JSONResponse(content={"ok": True, "profile": profile})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"만세력 계산 오류: {e}") from e
 
 
 @app.get("/api/manseryeok/all")

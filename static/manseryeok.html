@@ -24,12 +24,79 @@
   </a>
   <div class="ms-title-wrap">
     <h1 class="ms-main-title">萬歲曆</h1>
-    <p class="ms-subtitle">丙午年 明文堂 大韓民曆 · 고전 문헌 데이터베이스</p>
+    <p class="ms-subtitle">사주 입력 → 만세력·택일·고전 문헌 (단독 이용)</p>
   </div>
   <button class="ms-pdf-btn" id="pdfBtn" onclick="printPage()">
     🖨 인쇄 · PDF
   </button>
 </header>
+
+<!-- ── 사주 입력 (단독 플레이) ── -->
+<section class="ms-saju-panel" id="msSajuPanel">
+  <div class="ms-saju-panel-head">
+    <h2 class="ms-saju-panel-title">사주 입력</h2>
+    <p class="ms-saju-panel-desc">생년월일시를 넣으면 원국·용신·신살과 만세력 문헌이 자동 연결됩니다</p>
+  </div>
+  <form id="msSajuForm" class="ms-saju-form" autocomplete="on">
+    <label class="ms-saju-field ms-saju-field-wide">
+      <span>이름 <small>(선택)</small></span>
+      <input type="text" id="msUserName" maxlength="40" placeholder="표시용" />
+    </label>
+    <div class="ms-saju-field ms-saju-field-wide">
+      <span>달력</span>
+      <div class="ms-seg" role="group" aria-label="달력">
+        <button type="button" class="ms-seg-btn active" data-ms-calendar="solar" aria-pressed="true">양력</button>
+        <button type="button" class="ms-seg-btn" data-ms-calendar="lunar" aria-pressed="false">음력</button>
+      </div>
+      <input type="hidden" id="msCalendar" value="solar" />
+    </div>
+    <div class="ms-saju-grid">
+      <label class="ms-saju-field">
+        <span>생년</span>
+        <input type="number" id="msYear" min="1800" max="2100" value="1990" required />
+      </label>
+      <label class="ms-saju-field">
+        <span>생월</span>
+        <input type="number" id="msMonth" min="1" max="12" value="5" required />
+      </label>
+      <label class="ms-saju-field">
+        <span>생일</span>
+        <input type="number" id="msDay" min="1" max="31" value="15" required />
+      </label>
+      <label class="ms-saju-field">
+        <span>생시</span>
+        <input type="number" id="msHour" min="0" max="23" value="12" />
+      </label>
+      <label class="ms-saju-field">
+        <span>분</span>
+        <input type="number" id="msMinute" min="0" max="59" value="0" />
+      </label>
+    </div>
+    <div class="ms-saju-row-actions">
+      <div class="ms-saju-field">
+        <span>성별</span>
+        <div class="ms-seg" role="group" aria-label="성별">
+          <button type="button" class="ms-seg-btn active" data-ms-gender="male" aria-pressed="true">남</button>
+          <button type="button" class="ms-seg-btn" data-ms-gender="female" aria-pressed="false">여</button>
+        </div>
+        <input type="hidden" id="msGender" value="male" />
+      </div>
+      <div class="ms-saju-field ms-leap-wrap fallback-hidden" id="msLeapWrap">
+        <span>음력</span>
+        <div class="ms-seg" role="group" aria-label="윤달">
+          <button type="button" class="ms-seg-btn active" data-ms-leap="0" aria-pressed="true">평달</button>
+          <button type="button" class="ms-seg-btn" data-ms-leap="1" aria-pressed="false">윤달</button>
+        </div>
+        <input type="hidden" id="msLunarLeap" value="0" />
+      </div>
+      <button type="button" class="ms-saju-opt-btn" id="msHourUnknownBtn" aria-pressed="false">생시 모름</button>
+    </div>
+    <button type="submit" class="ms-search-btn" id="msSajuSubmitBtn">🔮 사주 계산 · 만세력 연동</button>
+    <p class="ms-saju-status" id="msSajuStatus" role="status"></p>
+  </form>
+
+  <div class="ms-saju-summary fallback-hidden" id="msSajuSummary" aria-live="polite"></div>
+</section>
 
 <!-- ── 탭 네비게이션 ── -->
 <nav class="ms-tab-nav" role="tablist">
@@ -227,7 +294,7 @@
 <section class="ms-tab-panel" id="tab-saju" role="tabpanel">
   <div class="ms-section-header">
     <h2>사주 기반 문헌 매칭</h2>
-    <p class="ms-section-desc">십신·신살·격국을 입력하면 관련 고전 문헌을 자동으로 연결합니다</p>
+    <p class="ms-section-desc">상단에서 사주를 계산하면 조건이 자동 채워지고, 직접 수정 후 다시 검색할 수도 있습니다</p>
   </div>
 
   <div class="ms-saju-form">

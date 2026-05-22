@@ -279,6 +279,158 @@
 .ms-search-btn:hover { background: var(--ms-gold-lt); }
 .ms-search-btn:active { transform: scale(0.98); }
 
+/* ── 사주 입력 패널 (단독 플레이) ───────────────────── */
+.ms-saju-panel {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 2rem 1.2rem;
+}
+.ms-saju-panel-head { margin-bottom: 0.8rem; }
+.ms-saju-panel-title {
+  font-family: var(--ms-font-serif);
+  font-size: 1.15rem;
+  margin: 0 0 4px;
+  color: var(--ms-ink);
+}
+.ms-saju-panel-desc {
+  font-size: 0.82rem;
+  color: var(--ms-ink-light);
+  margin: 0;
+}
+.ms-saju-form {
+  background: var(--ms-paper);
+  border: 1px solid var(--ms-border);
+  border-radius: var(--ms-radius);
+  padding: 1.2rem 1.4rem;
+  box-shadow: var(--ms-shadow);
+}
+.ms-saju-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.ms-saju-field label,
+.ms-saju-field > span {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.ms-saju-field input[type="text"],
+.ms-saju-field input[type="number"] {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  box-sizing: border-box;
+  background: rgba(255, 252, 245, 0.95);
+}
+.ms-saju-field-wide { grid-column: 1 / -1; margin-bottom: 8px; }
+.ms-seg {
+  display: inline-flex;
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.ms-seg-btn {
+  padding: 7px 14px;
+  border: none;
+  background: transparent;
+  font-size: 0.84rem;
+  color: var(--ms-ink-light);
+  cursor: pointer;
+  font-family: var(--ms-font-sans);
+}
+.ms-seg-btn.active {
+  background: var(--ms-ink);
+  color: #f5e8c8;
+}
+.ms-saju-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.ms-saju-opt-btn {
+  padding: 7px 12px;
+  border: 1px dashed var(--ms-border);
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.8rem;
+  color: var(--ms-ink-light);
+  cursor: pointer;
+}
+.ms-saju-opt-btn[aria-pressed="true"] {
+  border-color: var(--ms-gold);
+  color: var(--ms-gold);
+  background: rgba(184, 134, 11, 0.1);
+}
+.ms-saju-status {
+  font-size: 0.8rem;
+  color: var(--ms-ink-light);
+  margin: 0.6rem 0 0;
+  min-height: 1.2em;
+}
+.ms-saju-status.error { color: var(--ms-red); }
+.ms-saju-summary {
+  margin-top: 1rem;
+  background: rgba(255, 248, 235, 0.95);
+  border: 1px solid var(--ms-gold);
+  border-radius: var(--ms-radius);
+  padding: 1rem 1.2rem;
+  box-shadow: var(--ms-shadow);
+}
+.ms-saju-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 0.8rem;
+}
+.ms-saju-summary-head h3 {
+  margin: 0;
+  font-family: var(--ms-font-serif);
+  font-size: 1.05rem;
+}
+.ms-saju-pillars {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 0.8rem;
+}
+.ms-saju-pillar {
+  text-align: center;
+  padding: 8px 4px;
+  background: var(--ms-paper-dk);
+  border-radius: 8px;
+  border: 1px solid var(--ms-border);
+}
+.ms-saju-pillar .lab { font-size: 0.72rem; color: var(--ms-ink-light); }
+.ms-saju-pillar .gz {
+  font-family: var(--ms-font-serif);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--ms-ink);
+}
+.ms-saju-pillar .sub { font-size: 0.72rem; color: var(--ms-gold); }
+.ms-saju-meta {
+  font-size: 0.82rem;
+  line-height: 1.6;
+  color: var(--ms-ink);
+}
+.ms-saju-meta strong { color: var(--ms-gold); }
+.ms-saju-linked {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--ms-border);
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+}
+
 /* ── 택일 탭 ────────────────────────────────────────── */
 .ms-taekil-form {
   background: var(--ms-paper);
@@ -775,5 +927,7 @@
   .ms-search-row { grid-template-columns: 1fr; }
   .ms-saju-row { grid-template-columns: 1fr 1fr; }
   .ms-taekil-results { grid-template-columns: 1fr; }
+  .ms-saju-panel { padding: 0 1rem 1rem; }
+  .ms-saju-pillars { grid-template-columns: repeat(2, 1fr); }
   .ms-modal-content { padding: 1.4rem 1.2rem 0.8rem; }
 }

@@ -10,14 +10,18 @@ const API = {
   search:   '/api/manseryeok/search',
   calendar: '/api/manseryeok/calendar',
   taekil:   '/api/manseryeok/taekil',
+  compute:  '/api/manseryeok/compute',
   saju:     '/api/manseryeok/saju-match',
   item:     (id) => `/api/manseryeok/item/${id}`,
   category: (cat) => `/api/manseryeok/category/${encodeURIComponent(cat)}`,
 };
 
+const MS_PROFILE_KEY = 'ms_manseryeok_profile_v1';
+
 /* ── 상태 ────────────────────────────────────────────── */
 let _allData   = [];
 let _curModal  = null;
+let _sajuProfile = null;
 
 /* ── 카테고리 색상 맵 ────────────────────────────────── */
 const CAT_CLASS = {
@@ -33,6 +37,7 @@ const DIFF_CLASS = { beginner:'diff-beginner', intermediate:'diff-intermediate',
 document.addEventListener('DOMContentLoaded', async () => {
   await loadAllData();
   initTabs();
+  initSajuPanel();
   initCalendarTab();
   initTaekilTab();
   initCategoryTab();
@@ -67,6 +72,229 @@ function initTabs() {
       if (target) target.classList.add('active');
     });
   });
+}
+
+/* ══════════════════════════════════════════════════════
+   사주 입력 · 단독 플레이
+══════════════════════════════════════════════════════ */
+function initSajuPanel() {
+  const form = document.getElementById('msSajuForm');
+  if (!form) return;
+
+  bindMsSeg('.ms-seg [data-ms-calendar]', 'data-ms-calendar', (v) => {
+    document.getElementById('msCalendar').value = v;
+    const leapWrap = document.getElementById('msLeapWrap');
+    if (leapWrap) leapWrap.classList.toggle('fallback-hidden', v !== 'lunar');
+  });
+  bindMsSeg('.ms-seg [data-ms-gender]', 'data-ms-gender', (v) => {
+    document.getElementById('msGender').value = v;
+  });
+  bindMsSeg('.ms-seg [data-ms-leap]', 'data-ms-leap', (v) => {
+    document.getElementById('msLunarLeap').value = v;
+  });
+
+  const hourUnk = document.getElementById('msHourUnknownBtn');
+  if (hourUnk) {
+    hourUnk.addEventListener('click', () => {
+      const on = hourUnk.getAttribute('aria-pressed') !== 'true';
+      hourUnk.setAttribute('aria-pressed', on ? 'true' : 'false');
+      document.getElementById('msHour').disabled = on;
+      document.getElementById('msMinute').disabled = on;
+    });
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    runManseryeokCompute();
+  });
+
+  try {
+    const saved = localStorage.getItem(MS_PROFILE_KEY);
+    if (saved) {
+      const p = JSON.parse(saved);
+      restoreSajuForm(p.form);
+      if (p.profile) applySajuProfile(p.profile, { silent: true });
+    }
+  } catch (_) { /* ignore */ }
+}
+
+function bindMsSeg(selector, dataAttr, onPick) {
+  document.querySelectorAll(selector).forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const group = btn.parentElement;
+      group.querySelectorAll('.ms-seg-btn').forEach((b) => {
+        b.classList.remove('active');
+        b.setAttribute('aria-pressed', 'false');
+      });
+      btn.classList.add('active');
+      btn.setAttribute('aria-pressed', 'true');
+      onPick(btn.getAttribute(dataAttr));
+    });
+  });
+}
+
+function collectSajuFormBody() {
+  const calendar = document.getElementById('msCalendar').value;
+  const hourUnk = document.getElementById('msHourUnknownBtn')?.getAttribute('aria-pressed') === 'true';
+  const body = {
+    calendar,
+    year: Number(document.getElementById('msYear').value),
+    month: Number(document.getElementById('msMonth').value),
+    day: Number(document.getElementById('msDay').value),
+    hour: hourUnk ? 12 : Number(document.getElementById('msHour').value),
+    minute: hourUnk ? 0 : Number(document.getElementById('msMinute').value),
+    gender: document.getElementById('msGender').value,
+    lunar_leap: calendar === 'lunar' && document.getElementById('msLunarLeap').value === '1',
+    user_name: (document.getElementById('msUserName').value || '').trim(),
+  };
+  if (hourUnk) body.hour_unknown = true;
+  return body;
+}
+
+function restoreSajuForm(form) {
+  if (!form) return;
+  document.getElementById('msUserName').value = form.user_name || '';
+  document.getElementById('msYear').value = form.year;
+  document.getElementById('msMonth').value = form.month;
+  document.getElementById('msDay').value = form.day;
+  document.getElementById('msHour').value = form.hour ?? 12;
+  document.getElementById('msMinute').value = form.minute ?? 0;
+  setMsSegValue('[data-ms-calendar]', 'data-ms-calendar', form.calendar || 'solar');
+  setMsSegValue('[data-ms-gender]', 'data-ms-gender', form.gender || 'male');
+  setMsSegValue('[data-ms-leap]', 'data-ms-leap', form.lunar_leap ? '1' : '0');
+  const leapWrap = document.getElementById('msLeapWrap');
+  if (leapWrap) leapWrap.classList.toggle('fallback-hidden', form.calendar !== 'lunar');
+  const hourUnk = !!form.hour_unknown;
+  const btn = document.getElementById('msHourUnknownBtn');
+  if (btn) {
+    btn.setAttribute('aria-pressed', hourUnk ? 'true' : 'false');
+    document.getElementById('msHour').disabled = hourUnk;
+    document.getElementById('msMinute').disabled = hourUnk;
+  }
+}
+
+function setMsSegValue(sel, attr, val) {
+  document.querySelectorAll(sel).forEach((b) => {
+    const match = b.getAttribute(attr) === val;
+    b.classList.toggle('active', match);
+    b.setAttribute('aria-pressed', match ? 'true' : 'false');
+  });
+}
+
+async function runManseryeokCompute() {
+  const status = document.getElementById('msSajuStatus');
+  const btn = document.getElementById('msSajuSubmitBtn');
+  const body = collectSajuFormBody();
+  status.textContent = '사주 계산 중…';
+  status.classList.remove('error');
+  if (btn) btn.disabled = true;
+  try {
+    const res = await fetch(API.compute, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(parseApiError(json, res));
+    applySajuProfile(json.profile);
+    try {
+      localStorage.setItem(MS_PROFILE_KEY, JSON.stringify({ form: body, profile: json.profile }));
+    } catch (_) { /* ignore */ }
+    status.textContent = '계산 완료 — 아래 탭에서 달력·택일·문헌을 확인하세요.';
+  } catch (e) {
+    status.textContent = e.message || String(e);
+    status.classList.add('error');
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function parseApiError(json, res) {
+  let d = json?.detail ?? json?.message ?? res.statusText;
+  if (Array.isArray(d)) d = d.map((x) => x.msg || JSON.stringify(x)).join('; ');
+  if (d && typeof d === 'object') d = JSON.stringify(d);
+  return String(d);
+}
+
+function applySajuProfile(profile, opts = {}) {
+  _sajuProfile = profile;
+  renderSajuSummary(profile);
+  applyMatchDropdowns(profile.match_params);
+  renderSajuMatchedDocs(profile);
+  prefillMonthFilters(profile.birth_month_label);
+  if (!opts.silent) {
+    document.getElementById('msSajuSummary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    setTimeout(() => {
+      document.querySelector('[data-tab="saju"]')?.click();
+    }, 400);
+  }
+}
+
+function renderSajuSummary(p) {
+  const box = document.getElementById('msSajuSummary');
+  if (!box) return;
+  const name = p.user_name ? `${escHtml(p.user_name)}님 · ` : '';
+  const solar = p.solar?.label || '';
+  const lunar = p.lunar?.label || '';
+  const pillars = (p.pillars || []).map((row) => `
+    <div class="ms-saju-pillar">
+      <div class="lab">${escHtml(row.label)}</div>
+      <div class="gz">${escHtml(row.pillar)}</div>
+      <div class="sub">${escHtml(row.label_kr)}</div>
+    </div>
+  `).join('');
+  const mp = p.match_params || {};
+  const il = p.ilwoon_today || {};
+  const sins = (p.sinsal_highlights || []).slice(0, 3).map((s) =>
+    `${escHtml(s.신살)}(${escHtml(s.길흉)})`
+  ).join(' · ');
+  box.innerHTML = `
+    <div class="ms-saju-summary-head">
+      <h3>${name}일간 ${escHtml(p.day_master)}(${escHtml(p.day_master_kr)}) · ${escHtml(p.day_master_element)}</h3>
+      <span class="ms-saju-meta">${escHtml(solar)}</span>
+    </div>
+    <div class="ms-saju-pillars">${pillars}</div>
+    <p class="ms-saju-meta"><strong>음력</strong> ${escHtml(lunar)} · <strong>용신</strong> ${escHtml(p.yongsin?.용신_오행 || '')} · <strong>기신</strong> ${escHtml(p.yongsin?.기신_오행 || '')}</p>
+    <p class="ms-saju-meta">${escHtml(p.yongsin?.판단_요약 || '')}</p>
+    <p class="ms-saju-meta"><strong>오늘 일운</strong> ${escHtml(il.간지 || '')} ${escHtml(il.간지한글 || '')} — ${escHtml(il.길흉등급 || '')} · ${escHtml((il.한줄판정 || '').slice(0, 80))}</p>
+    ${sins ? `<p class="ms-saju-meta"><strong>신살</strong> ${sins}</p>` : ''}
+    <p class="ms-saju-linked">만세력 매칭: 십신 ${escHtml(mp.shinsin || '-')} · 신살 ${escHtml(mp.sinsal || '-')} · 격국 ${escHtml(mp.gyeokguk || '-')} · 용신 ${escHtml(mp.ohaeng || '-')} · 관련 문헌 ${p.matched_total ?? 0}건</p>
+  `;
+  box.classList.remove('fallback-hidden');
+}
+
+function applyMatchDropdowns(mp) {
+  const set = (id, val) => {
+    const el = document.getElementById(id);
+    if (el && val) el.value = val;
+  };
+  set('matchShinsin', mp.shinsin);
+  set('matchSinsal', mp.sinsal);
+  set('matchGyeok', mp.gyeokguk);
+  set('matchOhaeng', mp.ohaeng);
+}
+
+function renderSajuMatchedDocs(p) {
+  const grid = document.getElementById('sajuGrid');
+  const info = document.getElementById('sajuInfo');
+  if (!grid) return;
+  const docs = p.matched_docs || [];
+  if (info) {
+    info.style.display = 'block';
+    info.textContent = `사주 연동 — 관련 고전 문헌 ${p.matched_total ?? docs.length}건 (상위 ${docs.length}건 표시)`;
+  }
+  if (docs.length) renderCards(grid, docs, '');
+  else grid.innerHTML = '<div class="ms-empty">매칭된 문헌이 없습니다. 조건을 조정해 보세요.</div>';
+}
+
+function prefillMonthFilters(monthLabel) {
+  if (!monthLabel) return;
+  const taekilMonth = document.getElementById('taekilMonth');
+  if (taekilMonth) taekilMonth.value = monthLabel;
+  document.querySelectorAll('.ms-month-btn').forEach((b) => {
+    b.classList.toggle('active', b.dataset.month === monthLabel);
+  });
+  if (_sajuProfile) loadCalendar(monthLabel);
 }
 
 /* ══════════════════════════════════════════════════════

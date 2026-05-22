@@ -70,3 +70,26 @@ def test_taekil_api():
     assert body["event"] == "결혼"
     assert body["total_parsed_days"] >= 0
     assert "related_docs" in body
+
+
+def test_manseryeok_compute_api():
+    client = TestClient(app)
+    r = client.post(
+        "/api/manseryeok/compute",
+        json={
+            "calendar": "solar",
+            "year": 1990,
+            "month": 5,
+            "day": 15,
+            "hour": 12,
+            "minute": 0,
+            "gender": "male",
+        },
+    )
+    assert r.status_code == 200
+    data = r.json()
+    assert data["ok"] is True
+    p = data["profile"]
+    assert p["day_master"]
+    assert p["match_params"]
+    assert "matched_docs" in p
