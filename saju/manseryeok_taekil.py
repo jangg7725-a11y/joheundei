@@ -6,6 +6,8 @@ from __future__ import annotations
 import re
 from typing import Any
 
+from saju import manseryeok_display as msd
+
 # 행사 유형 → 宜·忌 매칭 키워드 (한자·한글 혼용)
 EVENT_RULES: dict[str, dict[str, list[str]]] = {
     "결혼": {
@@ -148,13 +150,13 @@ def score_day_for_event(day: dict[str, Any], event: str) -> dict[str, Any]:
     if score >= 20:
         grade, verdict = "대길", "전통 만세력 기준 이 날은 해당 행사에 매우 유리합니다."
     elif score >= 8:
-        grade, verdict = "길", "宜(宜)에 해당 행사가 포함되어 택일 후보로 좋습니다."
+        grade, verdict = "길", "의(하기 좋음) 항목에 해당 행사가 있어 택일 후보로 좋습니다."
     elif score >= 0:
         grade, verdict = "평", "길·흉이 섞여 있으니 다른 날과 비교해 보세요."
     elif score >= -15:
-        grade, verdict = "흉", "忌(忌)에 해당 행사가 있어 피하는 편이 낫습니다."
+        grade, verdict = "흉", "기(피할 것) 항목에 해당 행사가 있어 피하는 편이 낫습니다."
     else:
-        grade, verdict = "대흉", "諸事不宜 또는 강한 흉 요인이 있어 피하세요."
+        grade, verdict = "대흉", "만사 길하지 않음(諸事不宜) 또는 강한 흉 요인이 있어 피하세요."
 
     return {
         "score": score,
@@ -192,17 +194,19 @@ def rank_days_for_event(
                 "month_hint": _month_hint(item),
             }
         )
+        month_hint = _month_hint(item)
         for d in days:
             scored = score_day_for_event(d, event)
-            ranked.append(
-                {
-                    **d,
-                    **scored,
-                    "source_id": item.get("id"),
-                    "source_chapter": item.get("chapter"),
-                    "calendar_month": _month_hint(item),
-                }
-            )
+            row = {
+                **d,
+                **scored,
+                "source_id": item.get("id"),
+                "source_chapter": item.get("display_title")
+                or item.get("sub_category")
+                or item.get("chapter"),
+                "calendar_month": month_hint,
+            }
+            ranked.append(msd.enrich_taekil_day(row, item, month_hint=month_hint))
 
     ranked.sort(key=lambda x: x["score"], reverse=True)
     good = [r for r in ranked if r["score"] >= 8][:limit]

@@ -40,6 +40,37 @@ def test_annotate_samjae_line():
     assert "식신" in out
 
 
+def test_day_label_and_ganji_kr():
+    assert msd.day_label_kr("十八日", "火") == "18일(화)"
+    assert msd.ganji_kr("丙寅") == "병인"
+    assert msd.term_kr("結婚") == "결혼"
+
+
+def test_enrich_taekil_day():
+    day = {
+        "day_label": "二十三日",
+        "week_element": "金",
+        "ganji": "辛未",
+        "yi_hits": ["結婚", "會親友"],
+        "ji_hits": [],
+        "yi_raw": "結婚 會親友",
+        "ji_raw": "",
+        "grade": "길",
+        "verdict": "test",
+    }
+    src = {
+        "chapter": "舊十一月中 / 冬至 달력",
+        "sub_category": "월별 일진 달력",
+        "display_title": "월별 일진 달력",
+    }
+    out = msd.enrich_taekil_day(day, src, month_hint="11월")
+    assert out["day_label_kr"] == "23일(금)"
+    assert out["ganji_kr"] == "신미"
+    assert "辛未" in out["ganji_display"]
+    assert "결혼" in out["yi_display"]
+    assert "11월" in out["source_display"]
+
+
 def test_enrich_item_fields():
     db = json.loads(DATA_PATH.read_text(encoding="utf-8"))
     item = next(r for r in db if r["id"] == "012_001")

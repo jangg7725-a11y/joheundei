@@ -206,6 +206,26 @@ _HANJA_PHRASES: dict[str, str] = {
     "木": "목",
     "金": "금",
     "土": "토",
+    "舊": "구",
+    "月中": "월중",
+    "土王用事": "토왕용사",
+    "一月大": "1월 대월",
+    "二月平": "2월 평월",
+    "節": "절",
+    "王": "왕",
+    "用事": "용사",
+    "平": "평",
+    "大": "대",
+    "小": "소",
+    "正": "정",
+    "附錄": "부록",
+    "陽曆": "양력",
+    "行": "행",
+    "會": "회",
+    "親": "친",
+    "友": "우",
+    "祿": "록",
+    "后": "후",
     "官": "관",
     "財": "재",
     "印": "인",
@@ -251,6 +271,63 @@ for _s, _sk in _STEM_KR.items():
 _SORTED_HANJA_KEYS: tuple[str, ...] = tuple(
     sorted(_HANJA_PHRASES.keys(), key=len, reverse=True)
 )
+
+# 택일·달력 宜忌 행사 용어
+EVENT_TERM_KR: dict[str, str] = {
+    "結婚": "결혼",
+    "嫁娶": "가취",
+    "會親友": "친지 방문",
+    "出行": "출행",
+    "祈福": "기복",
+    "沐浴": "목욕",
+    "行嫁": "혼인 출행",
+    "行嫁娶": "혼인·가취",
+    "造葬": "장지·묘 작업",
+    "諸事不宜": "만사 길하지 않음",
+    "移動": "이동",
+    "移徙": "이사",
+    "動土上樓": "착공·상량",
+    "動土": "동토",
+    "納財": "재물 거두기",
+    "破土": "파토",
+    "交易": "거래",
+    "祭祀": "제사",
+    "安葬": "안장",
+    "開市": "개업",
+    "開倉庫": "창고 개방",
+    "造醫": "의원 설치",
+    "伐木": "벌목",
+    "裁種": "심목",
+    "修造": "수리·건축",
+    "求嗣": "자손 기원",
+    "冠帶": "관례",
+    "安床": "안침",
+    "解除": "해제",
+    "畋獵": "사냥",
+    "立券": "계약",
+    "會計": "회계",
+    "裁衣": "재봉",
+    "上官": "관직",
+    "臨政": "임정",
+    "見貴": "귀인 뵙기",
+    "乘船": "승선",
+    "渡水": "건넘",
+    "針灸": "침술",
+    "伐木作梁": "벌목·들보",
+}
+
+_CN_DIGIT = {
+    "一": 1,
+    "二": 2,
+    "三": 3,
+    "四": 4,
+    "五": 5,
+    "六": 6,
+    "七": 7,
+    "八": 8,
+    "九": 9,
+}
+_WEEK_KR = {"日": "일", "月": "월", "火": "화", "水": "수", "金": "금", "土": "토"}
 
 
 def _hanja_ratio(text: str) -> float:
@@ -375,6 +452,112 @@ def annotate_text(text: str) -> str:
             out.append(text[i])
             i += 1
     return "".join(out)
+
+
+def _parse_cn_day_number(part: str) -> int | None:
+    """十八, 二十三, 元 등 → 정수."""
+    part = (part or "").strip()
+    if not part:
+        return None
+    if part == "元":
+        return 1
+    if part == "十":
+        return 10
+    if "十" in part:
+        left, _, right = part.partition("十")
+        tens = 1 if left == "" else _CN_DIGIT.get(left, 0)
+        ones = _CN_DIGIT.get(right, 0) if right else 0
+        return tens * 10 + ones
+    if len(part) == 1 and part in _CN_DIGIT:
+        return _CN_DIGIT[part]
+    return None
+
+
+def day_label_kr(label: str, week_element: str = "") -> str:
+    """十八日 → 18일, 요일 병기."""
+    label = (label or "").strip()
+    m = re.match(r"^(.+?)日", label)
+    if m:
+        n = _parse_cn_day_number(m.group(1))
+        base = f"{n}일" if n is not None else annotate_text(label)
+    else:
+        base = annotate_text(label)
+    wk = (week_element or "").strip()
+    if wk and wk in _WEEK_KR:
+        return f"{base}({_WEEK_KR[wk]})"
+    return base
+
+
+def ganji_kr(ganji: str) -> str:
+    g = (ganji or "").strip()
+    if len(g) == 2 and g[0] in _STEM_KR and g[1] in _BRANCH_KR:
+        return _STEM_KR[g[0]] + _BRANCH_KR[g[1]]
+    return annotate_text(g)
+
+
+def term_kr(term: str) -> str:
+    t = (term or "").strip()
+    if not t:
+        return ""
+    if t in EVENT_TERM_KR:
+        return EVENT_TERM_KR[t]
+    mapped = annotate_text(t)
+    return mapped if mapped != t else t
+
+
+def tokens_kr(tokens: list[str] | None) -> list[str]:
+    return [term_kr(x) for x in (tokens or []) if x]
+
+
+def tokens_join_kr(tokens: list[str] | None, *, limit: int = 12) -> str:
+    parts = tokens_kr((tokens or [])[:limit])
+    return " · ".join(p for p in parts if p)
+
+
+def yi_ji_blob_kr(raw: str, *, max_len: int = 120) -> str:
+    """宜·忌 원문 줄 — 토큰 단위 한글 병기."""
+    raw = (raw or "").strip()
+    if not raw:
+        return ""
+    if len(raw) > max_len:
+        raw = raw[:max_len] + "…"
+    return annotate_text(raw)
+
+
+def source_line_kr(item: dict[str, Any], month_hint: str = "") -> str:
+    title = display_title(item)
+    ch = (item.get("chapter") or "").strip()
+    if ch and title != ch and _hanja_ratio(ch) > 0.2:
+        title = f"{title} · {annotate_text(ch[:36])}"
+    if month_hint:
+        return f"{title} · {month_hint}"
+    return title
+
+
+def enrich_taekil_day(
+    day: dict[str, Any],
+    source_item: dict[str, Any],
+    *,
+    month_hint: str = "",
+) -> dict[str, Any]:
+    """택일 길일·흉일 카드용 한글 표시 필드."""
+    out = dict(day)
+    wk = day.get("week_element") or ""
+    out["day_label_kr"] = day_label_kr(day.get("day_label") or "", wk)
+    gj = day.get("ganji") or ""
+    gjk = ganji_kr(gj)
+    out["ganji_kr"] = gjk
+    out["ganji_display"] = f"{gjk}({gj})" if gjk and gj and gjk != gj else (gjk or gj)
+    out["yi_hits_kr"] = tokens_kr(day.get("yi_hits"))
+    out["ji_hits_kr"] = tokens_kr(day.get("ji_hits"))
+    out["yi_display"] = tokens_join_kr(day.get("yi_hits")) or yi_ji_blob_kr(
+        day.get("yi_raw") or ""
+    )
+    out["ji_display"] = tokens_join_kr(day.get("ji_hits")) or yi_ji_blob_kr(
+        day.get("ji_raw") or ""
+    )
+    out["source_display"] = source_line_kr(source_item, month_hint)
+    return out
 
 
 def display_original(item: dict[str, Any]) -> str:

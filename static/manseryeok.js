@@ -464,22 +464,25 @@ async function runTaekil() {
 
 function renderTaekilDayCard(d, isGood) {
   const cls = TAEKIL_GRADE_CLASS[d.grade] || 'tk-grade-mid';
-  const hits = (isGood ? d.yi_hits : d.ji_hits) || [];
-  const hitStr = hits.length ? hits.join(' · ') : (isGood ? d.yi_raw?.slice(0, 40) : d.ji_raw?.slice(0, 40)) || '';
-  const src = d.source_chapter ? escHtml(d.source_chapter.slice(0, 28)) : '';
-  const calMonth = d.calendar_month ? ` · ${escHtml(d.calendar_month)}` : '';
+  const hitStr = isGood
+    ? (d.yi_display || (d.yi_hits_kr || d.yi_hits || []).join(' · ') || d.yi_raw?.slice(0, 48) || '')
+    : (d.ji_display || (d.ji_hits_kr || d.ji_hits || []).join(' · ') || d.ji_raw?.slice(0, 48) || '');
+  const src = escHtml((d.source_display || d.source_chapter || '').slice(0, 48));
+  const dayLabel = d.day_label_kr || d.day_label || '';
+  const ganjiLine = d.ganji_display || d.ganji_kr || d.ganji || '';
+  const yiJiTag = isGood ? '의(宜)' : '기(忌)';
   return `
     <article class="ms-taekil-day ${cls}" role="button" tabindex="0"
       onclick="openModal('${escHtml(d.source_id || '')}')"
       onkeydown="if(event.key==='Enter')openModal('${escHtml(d.source_id || '')}')">
       <div class="ms-taekil-day-head">
-        <span class="ms-taekil-day-label">${escHtml(d.day_label)}</span>
-        <span class="ms-taekil-ganji">${escHtml(d.ganji)}</span>
+        <span class="ms-taekil-day-label">${escHtml(dayLabel)}</span>
+        <span class="ms-taekil-ganji">${escHtml(ganjiLine)}</span>
         <span class="ms-taekil-grade">${escHtml(d.grade)}</span>
       </div>
       <p class="ms-taekil-verdict">${escHtml(d.verdict)}</p>
-      <p class="ms-taekil-hits">${isGood ? '宜' : '忌'}: ${escHtml(hitStr)}</p>
-      <p class="ms-taekil-src">${src}${calMonth}</p>
+      <p class="ms-taekil-hits"><span class="ms-yiji-tag">${yiJiTag}</span> ${escHtml(hitStr)}</p>
+      <p class="ms-taekil-src">${src}</p>
     </article>
   `;
 }

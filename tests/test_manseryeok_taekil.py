@@ -71,6 +71,11 @@ def test_taekil_api():
     assert body["event"] == "결혼"
     assert body["total_parsed_days"] >= 0
     assert "related_docs" in body
+    if body["good_days"]:
+        d = body["good_days"][0]
+        assert d.get("day_label_kr")
+        assert d.get("ganji_kr")
+        assert d.get("yi_display") or d.get("yi_hits_kr")
 
 
 def test_manseryeok_compute_api():

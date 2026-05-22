@@ -452,6 +452,17 @@
   color: var(--ms-ink-light);
   letter-spacing: 0.02em;
 }
+.ms-yiji-hint,
+.ms-yiji-tag {
+  font-weight: 600;
+  color: var(--ms-gold);
+}
+.ms-taekil-col-title.bad .ms-yiji-hint,
+.ms-taekil-day.tk-grade-bad .ms-yiji-tag,
+.ms-taekil-day.tk-grade-worst .ms-yiji-tag {
+  color: var(--ms-red);
+}
+
 .ms-original-body {
   white-space: pre-wrap;
   word-break: break-word;
