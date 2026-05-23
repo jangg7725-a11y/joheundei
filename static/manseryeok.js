@@ -23,6 +23,7 @@ const MS_PROFILE_KEY = 'ms_manseryeok_profile_v1';
 let _allData   = [];
 let _curModal  = null;
 let _sajuProfile = null;
+let _msFortuneCache = null;
 
 /* ── 카테고리 색상 맵 ────────────────────────────────── */
 const CAT_CLASS = {
@@ -305,11 +306,13 @@ function renderMsFortune(fortune) {
   const wrap = document.getElementById('msFortuneWrap');
   if (!wrap) return;
   if (!fortune?.sewoon) {
+    _msFortuneCache = null;
     wrap.innerHTML = '';
     wrap.classList.add('fallback-hidden');
     return;
   }
 
+  _msFortuneCache = fortune;
   const se = fortune.sewoon;
   const mo = fortune.monthly || {};
   const cy = fortune.center_year || se.year;
@@ -329,12 +332,13 @@ function renderMsFortune(fortune) {
   ].join('');
 
   const monthCells = (mo.months || []).map((m) => `
-    <div class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}" title="${escHtml(m.summary || '')}">
+    <button type="button" class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}"
+      data-wol-slot="${m.slot}" aria-label="${m.slot}월 월운 상세 보기">
       <div class="ms-fort-month-emo">${escHtml(m.emoji || '⚪')}</div>
       <div class="ms-fort-month-num">${m.slot}월</div>
       <div class="ms-fort-month-gz">${escHtml(m.ganzhi || '')}</div>
       <div class="ms-fort-month-grade">${escHtml(m.grade || '')}</div>
-    </div>
+    </button>
   `).join('');
 
   const bestLine = (mo.best_months || []).slice(0, 3).map((b) =>
@@ -416,6 +420,108 @@ function renderMsFortune(fortune) {
     <p class="ms-fort-disclaimer">참고용 안내입니다. 중요한 결정은 여러 정보를 함께 보세요.</p>
   `;
   wrap.classList.remove('fallback-hidden');
+  bindMsWolwoonMonthClicks(wrap);
+}
+
+function bindMsWolwoonMonthClicks(wrap) {
+  if (!wrap || wrap.dataset.wolBound) return;
+  wrap.dataset.wolBound = '1';
+  wrap.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-wol-slot]');
+    if (!btn) return;
+    const slot = Number(btn.dataset.wolSlot);
+    if (slot) showMsWolwoonMonth(slot);
+  });
+}
+
+function showMsWolwoonMonth(slot) {
+  const months = _msFortuneCache?.monthly?.months || [];
+  const m = months.find((x) => Number(x.slot) === Number(slot));
+  if (!m) return;
+  const d = m.detail || m;
+  const cy = _msFortuneCache?.center_year || _msFortuneCache?.sewoon?.year || '';
+
+  const flagLabels = {
+    삼합완성: '삼합 완성',
+    세운월운_동시충: '세운·월운 동시충',
+    세운월운_복음: '세운·월운 복음',
+    공망달: '공망 달',
+    이중충: '이중충',
+  };
+  const flags = Object.entries(d.flags || {})
+    .filter(([, v]) => v)
+    .map(([k]) => flagLabels[k] || k);
+
+  const overlapLi = (d.overlap || []).map((t) => `<li>${escHtml(t)}</li>`).join('');
+  const actionLi = (d.actions || []).map((t) => `<li>${escHtml(t)}</li>`).join('');
+
+  const html = `
+    <div class="ms-modal-cat"><span class="ms-cat-badge cat-명리">월운</span></div>
+    <h2 class="ms-modal-title">${cy}년 ${d.slot}월(절월) <span class="han-inline">${escHtml(d.ganzhi || m.ganzhi || '')}</span></h2>
+    <p class="ms-wol-modal-meta">${escHtml(d.jieqi || '')} 후 · 오행 ${escHtml(d.oheng || '')} · 월간 십신 ${escHtml(d.sipgan || '')}</p>
+    <div class="ms-wol-modal-grade ms-wol-modal-grade--${m.grade_class || 'mid'}">
+      <strong>${escHtml(m.grade || '')}</strong>
+      <span>${escHtml(d.grade_5 || '')}</span>
+    </div>
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">📖 이번 달 핵심</div>
+      <p class="ms-modal-beginner">${escHtml(d.story || m.summary || '')}</p>
+    </div>
+    ${d.sewoon_overlay ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">🔗 세운과의 겹침</div>
+      <p class="ms-modal-text">${escHtml(d.sewoon_overlay)}</p>
+    </div>` : ''}
+    ${overlapLi ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">⚡ 원국·세운 중첩</div>
+      <ul class="ms-wol-modal-list">${overlapLi}</ul>
+    </div>` : ''}
+    ${d.action ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">✅ 하면 좋은 흐름</div>
+      <p class="ms-modal-text">${escHtml(d.action)}</p>
+      ${actionLi ? `<ul class="ms-wol-modal-list">${actionLi}</ul>` : ''}
+    </div>` : ''}
+    ${d.caution ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">⚠️ 주의</div>
+      <p class="ms-modal-text">${escHtml(d.caution)}</p>
+    </div>` : ''}
+    ${d.tips ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">💡 실천 팁</div>
+      <p class="ms-modal-text">${escHtml(d.tips)}</p>
+    </div>` : ''}
+    ${d.health ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">🏥 건강</div>
+      <p class="ms-modal-text">${escHtml(d.health)}${d.body ? `<br><small>${escHtml(d.body)}</small>` : ''}</p>
+    </div>` : ''}
+    ${d.wealth ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">💰 재물</div>
+      <p class="ms-modal-text">${escHtml(d.wealth)}</p>
+    </div>` : ''}
+    ${flags.length ? `
+    <div class="ms-modal-section">
+      <div class="ms-modal-section-label">🏷️ 특이 표시</div>
+      <p class="ms-modal-text">${flags.map((f) => escHtml(f)).join(' · ')}</p>
+    </div>` : ''}
+    <p class="ms-fort-note" style="margin-top:0.75rem">절기 기준 월입니다. 양력 1~12월과 다를 수 있습니다.</p>
+  `;
+
+  const modal = document.getElementById('detailModal');
+  const content = document.getElementById('modalContent');
+  const actions = document.querySelector('.ms-modal-actions');
+  if (actions) actions.style.display = 'none';
+  modal.dataset.mode = 'wolwoon';
+  document.getElementById('modalBackdrop').classList.add('open');
+  modal.classList.add('open');
+  content.innerHTML = html;
+  content.scrollTop = 0;
+  document.body.style.overflow = 'hidden';
+  modal.focus({ preventScroll: true });
 }
 
 function goToSajuMatchTab() {
@@ -1099,6 +1205,11 @@ async function openModal(id) {
 }
 
 function renderModal(item) {
+  const modal = document.getElementById('detailModal');
+  const actions = document.querySelector('.ms-modal-actions');
+  if (modal) delete modal.dataset.mode;
+  if (actions) actions.style.display = '';
+
   const catCls  = CAT_CLASS[item.category] || 'cat-기타';
   const mc      = item.match_conditions || {};
   const cq      = item.content_quality || {};
@@ -1176,7 +1287,11 @@ function renderModal(item) {
 
 function closeModal() {
   document.getElementById('modalBackdrop').classList.remove('open');
-  document.getElementById('detailModal').classList.remove('open');
+  const modal = document.getElementById('detailModal');
+  modal.classList.remove('open');
+  delete modal.dataset.mode;
+  const actions = document.querySelector('.ms-modal-actions');
+  if (actions) actions.style.display = '';
   document.body.style.overflow = '';
   _curModal = null;
 }

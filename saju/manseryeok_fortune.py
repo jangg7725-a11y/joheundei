@@ -216,6 +216,55 @@ def _build_phases(months_out: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return out
 
 
+def _clip_text(val: Any, limit: int = 400) -> str:
+    if val is None:
+        return ""
+    if isinstance(val, dict):
+        bits = [f"{k}: {v}" for k, v in val.items() if v]
+        return " · ".join(bits)[:limit]
+    if isinstance(val, list):
+        return " · ".join(str(x) for x in val if x)[:limit]
+    return str(val).strip()[:limit]
+
+
+def _month_detail_for_ui(m: dict[str, Any]) -> dict[str, Any]:
+    """월운 카드 클릭 시 모달용 상세."""
+    actions = m.get("월별_행동지침") or []
+    if isinstance(actions, str):
+        actions = [actions]
+    ov = m.get("세운_월운_중첩") or {}
+    sew_note = ""
+    if isinstance(ov, dict):
+        badge = (ov.get("배지") or "").strip()
+        sew_note = f"{badge} {ov.get('유형', '')}: {ov.get('설명', '')}".strip()
+    return {
+        "slot": m.get("절월번호"),
+        "ganzhi": m.get("월주간지") or "",
+        "jieqi": m.get("절기명") or "",
+        "oheng": m.get("오행") or "",
+        "sipgan": m.get("월간십신") or "",
+        "grade_5": m.get("길흉등급_5단계") or "",
+        "luck_raw": m.get("길흉판정") or "",
+        "story": m.get("월별_핵심스토리") or m.get("한줄요약") or "",
+        "action": m.get("월별_행동지침_텍스트") or "",
+        "tips": m.get("월별_실천팁") or "",
+        "caution": m.get("월별_주의사항") or "",
+        "actions": [str(x) for x in actions if x][:4],
+        "overlap": [str(x) for x in (m.get("중첩분석") or []) if x][:8],
+        "sewoon_overlay": sew_note[:200],
+        "energy": _clip_text(m.get("월별에너지"), 200),
+        "health": _clip_text(m.get("건강_월별"), 220),
+        "wealth": _clip_text(m.get("재물_타이밍"), 180),
+        "body": m.get("건강부위메모") or "",
+        "chungs": [str(x) for x in (m.get("충발동") or []) if x][:6],
+        "flags": {
+            k: bool(v)
+            for k, v in (m.get("중첩플래그") or {}).items()
+            if isinstance(v, bool) and v
+        },
+    }
+
+
 def _month_emoji(luck: str, icons: list | None) -> str:
     ic = "".join(icons or [])
     if "🔴" in ic:
@@ -286,6 +335,7 @@ def build_manseryeok_fortune(
                 "emoji": _month_emoji(luck, m.get("특이아이콘")),
                 "summary": (m.get("월별_핵심스토리") or m.get("한줄요약") or "")[:160],
                 "action": (m.get("월별_행동지침_텍스트") or "")[:80],
+                "detail": _month_detail_for_ui(m),
             }
         )
 

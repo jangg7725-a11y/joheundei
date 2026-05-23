@@ -27,6 +27,7 @@ def test_build_fortune_has_sewoon_and_twelve_months():
     assert (se.get("position") or {}).get("intro")
     months = (f.get("monthly") or {}).get("months") or []
     assert len(months) == 12
+    assert (months[0].get("detail") or {}).get("story")
 
 
 def test_plain_grade_mapping():
