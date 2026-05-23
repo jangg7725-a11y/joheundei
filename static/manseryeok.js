@@ -344,6 +344,38 @@ function renderMsFortune(fortune) {
     `${b.절월번호}월(${escHtml(b.월주간지 || '')})`
   ).join(', ');
 
+  const storyHtml = (se.story || []).map((p) =>
+    `<p class="ms-fort-story-p">${escHtml(p)}</p>`
+  ).join('');
+
+  const pos = se.position || {};
+  const posIntro = (pos.intro || []).map((p) => `<p class="ms-fort-pos-p">${escHtml(p)}</p>`).join('');
+  const posImpacts = (pos.impacts || []).map((p) => `<li>${escHtml(p)}</li>`).join('');
+  const posAssign = (pos.assignments || []).map((a) => `
+    <div class="ms-fort-assign-card">
+      <h5>${escHtml(a.title || '')}</h5>
+      <p class="ms-fort-assign-meta"><strong>맞물림</strong> ${escHtml(a.status || '')}</p>
+      <p class="ms-fort-assign-meta">${escHtml(a.role || '')}</p>
+      <p class="ms-fort-assign-pred">${escHtml(a.prediction || '')}</p>
+    </div>
+  `).join('');
+
+  const phasesHtml = (se.phases || []).map((ph) => `
+    <div class="ms-fort-phase ms-fort-phase--${ph.grade_class || 'mid'}">
+      <div class="ms-fort-phase-head">
+        <strong>${escHtml(ph.label || '')}</strong>
+        <span class="ms-fort-phase-period">${escHtml(ph.period || '')}</span>
+        <span class="ms-fort-phase-badge">${escHtml(ph.grade || '')}</span>
+      </div>
+      ${(ph.paragraphs || []).map((p) => `<p class="ms-fort-phase-p">${escHtml(p)}</p>`).join('')}
+      ${(ph.highlight_months || []).length
+        ? `<p class="ms-fort-phase-hl">💡 ${ph.highlight_months.map((m) => escHtml(m)).join(' · ')}</p>` : ''}
+    </div>
+  `).join('');
+
+  const eventsHtml = (se.event_notes || []).length
+    ? `<ul class="ms-fort-events">${(se.event_notes || []).map((e) => `<li>${escHtml(e)}</li>`).join('')}</ul>` : '';
+
   wrap.innerHTML = `
     <section class="ms-fortune-sewoon">
       <h3 class="ms-fort-title">${cy}년 총운 <span class="han-inline">(세운 ${escHtml(se.pillar || '')})</span></h3>
@@ -351,11 +383,25 @@ function renderMsFortune(fortune) {
         <span class="ms-fort-grade-badge">${escHtml(se.grade || '')}</span>
         <span class="ms-fort-stars">${escHtml(se.stars_bar || '')}</span>
         <span class="ms-fort-pillar-kr">${escHtml(se.pillar_kr || '')}</span>
+        ${se.nayin ? `<span class="ms-fort-nayin">${escHtml(se.nayin)}</span>` : ''}
       </div>
+      <p class="ms-fort-sip">천간 십신 <strong>${escHtml(se.sip_gan || '')}</strong> · 지지 <strong>${escHtml(se.sip_zhi || '')}</strong></p>
       <p class="ms-fort-headline">${escHtml(se.headline || '')}</p>
-      <p class="ms-fort-closing">${escHtml(se.closing || '')}</p>
       ${domainHtml ? `<div class="ms-fort-domains">${domainHtml}</div>` : ''}
       ${kwHtml}
+      ${storyHtml ? `<div class="ms-fort-story">${storyHtml}</div>` : ''}
+      <p class="ms-fort-closing">${escHtml(se.closing || '')}</p>
+      <details class="ms-fort-details" open>
+        <summary>📖 올해 세운이 사주에 놓이는 위치·궁별 배당</summary>
+        <div class="ms-fort-details-body">
+          ${posIntro}
+          ${posImpacts ? `<ul class="ms-fort-impact-list">${posImpacts}</ul>` : ''}
+          ${posAssign ? `<div class="ms-fort-assign-grid">${posAssign}</div>` : ''}
+          ${eventsHtml}
+        </div>
+      </details>
+      <h4 class="ms-fort-subtitle">초 · 중 · 후 — 한 해 흐름</h4>
+      <div class="ms-fort-phases">${phasesHtml}</div>
       ${se.ipchun_note ? `<p class="ms-fort-note">${escHtml(se.ipchun_note)}</p>` : ''}
     </section>
     <section class="ms-fortune-monthly">

@@ -22,6 +22,9 @@ def test_build_fortune_has_sewoon_and_twelve_months():
     assert se.get("pillar")
     assert se.get("grade") in ("길한 편", "보통", "조심")
     assert se.get("headline")
+    assert len(se.get("story") or []) >= 2
+    assert len(se.get("phases") or []) == 3
+    assert (se.get("position") or {}).get("intro")
     months = (f.get("monthly") or {}).get("months") or []
     assert len(months) == 12
 

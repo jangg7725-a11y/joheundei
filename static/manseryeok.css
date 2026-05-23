@@ -1580,6 +1580,137 @@
   text-align: center;
   margin: 0.25rem 0 0;
 }
+.ms-fort-sip {
+  font-size: 0.82rem;
+  color: var(--ms-ink-light);
+  margin: 0 0 0.5rem;
+}
+.ms-fort-nayin {
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+  margin-left: 0.35rem;
+}
+.ms-fort-story {
+  margin: 0.75rem 0;
+  padding: 0.75rem 0.85rem;
+  background: #fff;
+  border-radius: 10px;
+  border-left: 3px solid var(--ms-gold);
+}
+.ms-fort-story-p {
+  font-size: 0.88rem;
+  line-height: 1.65;
+  margin: 0.4rem 0;
+  color: var(--ms-ink);
+}
+.ms-fort-details {
+  margin: 0.85rem 0;
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+.ms-fort-details summary {
+  padding: 0.65rem 0.85rem;
+  cursor: pointer;
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: var(--ms-gold);
+  background: var(--ms-paper-dk);
+  list-style: none;
+}
+.ms-fort-details summary::-webkit-details-marker { display: none; }
+.ms-fort-details-body { padding: 0.75rem 0.9rem; }
+.ms-fort-pos-p {
+  font-size: 0.84rem;
+  line-height: 1.55;
+  margin: 0.35rem 0;
+}
+.ms-fort-impact-list {
+  margin: 0.5rem 0 0.75rem;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+.ms-fort-assign-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+}
+.ms-fort-assign-card {
+  padding: 0.55rem 0.65rem;
+  border-radius: 8px;
+  border: 1px solid var(--ms-border);
+  background: var(--ms-paper);
+  font-size: 0.8rem;
+}
+.ms-fort-assign-card h5 {
+  margin: 0 0 0.35rem;
+  font-size: 0.82rem;
+  color: var(--ms-ink);
+}
+.ms-fort-assign-meta { margin: 0.2rem 0; color: var(--ms-ink-light); font-size: 0.76rem; }
+.ms-fort-assign-pred { margin: 0.35rem 0 0; line-height: 1.45; }
+.ms-fort-events {
+  margin: 0.65rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.8rem;
+  line-height: 1.5;
+}
+.ms-fort-subtitle {
+  margin: 1rem 0 0.5rem;
+  font-family: var(--ms-font-serif);
+  font-size: 0.95rem;
+  color: var(--ms-ink);
+}
+.ms-fort-phases {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.55rem;
+}
+.ms-fort-phase {
+  padding: 0.65rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--ms-border);
+  background: #fff;
+}
+.ms-fort-phase--good { background: rgba(72, 160, 110, 0.08); }
+.ms-fort-phase--caution { background: rgba(200, 72, 85, 0.08); }
+.ms-fort-phase-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.4rem;
+  margin-bottom: 0.4rem;
+  font-size: 0.82rem;
+}
+.ms-fort-phase-period {
+  font-size: 0.68rem;
+  color: var(--ms-ink-light);
+  width: 100%;
+}
+.ms-fort-phase-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  background: var(--ms-paper-dk);
+}
+.ms-fort-phase-p {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  margin: 0.3rem 0;
+}
+.ms-fort-phase-hl {
+  font-size: 0.72rem;
+  color: var(--ms-ink-light);
+  margin: 0.35rem 0 0;
+}
+@media (max-width: 720px) {
+  .ms-fort-phases { grid-template-columns: 1fr; }
+  .ms-fort-assign-grid { grid-template-columns: 1fr; }
+}
 
 /* ── 궁합 탭 (폼·밝은 톤) ───────────────────────────── */
 .ms-gh-two {
