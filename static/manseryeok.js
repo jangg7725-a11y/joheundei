@@ -515,7 +515,7 @@ const TAEKIL_GRADE_CLASS = {
 };
 
 async function runTaekil() {
-  const event = document.getElementById('taekilEvent')?.value || '택일';
+  const event = document.getElementById('taekilEvent')?.value || '결혼';
   const month = document.getElementById('taekilMonth')?.value || '';
   const goodEl = document.getElementById('taekilGoodList');
   const badEl  = document.getElementById('taekilBadList');

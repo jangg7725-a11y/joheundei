@@ -9,6 +9,8 @@ from typing import Any
 from saju import manseryeok_display as msd
 
 # 행사 유형 → 宜·忌 매칭 키워드 (한자·한글 혼용)
+DEFAULT_TAEKIL_EVENT = "결혼"
+
 EVENT_RULES: dict[str, dict[str, list[str]]] = {
     "결혼": {
         "yi": ["結婚", "嫁娶", "會親友", "出行", "祈福", "沐浴"],
@@ -19,16 +21,6 @@ EVENT_RULES: dict[str, dict[str, list[str]]] = {
         "yi": ["移徙", "移動", "動土上樓", "出行", "納財"],
         "ji": ["諸事不宜", "破土", "造葬", "交易"],
         "label": "이사·이전",
-    },
-    "제사": {
-        "yi": ["祭祀", "祈福", "沐浴"],
-        "ji": ["諸事不宜", "造葬", "行嫁"],
-        "label": "제사·차례",
-    },
-    "장례": {
-        "yi": ["安葬", "破土", "造葬"],
-        "ji": ["諸事不宜", "結婚", "移徙", "開市"],
-        "label": "장례·장례식",
     },
     "개업": {
         "yi": ["開市", "開倉庫", "納財", "造醫"],
@@ -44,16 +36,6 @@ EVENT_RULES: dict[str, dict[str, list[str]]] = {
         "yi": ["安葬", "移徙", "破土"],
         "ji": ["諸事不宜", "結婚", "開市"],
         "label": "이장·묘 이장",
-    },
-    "기도": {
-        "yi": ["祈福", "祭祀", "沐浴", "造醫"],
-        "ji": ["諸事不宜", "造葬"],
-        "label": "기도·기원",
-    },
-    "택일": {
-        "yi": ["祭祀", "祈福", "納財", "出行", "造醫", "沐浴"],
-        "ji": ["諸事不宜", "造葬"],
-        "label": "일반 택일",
     },
 }
 
@@ -117,7 +99,7 @@ def parse_calendar_days(original_text: str) -> list[dict[str, Any]]:
 
 def score_day_for_event(day: dict[str, Any], event: str) -> dict[str, Any]:
     """행사 유형에 대한 택일 점수·등급."""
-    rules = EVENT_RULES.get(event, EVENT_RULES["택일"])
+    rules = EVENT_RULES.get(event, EVENT_RULES[DEFAULT_TAEKIL_EVENT])
     yi_hits: list[str] = []
     ji_hits: list[str] = []
     score = 0
@@ -179,7 +161,7 @@ def rank_days_for_event(
     달력 DB 항목들에서 행사별 길일·흉일 목록 생성.
     ``calendar_items``: canonical_key 일진달력 또는 sub_category 달력 항목.
     """
-    event = event if event in EVENT_RULES else "택일"
+    event = event if event in EVENT_RULES else DEFAULT_TAEKIL_EVENT
     ranked: list[dict[str, Any]] = []
     sources: list[dict[str, str]] = []
 
@@ -543,7 +525,7 @@ def related_theory_items(
     limit: int = 6,
 ) -> list[dict[str, Any]]:
     """행사·택일 관련 고전 문헌 항목 (달력 제외)."""
-    event = event if event in EVENT_RULES else "택일"
+    event = event if event in EVENT_RULES else DEFAULT_TAEKIL_EVENT
     cat_map = {
         "결혼": "혼인",
         "이사": "풍수",

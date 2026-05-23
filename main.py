@@ -883,17 +883,17 @@ async def manseryeok_calendar(month: str = ""):
 
 @app.get("/api/manseryeok/taekil")
 async def manseryeok_taekil(
-    event: str = "택일",
+    event: str = "결혼",
     month: str = "",
     limit: int = 30,
 ):
     """
     만세력 일진 달력 원문(宜·忌) 기반 행사별 택일.
-    - event: 결혼 | 이사 | 제사 | 장례 | 개업 | 건축 | 이장 | 기도 | 택일
-    - month: 1월 … 12월 (빈 값이면 전체 달력 항목 대상)
+    - event: 결혼 | 이사 | 개업 | 건축 | 이장
+    - month: 1월 … 12월 (필수)
     """
     if event not in mst.EVENT_RULES:
-        event = "택일"
+        event = mst.DEFAULT_TAEKIL_EVENT
     cal = _manseryeok_calendar_items(month)
     pack = mst.rank_days_for_event(cal, event, month=month, limit=min(limit, 60))
     return JSONResponse(content=pack)
