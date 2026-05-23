@@ -1238,6 +1238,61 @@
   .ms-main-title { font-size: 1.5rem !important; }
 }
 
+/* ── 일운·달력 접기/펼치기 ─────────────────────────── */
+.ms-ilwoon-collapse {
+  max-width: 920px;
+  margin: 0 auto;
+  border: 1px solid var(--ms-border);
+  border-radius: var(--ms-radius);
+  background: var(--ms-paper);
+  box-shadow: var(--ms-shadow);
+  overflow: hidden;
+}
+.ms-ilwoon-collapse-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  background: var(--ms-paper-dk);
+  border-bottom: 1px solid transparent;
+}
+.ms-ilwoon-collapse-summary::-webkit-details-marker { display: none; }
+.ms-ilwoon-collapse[open] .ms-ilwoon-collapse-summary {
+  border-bottom-color: var(--ms-border);
+}
+.ms-ilwoon-collapse-title {
+  font-family: var(--ms-font-serif);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--ms-ink);
+}
+.ms-ilwoon-collapse-hint {
+  font-size: 0.78rem;
+  color: var(--ms-gold);
+  font-weight: 500;
+}
+.ms-ilwoon-collapse-summary::after {
+  content: '▸';
+  color: var(--ms-gold);
+  font-size: 0.85rem;
+  transition: transform 0.2s ease;
+}
+.ms-ilwoon-collapse[open] .ms-ilwoon-collapse-summary::after {
+  transform: rotate(90deg);
+}
+.ms-ilwoon-collapse .ms-ilwoon-pane {
+  padding: 1rem 1rem 1.2rem;
+}
+#msIlwoonEmpty {
+  max-width: 920px;
+  margin: 0 auto 0.5rem;
+  padding: 0 1rem;
+}
+
 /* ── 일운·달력 (KT 사주 품 일운, 밝은 만세력 톤) ─────── */
 .ms-ilwoon-pane { max-width: 920px; }
 

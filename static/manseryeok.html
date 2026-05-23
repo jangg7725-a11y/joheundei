@@ -118,9 +118,14 @@
     <h2>일운 · 달력</h2>
     <p class="ms-section-desc" id="msIlwoonGuide">상단에서 <strong>사주 계산</strong>을 하면 오늘 일진·시간대 운세·이번 주·이번 달 달력이 표시됩니다.</p>
   </div>
-  <div id="msIlwoonPane" class="ms-ilwoon-pane" aria-live="polite">
-    <div class="ms-empty">사주를 계산해 주세요.</div>
-  </div>
+  <div id="msIlwoonEmpty" class="ms-empty">사주를 계산해 주세요.</div>
+  <details class="ms-ilwoon-collapse" id="msIlwoonCollapse" hidden>
+    <summary class="ms-ilwoon-collapse-summary">
+      <span class="ms-ilwoon-collapse-title">📅 일운·달력 상세</span>
+      <span class="ms-ilwoon-collapse-hint" id="msIlwoonCollapseHint">펼치기</span>
+    </summary>
+    <div id="msIlwoonPane" class="ms-ilwoon-pane" aria-live="polite"></div>
+  </details>
 </section>
 
 <!-- ══════════════════════════════════════ -->

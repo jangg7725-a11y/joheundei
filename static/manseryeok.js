@@ -475,7 +475,47 @@ function prefillMonthFilters(monthLabel) {
    TAB 1: 일운·달력 (KT 사주 품 일운 UI)
 ══════════════════════════════════════════════════════ */
 function initCalendarTab() {
+  bindMsIlwoonCollapse();
   renderMsIlwoonPane(_sajuProfile);
+}
+
+function bindMsIlwoonCollapse() {
+  const det = document.getElementById('msIlwoonCollapse');
+  if (!det || det.dataset.bound) return;
+  det.dataset.bound = '1';
+  const hint = document.getElementById('msIlwoonCollapseHint');
+  const syncHint = () => {
+    if (hint) hint.textContent = det.open ? '접기' : '펼치기';
+  };
+  det.addEventListener('toggle', () => {
+    syncHint();
+    rememberMsIlwoonOpen();
+  });
+  syncHint();
+}
+
+function setMsIlwoonCollapseVisible(show, open = true) {
+  const det = document.getElementById('msIlwoonCollapse');
+  const empty = document.getElementById('msIlwoonEmpty');
+  if (empty) empty.classList.toggle('fallback-hidden', !!show);
+  if (!det) return;
+  det.hidden = !show;
+  if (show) {
+    const saved = sessionStorage.getItem('ms_ilwoon_open');
+    det.open = saved === null ? open : saved === '1';
+    bindMsIlwoonCollapse();
+    const hint = document.getElementById('msIlwoonCollapseHint');
+    if (hint) hint.textContent = det.open ? '접기' : '펼치기';
+  }
+}
+
+function rememberMsIlwoonOpen() {
+  const det = document.getElementById('msIlwoonCollapse');
+  if (det && !det.hidden) {
+    try {
+      sessionStorage.setItem('ms_ilwoon_open', det.open ? '1' : '0');
+    } catch (_) { /* ignore */ }
+  }
 }
 
 function msTodayISO() {
@@ -492,12 +532,14 @@ function renderMsIlwoonPane(profile) {
   const pack = profile?.ilwoon;
   const today = pack?.['오늘'];
   if (!today) {
-    pane.innerHTML = '<div class="ms-empty">상단에서 <strong>사주 계산</strong>을 하면 오늘 일운·주간·월간 달력이 표시됩니다.</div>';
+    setMsIlwoonCollapseVisible(false);
+    pane.innerHTML = '';
     if (guide) {
       guide.innerHTML = '상단에서 <strong>사주 계산</strong>을 하면 오늘 일진·시간대 운세·이번 주·이번 달 달력이 표시됩니다.';
     }
     return;
   }
+  setMsIlwoonCollapseVisible(true, true);
 
   const isoToday = msTodayISO();
   const name = profile.user_name ? `${escHtml(profile.user_name)}님 · ` : '';
