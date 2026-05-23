@@ -289,8 +289,9 @@ function renderSajuSummary(p) {
     <p class="ms-saju-meta">${escHtml(p.yongsin?.판단_요약 || '')}</p>
     <p class="ms-saju-meta"><strong>오늘 일운</strong> ${escHtml(il.간지 || '')} ${escHtml(il.간지한글 || '')} — ${escHtml(il.길흉등급 || '')} · ${escHtml((il.한줄판정 || '').slice(0, 80))}</p>
     ${sins ? `<p class="ms-saju-meta"><strong>신살</strong> ${sins}</p>` : ''}
-    <p class="ms-saju-linked">만세력 매칭: 십신 ${escHtml(mp.shinsin || '-')} · 신살 ${escHtml(mp.sinsal || '-')} · 격국 ${escHtml(mp.gyeokguk || '-')} · 용신 ${escHtml(mp.ohaeng || '-')} ·
-      <button type="button" class="ms-saju-linked-btn" onclick="goToSajuMatchTab()">관련 문헌 ${p.matched_total ?? 0}건</button></p>
+    <p class="ms-saju-linked">
+      <button type="button" class="ms-saju-linked-btn" onclick="goToSajuMatchTab()">나에게 맞는 안내 ${p.matched_total ?? 0}건 보기 →</button>
+    </p>
   `;
   box.classList.remove('fallback-hidden');
 }
@@ -317,17 +318,91 @@ function applyMatchDropdowns(mp) {
   set('matchOhaeng', mp.ohaeng);
 }
 
-function renderSajuMatchedDocs(p) {
+function renderSajuBrief(brief) {
+  const box = document.getElementById('sajuBriefBox');
+  if (!box || !brief) return;
+  const cards = (brief.param_cards || []).map((c) => `
+    <div class="ms-param-card">
+      <span class="ms-param-label">${escHtml(c.label)}</span>
+      <strong class="ms-param-term">${escHtml(c.term)}</strong>
+      <p>${escHtml(c.plain)}</p>
+    </div>
+  `).join('');
+  box.innerHTML = `
+    <h3 class="ms-brief-head">${escHtml(brief.headline || '')}</h3>
+    <p class="ms-brief-lead">${escHtml(brief.lead || '')}</p>
+    ${cards ? `<div class="ms-param-grid">${cards}</div>` : ''}
+    <p class="ms-brief-note">${escHtml(brief.matched_note || '')}</p>
+  `;
+  box.classList.remove('fallback-hidden');
+}
+
+function renderInsightCard(ins) {
+  const evs = (ins.events || []).map((e) =>
+    `<span class="ms-insight-ev">${escHtml(e)}</span>`
+  ).join('');
+  return `
+    <article class="ms-insight-card">
+      <span class="ms-insight-theme">${escHtml(ins.theme || '')}</span>
+      <h4 class="ms-insight-title">${escHtml(ins.title || '')}</h4>
+      <p class="ms-insight-summary">${escHtml(ins.summary || '')}</p>
+      <p class="ms-insight-why">💡 ${escHtml(ins.why || '')}</p>
+      <p class="ms-insight-tip">✅ ${escHtml(ins.tip || '')}</p>
+      ${evs ? `<div class="ms-insight-evs">${evs}</div>` : ''}
+      <button type="button" class="ms-insight-ref-btn" onclick="openModal('${escHtml(ins.id || '')}')">
+        원문·고전 참고: ${escHtml(ins.ref_label || '자세히')} →
+      </button>
+    </article>
+  `;
+}
+
+function renderSajuInsights(insights, docs) {
   const grid = document.getElementById('sajuGrid');
-  const info = document.getElementById('sajuInfo');
+  const refWrap = document.getElementById('sajuRefWrap');
+  const refGrid = document.getElementById('sajuRefGrid');
   if (!grid) return;
-  const docs = p.matched_docs || [];
+
+  const groups = insights?.groups || [];
+  const items = insights?.items || [];
+
+  if (!items.length) {
+    grid.innerHTML = '<div class="ms-empty">아직 연결된 안내가 없습니다. 상단에서 사주를 계산해 주세요.</div>';
+    if (refWrap) refWrap.classList.add('fallback-hidden');
+    return;
+  }
+
+  let html = '';
+  if (groups.length > 1) {
+    html = groups.map((g) => `
+      <section class="ms-insight-group">
+        <h3 class="ms-insight-group-title">${escHtml(g.theme)}</h3>
+        <div class="ms-insight-group-list">
+          ${(g.items || []).map((ins) => renderInsightCard(ins)).join('')}
+        </div>
+      </section>
+    `).join('');
+  } else {
+    html = `<div class="ms-insight-group-list">${items.map((ins) => renderInsightCard(ins)).join('')}</div>`;
+  }
+  grid.innerHTML = html;
+
+  if (refWrap && refGrid && docs?.length) {
+    refWrap.classList.remove('fallback-hidden');
+    renderCards(refGrid, docs, '');
+  } else if (refWrap) {
+    refWrap.classList.add('fallback-hidden');
+  }
+}
+
+function renderSajuMatchedDocs(p) {
+  const info = document.getElementById('sajuInfo');
   if (info) {
     info.style.display = 'block';
-    info.textContent = `사주 연동 — 관련 고전 문헌 ${p.matched_total ?? docs.length}건 (상위 ${docs.length}건 표시)`;
+    info.textContent = (p.match_brief?.matched_note)
+      || `쉬운 안내 ${p.matched_total ?? 0}건을 정리했습니다.`;
   }
-  if (docs.length) renderCards(grid, docs, '');
-  else grid.innerHTML = '<div class="ms-empty">매칭된 문헌이 없습니다. 조건을 조정해 보세요.</div>';
+  renderSajuBrief(p.match_brief);
+  renderSajuInsights(p.match_insights, p.matched_docs || []);
 }
 
 function prefillMonthFilters(monthLabel) {
@@ -628,11 +703,11 @@ async function doSajuMatch() {
 
   const grid = document.getElementById('sajuGrid');
   const info = document.getElementById('sajuInfo');
-  grid.innerHTML = '<div class="ms-loading">매칭 중…</div>';
+  grid.innerHTML = '<div class="ms-loading">안내 정리 중…</div>';
   info.style.display = 'none';
 
   if (!shinsin && !sinsal && !gyeokguk && !ohaeng) {
-    grid.innerHTML = '<div class="ms-empty">최소 하나의 조건을 선택해주세요.</div>';
+    grid.innerHTML = '<div class="ms-empty">고급 모드에서는 최소 하나의 조건을 선택해 주세요. 보통은 상단 「사주 계산」만으로 충분합니다.</div>';
     return;
   }
 
@@ -647,13 +722,15 @@ async function doSajuMatch() {
     const res  = await fetch(`${API.saju}?${params}`);
     const json = await res.json();
 
-    const condList = [shinsin, sinsal, gyeokguk, ohaeng].filter(Boolean);
-    info.textContent = `조건 [${condList.join(', ')}] — 관련 문헌 ${json.total}건 매칭됨`;
-    info.style.display = 'block';
-
-    renderCards(grid, json.data, '');
+    if (json.brief) renderSajuBrief(json.brief);
+    if (info) {
+      info.style.display = 'block';
+      info.textContent = json.brief?.matched_note
+        || `쉬운 안내 ${json.total}건을 정리했습니다.`;
+    }
+    renderSajuInsights(json.insights, json.data || []);
   } catch (e) {
-    grid.innerHTML = '<div class="ms-empty">매칭 중 오류가 발생했습니다.</div>';
+    grid.innerHTML = '<div class="ms-empty">안내를 불러오지 못했습니다.</div>';
   }
 }
 

@@ -38,6 +38,7 @@ from saju import tarot as tr
 from saju import maehwa as mh
 from saju import manseryeok_taekil as mst
 from saju import manseryeok_display as msd
+from saju import manseryeok_insights as msi
 from saju import manseryeok_profile as msp
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -736,6 +737,8 @@ async def manseryeok_compute(req: ManseryeokComputeRequest):
         docs, total = msp.rank_manseryeok_matches(_MANSERYEOK_DB, mp, limit=12)
         profile["matched_docs"] = docs
         profile["matched_total"] = total
+        profile["match_insights"] = msi.build_match_insights(docs, mp)
+        profile["match_brief"] = msi.build_match_brief(profile, total)
         return JSONResponse(content={"ok": True, "profile": profile})
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -927,6 +930,12 @@ async def manseryeok_saju_match(
             },
             "total": total,
             "data": data,
+            "insights": msi.build_match_insights(data, mp, max_items=limit),
+            "brief": msi.build_match_brief(
+                {"match_params": mp, "day_master_kr": ""},
+                total,
+            ),
+            "param_explain": msi.explain_match_params(mp),
         }
     )
 

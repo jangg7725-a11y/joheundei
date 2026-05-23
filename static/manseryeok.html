@@ -110,7 +110,7 @@
     <span class="ms-tab-icon">🔍</span> 찾아보기
   </button>
   <button class="ms-tab" data-tab="saju" role="tab" aria-selected="false">
-    <span class="ms-tab-icon">🌙</span> 사주 매칭
+    <span class="ms-tab-icon">🌙</span> 내 사주 안내
   </button>
   <button class="ms-tab" data-tab="category" role="tab" aria-selected="false">
     <span class="ms-tab-icon">📚</span> 카테고리
@@ -297,14 +297,18 @@
 </section>
 
 <!-- ══════════════════════════════════════ -->
-<!-- TAB 3: 사주 매칭                       -->
+<!-- TAB: 내 사주 안내                       -->
 <!-- ══════════════════════════════════════ -->
 <section class="ms-tab-panel" id="tab-saju" role="tabpanel">
   <div class="ms-section-header">
-    <h2>사주 기반 문헌 매칭</h2>
-    <p class="ms-section-desc">상단에서 사주를 계산하면 조건이 자동 채워지고, 직접 수정 후 다시 검색할 수도 있습니다</p>
+    <h2>나에게 맞는 생활 안내</h2>
+    <p class="ms-section-desc">위에서 사주를 계산하면, 어려운 고전 이름 대신 <strong>쉬운 말로 풀어 드립니다</strong>. 원문 자료는 각 항목의 「원문 보기」에서만 참고하세요.</p>
   </div>
 
+  <div id="sajuBriefBox" class="ms-saju-brief-box fallback-hidden" aria-live="polite"></div>
+
+  <details class="ms-advanced-match">
+    <summary>고급: 전문 용어로 직접 찾기 (선택)</summary>
   <div class="ms-saju-form">
     <div class="ms-saju-row">
       <div class="ms-saju-field">
@@ -364,13 +368,19 @@
         </select>
       </div>
     </div>
-    <button class="ms-search-btn" onclick="doSajuMatch()">🌙 관련 문헌 찾기</button>
+    <button class="ms-search-btn" onclick="doSajuMatch()">🔍 전문 조건으로 다시 찾기</button>
   </div>
+  </details>
 
   <div class="ms-result-info" id="sajuInfo" style="display:none"></div>
-  <div class="ms-card-grid" id="sajuGrid">
-    <div class="ms-empty">조건을 선택하고 문헌 찾기를 눌러주세요</div>
+  <div class="ms-insight-list" id="sajuGrid">
+    <div class="ms-empty">먼저 상단에서 생년월일을 입력하고 「사주 계산」을 눌러 주세요.</div>
   </div>
+
+  <details class="ms-ref-docs-wrap fallback-hidden" id="sajuRefWrap">
+    <summary>📚 고전 원문 참고 목록 (전문가·추가 확인용)</summary>
+    <div class="ms-card-grid ms-ref-grid" id="sajuRefGrid"></div>
+  </details>
 </section>
 
 <!-- ══════════════════════════════════════ -->

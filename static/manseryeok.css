@@ -446,6 +446,160 @@
   color: var(--ms-red);
 }
 
+/* 내 사주 안내 — 쉬운 해석 */
+.ms-saju-brief-box {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.15rem;
+  background: linear-gradient(135deg, #faf6ee 0%, #f5efe3 100%);
+  border: 1px solid var(--ms-border);
+  border-radius: 12px;
+}
+.ms-brief-head {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.ms-brief-lead,
+.ms-brief-note {
+  margin: 0.35rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.65;
+  color: var(--ms-ink);
+}
+.ms-brief-note {
+  color: var(--ms-ink-light);
+  font-size: 0.8rem;
+}
+.ms-param-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.65rem;
+  margin: 0.85rem 0;
+}
+.ms-param-card {
+  padding: 0.65rem 0.75rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px solid var(--ms-border);
+}
+.ms-param-label {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--ms-ink-light);
+  font-weight: 600;
+}
+.ms-param-term {
+  display: block;
+  margin: 0.2rem 0;
+  font-size: 0.95rem;
+  color: var(--ms-gold);
+}
+.ms-param-card p {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+.ms-advanced-match,
+.ms-ref-docs-wrap {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px dashed var(--ms-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.5);
+}
+.ms-advanced-match summary,
+.ms-ref-docs-wrap summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--ms-ink-light);
+}
+.ms-insight-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.ms-insight-group-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ms-gold);
+  border-bottom: 1px solid var(--ms-border);
+  padding-bottom: 0.35rem;
+}
+.ms-insight-group-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.ms-insight-card {
+  padding: 1rem 1.1rem;
+  background: #fff;
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+.ms-insight-theme {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #1a6b4a;
+  background: #e8f5ef;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-bottom: 0.4rem;
+}
+.ms-insight-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.ms-insight-summary {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+  line-height: 1.65;
+  color: var(--ms-ink);
+}
+.ms-insight-why,
+.ms-insight-tip {
+  margin: 0.3rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--ms-ink-light);
+}
+.ms-insight-evs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+.ms-insight-ev {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  background: var(--ms-paper, #faf8f4);
+  border-radius: 4px;
+  color: var(--ms-ink-light);
+}
+.ms-insight-ref-btn {
+  display: inline-block;
+  margin-top: 0.65rem;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  font-size: 0.78rem;
+  color: var(--ms-gold);
+  text-decoration: underline;
+  cursor: pointer;
+}
+.ms-insight-ref-btn:hover {
+  color: var(--ms-red);
+}
+.ms-ref-grid {
+  margin-top: 0.75rem;
+}
+
 .ms-modal-hanja-sub {
   margin: -0.35rem 0 0.85rem;
   font-size: 0.82rem;
