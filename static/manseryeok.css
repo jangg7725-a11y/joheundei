@@ -36,12 +36,14 @@
     url('/static/bg/sansuhwa.png') center/cover no-repeat,
     linear-gradient(160deg, #f5e8c8 0%, #e8d5a0 50%, #d4b878 100%);
   z-index: 0;
+  pointer-events: none;
 }
 .sansuhwa-overlay {
   position: fixed;
   inset: 0;
   background: rgba(255, 248, 230, 0.72);
   z-index: 1;
+  pointer-events: none;
 }
 .manseryeok-body > *:not(.sansuhwa-bg):not(.sansuhwa-overlay):not(.ms-modal):not(.ms-modal-backdrop) {
   position: relative;
