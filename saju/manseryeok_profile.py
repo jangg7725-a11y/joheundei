@@ -6,6 +6,7 @@ from __future__ import annotations
 from typing import Any
 
 from . import ilwoon as il
+from . import manseryeok_fortune as mfort
 from . import ohaeng as oh
 from . import saju_calc as sc
 from . import sinsal as sn
@@ -212,6 +213,9 @@ def compute_manseryeok_profile(
 
     il_pack = il.ilwoon_snapshot_pack(dm, pillars)
     today = il_pack.get("오늘") or {}
+    fortune = mfort.build_manseryeok_fortune(
+        dm, pillars, gender, counts, yong_block
+    )
 
     return {
         "user_name": (user_name or "").strip(),
@@ -241,6 +245,7 @@ def compute_manseryeok_profile(
             if isinstance(r, dict)
         ],
         "ilwoon": il_pack,
+        "fortune": fortune,
         "ilwoon_today": {
             "양력문자열": today.get("양력문자열"),
             "간지": today.get("간지"),

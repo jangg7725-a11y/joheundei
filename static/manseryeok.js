@@ -256,6 +256,7 @@ function parseApiError(json, res) {
 function applySajuProfile(profile, opts = {}) {
   _sajuProfile = profile;
   renderSajuSummary(profile);
+  renderMsFortune(profile.fortune);
   applyMatchDropdowns(profile.match_params);
   prefillMonthFilters(profile.birth_month_label);
   renderMsIlwoonPane(profile);
@@ -298,6 +299,77 @@ function renderSajuSummary(p) {
     ${sins ? `<p class="ms-saju-meta"><strong>신살</strong> ${sins}</p>` : ''}
   `;
   box.classList.remove('fallback-hidden');
+}
+
+function renderMsFortune(fortune) {
+  const wrap = document.getElementById('msFortuneWrap');
+  if (!wrap) return;
+  if (!fortune?.sewoon) {
+    wrap.innerHTML = '';
+    wrap.classList.add('fallback-hidden');
+    return;
+  }
+
+  const se = fortune.sewoon;
+  const mo = fortune.monthly || {};
+  const cy = fortune.center_year || se.year;
+
+  const domainHtml = (se.domains || []).map((d) => `
+    <span class="ms-fort-domain" title="${escHtml(d.label)}">
+      <span class="ms-fort-domain-lab">${escHtml(d.label)}</span>
+      <span class="ms-fort-domain-stars">${escHtml(d.bar || '')}</span>
+    </span>
+  `).join('');
+
+  const luckKw = Array.isArray(se.luck_keywords) ? se.luck_keywords.slice(0, 4) : [];
+  const cautKw = Array.isArray(se.caution_keywords) ? se.caution_keywords.slice(0, 4) : [];
+  const kwHtml = [
+    luckKw.length ? `<p class="ms-fort-kw good">✅ ${luckKw.map((k) => escHtml(String(k))).join(' · ')}</p>` : '',
+    cautKw.length ? `<p class="ms-fort-kw caution">⚠️ ${cautKw.map((k) => escHtml(String(k))).join(' · ')}</p>` : '',
+  ].join('');
+
+  const monthCells = (mo.months || []).map((m) => `
+    <div class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}" title="${escHtml(m.summary || '')}">
+      <div class="ms-fort-month-emo">${escHtml(m.emoji || '⚪')}</div>
+      <div class="ms-fort-month-num">${m.slot}월</div>
+      <div class="ms-fort-month-gz">${escHtml(m.ganzhi || '')}</div>
+      <div class="ms-fort-month-grade">${escHtml(m.grade || '')}</div>
+    </div>
+  `).join('');
+
+  const bestLine = (mo.best_months || []).slice(0, 3).map((b) =>
+    `${b.절월번호}월(${escHtml(b.월주간지 || '')})`
+  ).join(', ');
+  const badLine = (mo.caution_months || []).slice(0, 3).map((b) =>
+    `${b.절월번호}월(${escHtml(b.월주간지 || '')})`
+  ).join(', ');
+
+  wrap.innerHTML = `
+    <section class="ms-fortune-sewoon">
+      <h3 class="ms-fort-title">${cy}년 총운 <span class="han-inline">(세운 ${escHtml(se.pillar || '')})</span></h3>
+      <div class="ms-fort-hero ms-fort-hero--${se.grade_class || 'mid'}">
+        <span class="ms-fort-grade-badge">${escHtml(se.grade || '')}</span>
+        <span class="ms-fort-stars">${escHtml(se.stars_bar || '')}</span>
+        <span class="ms-fort-pillar-kr">${escHtml(se.pillar_kr || '')}</span>
+      </div>
+      <p class="ms-fort-headline">${escHtml(se.headline || '')}</p>
+      <p class="ms-fort-closing">${escHtml(se.closing || '')}</p>
+      ${domainHtml ? `<div class="ms-fort-domains">${domainHtml}</div>` : ''}
+      ${kwHtml}
+      ${se.ipchun_note ? `<p class="ms-fort-note">${escHtml(se.ipchun_note)}</p>` : ''}
+    </section>
+    <section class="ms-fortune-monthly">
+      <h3 class="ms-fort-title">${cy}년 월별 운세</h3>
+      <p class="ms-fort-note">${escHtml(mo.slot_note || '절기 기준 월(입춘부터 1월)입니다.')}</p>
+      <div class="ms-fort-month-strip">${monthCells}</div>
+      ${mo.first_half ? `<p class="ms-fort-half">📈 ${escHtml(mo.first_half)}</p>` : ''}
+      ${mo.second_half ? `<p class="ms-fort-half">📉 ${escHtml(mo.second_half)}</p>` : ''}
+      ${bestLine ? `<p class="ms-fort-tip good">💚 좋은 흐름: ${bestLine}</p>` : ''}
+      ${badLine ? `<p class="ms-fort-tip caution">🔴 조심할 달: ${badLine}</p>` : ''}
+    </section>
+    <p class="ms-fort-disclaimer">참고용 안내입니다. 중요한 결정은 여러 정보를 함께 보세요.</p>
+  `;
+  wrap.classList.remove('fallback-hidden');
 }
 
 function goToSajuMatchTab() {

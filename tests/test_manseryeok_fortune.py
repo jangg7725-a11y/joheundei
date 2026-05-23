@@ -1,0 +1,31 @@
+# -*- coding: utf-8 -*-
+"""manseryeok_fortune — 세운·월운 요약."""
+
+from saju import manseryeok_fortune as mf
+from saju import manseryeok_profile as msp
+
+
+def test_build_fortune_has_sewoon_and_twelve_months():
+    p = msp.compute_manseryeok_profile(
+        calendar="solar",
+        year=1966,
+        month=12,
+        day=15,
+        hour=2,
+        minute=5,
+        gender="female",
+        user_name="테스트",
+    )
+    f = p.get("fortune") or {}
+    assert f.get("center_year")
+    se = f.get("sewoon") or {}
+    assert se.get("pillar")
+    assert se.get("grade") in ("길한 편", "보통", "조심")
+    assert se.get("headline")
+    months = (f.get("monthly") or {}).get("months") or []
+    assert len(months) == 12
+
+
+def test_plain_grade_mapping():
+    assert mf._plain_grade("길운") == "길한 편"
+    assert mf._plain_grade("흉운") == "조심"
