@@ -11,6 +11,7 @@ const API = {
   calendar: '/api/manseryeok/calendar',
   taekil:   '/api/manseryeok/taekil',
   compute:  '/api/manseryeok/compute',
+  goonghap: '/api/goonghap',
   saju:     '/api/manseryeok/saju-match',
   item:     (id) => `/api/manseryeok/item/${id}`,
   category: (cat) => `/api/manseryeok/category/${encodeURIComponent(cat)}`,
@@ -71,6 +72,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSajuPanel();
   initCalendarTab();
   initTaekilTab();
+  if (typeof initMsGoonghapTab === 'function') initMsGoonghapTab();
 });
 
 async function loadAllData() {

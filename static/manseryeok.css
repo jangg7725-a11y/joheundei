@@ -1414,6 +1414,75 @@
 .ms-il-cal-dom { font-weight: 600; }
 .ms-il-cal-badges { font-size: 0.58rem; line-height: 1.1; white-space: nowrap; color: var(--ms-ink-light); }
 
+/* ── 궁합 탭 (폼·밝은 톤) ───────────────────────────── */
+.ms-gh-two {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.ms-gh-person {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  border-radius: var(--ms-radius);
+  border: 1px solid var(--ms-border);
+  background: var(--ms-paper);
+  box-shadow: var(--ms-shadow);
+}
+.ms-gh-person legend {
+  padding: 0 0.35rem;
+  font-family: var(--ms-font-serif);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ms-gold);
+}
+.ms-gh-leap {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.82rem;
+  margin-top: 0.35rem;
+  color: var(--ms-ink-light);
+}
+.ms-gh-hint { margin: 0 0 0.75rem; }
+.ms-gh-prefill-btn {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  border: 1px dashed var(--ms-gold);
+  background: rgba(184, 134, 11, 0.08);
+  color: var(--ms-ink-light);
+  cursor: pointer;
+}
+.ms-gh-prefill-btn:hover {
+  background: var(--ms-paper-dk);
+  color: var(--ms-ink);
+}
+.ms-gh-year-row { max-width: 220px; margin-bottom: 0.75rem; }
+.ms-gh-submit { margin-top: 0.25rem; }
+.ms-gh-result { margin-top: 1rem; }
+
+#tab-goonghap .gh-chart-card {
+  background: #fff;
+  border-color: var(--ms-border);
+}
+#tab-goonghap .gh-heart-track {
+  background: var(--ms-paper-dk);
+  border-color: var(--ms-border);
+}
+#tab-goonghap .gh-detail-block h4,
+#tab-goonghap .gh-chart-name {
+  color: var(--ms-gold);
+}
+#tab-goonghap .gh-scores-block h4 {
+  font-family: var(--ms-font-serif);
+  color: var(--ms-ink);
+}
+
+@media (max-width: 720px) {
+  .ms-gh-two { grid-template-columns: 1fr; }
+}
+
 /* ── 반응형 ─────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ms-header { padding: 1rem; flex-wrap: wrap; gap: 8px; }

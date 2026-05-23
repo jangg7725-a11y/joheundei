@@ -106,6 +106,9 @@
   <button class="ms-tab" data-tab="taekil" role="tab" aria-selected="false">
     <span class="ms-tab-icon">📌</span> 택일
   </button>
+  <button class="ms-tab" data-tab="goonghap" role="tab" aria-selected="false">
+    <span class="ms-tab-icon">💕</span> 궁합
+  </button>
 </nav>
 
 <!-- TAB 1: 일운·달력 (KT 사주 품 일운 UI, 만세력 밝은 톤) -->
@@ -177,6 +180,83 @@
     </div>
   </div>
 
+</section>
+
+<!-- TAB 3: 궁합 (K사주품 /api/goonghap 동일 로직) -->
+<section class="ms-tab-panel" id="tab-goonghap" role="tabpanel">
+  <div class="ms-section-header">
+    <h2>두 사람 궁합</h2>
+    <p class="ms-section-desc">양력·음력 생년월일시를 넣으면 일지·오행·일간·천간합·용신·세운 관점의 참고 궁합을 보여 드립니다.</p>
+  </div>
+
+  <p class="ms-gh-hint">
+    <button type="button" class="ms-gh-prefill-btn" id="msGhPrefillA">↑ 상단 사주 입력을 첫 번째 사람에 넣기</button>
+  </p>
+
+  <form id="msGoonghapForm" class="ms-gh-form">
+    <div class="ms-gh-two">
+      <fieldset class="ms-gh-person">
+        <legend>첫 번째 사람</legend>
+        <label class="ms-saju-field ms-saju-field-wide">
+          <span>이름 <small>(선택)</small></span>
+          <input type="text" id="ms-gh-name-a" maxlength="24" placeholder="A" />
+        </label>
+        <label class="ms-saju-field ms-saju-field-wide">
+          <span>달력</span>
+          <select id="ms-gh-a-calendar">
+            <option value="solar" selected>양력</option>
+            <option value="lunar">음력</option>
+          </select>
+        </label>
+        <div class="ms-saju-grid">
+          <label class="ms-saju-field"><span>생년</span><input type="number" id="ms-gh-a-year" min="1800" max="2100" required /></label>
+          <label class="ms-saju-field"><span>생월</span><input type="number" id="ms-gh-a-month" min="1" max="12" value="1" required /></label>
+          <label class="ms-saju-field"><span>생일</span><input type="number" id="ms-gh-a-day" min="1" max="31" value="1" required /></label>
+          <label class="ms-saju-field"><span>시</span><input type="number" id="ms-gh-a-hour" min="0" max="23" value="12" /></label>
+          <label class="ms-saju-field"><span>분</span><input type="number" id="ms-gh-a-minute" min="0" max="59" value="0" /></label>
+        </div>
+        <label class="ms-saju-field ms-saju-field-wide">
+          <span>성별</span>
+          <select id="ms-gh-a-gender"><option value="male" selected>남</option><option value="female">여</option></select>
+        </label>
+        <label class="ms-gh-leap"><input type="checkbox" id="ms-gh-a-leap" /> 음력 윤달</label>
+      </fieldset>
+
+      <fieldset class="ms-gh-person">
+        <legend>두 번째 사람</legend>
+        <label class="ms-saju-field ms-saju-field-wide">
+          <span>이름 <small>(선택)</small></span>
+          <input type="text" id="ms-gh-name-b" maxlength="24" placeholder="B" />
+        </label>
+        <label class="ms-saju-field ms-saju-field-wide">
+          <span>달력</span>
+          <select id="ms-gh-b-calendar">
+            <option value="solar" selected>양력</option>
+            <option value="lunar">음력</option>
+          </select>
+        </label>
+        <div class="ms-saju-grid">
+          <label class="ms-saju-field"><span>생년</span><input type="number" id="ms-gh-b-year" min="1800" max="2100" required /></label>
+          <label class="ms-saju-field"><span>생월</span><input type="number" id="ms-gh-b-month" min="1" max="12" value="1" required /></label>
+          <label class="ms-saju-field"><span>생일</span><input type="number" id="ms-gh-b-day" min="1" max="31" value="1" required /></label>
+          <label class="ms-saju-field"><span>시</span><input type="number" id="ms-gh-b-hour" min="0" max="23" value="12" /></label>
+          <label class="ms-saju-field"><span>분</span><input type="number" id="ms-gh-b-minute" min="0" max="59" value="0" /></label>
+        </div>
+        <label class="ms-saju-field ms-saju-field-wide">
+          <span>성별</span>
+          <select id="ms-gh-b-gender"><option value="male">남</option><option value="female" selected>여</option></select>
+        </label>
+        <label class="ms-gh-leap"><input type="checkbox" id="ms-gh-b-leap" /> 음력 윤달</label>
+      </fieldset>
+    </div>
+    <label class="ms-saju-field ms-gh-year-row">
+      <span>세운 기준 연도 <small>(비우면 올해)</small></span>
+      <input type="number" id="ms-gh-current-year" min="2000" max="2100" placeholder="예: 2026" />
+    </label>
+    <button type="submit" class="ms-search-btn ms-gh-submit">♥ 궁합 분석하기</button>
+  </form>
+  <p class="ms-saju-status fallback-hidden" id="msGhStatus" role="status" aria-live="polite"></p>
+  <div id="msGoonghapResult" class="goonghap-result ms-gh-result" hidden></div>
 </section>
 
 <!-- 찾아보기·카테고리(고전 DB) — UI 비표시, 데이터는 서버 JSON만 사용 -->
@@ -357,5 +437,6 @@
 </div>
 
 <script src="/static/manseryeok.js"></script>
+<script src="/static/manseryeok_goonghap.js"></script>
 </body>
 </html>
