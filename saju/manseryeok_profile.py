@@ -240,6 +240,7 @@ def compute_manseryeok_profile(
             for r in (sinsal_block.get("신살_목록") or [])[:6]
             if isinstance(r, dict)
         ],
+        "ilwoon": il_pack,
         "ilwoon_today": {
             "양력문자열": today.get("양력문자열"),
             "간지": today.get("간지"),

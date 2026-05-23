@@ -1238,6 +1238,182 @@
   .ms-main-title { font-size: 1.5rem !important; }
 }
 
+/* ── 일운·달력 (KT 사주 품 일운, 밝은 만세력 톤) ─────── */
+.ms-ilwoon-pane { max-width: 920px; }
+
+.ms-il-note {
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+  margin: 0 0 0.85rem;
+  line-height: 1.45;
+}
+
+.ms-il-hero {
+  text-align: center;
+  padding: 1.1rem 1rem;
+  border-radius: var(--ms-radius);
+  border: 1px solid var(--ms-border);
+  background: var(--ms-paper);
+  box-shadow: var(--ms-shadow);
+  margin-bottom: 0.75rem;
+}
+
+.ms-il-hero-date { font-size: 0.85rem; color: var(--ms-ink-light); }
+.ms-il-hero-gz {
+  font-family: var(--ms-font-serif);
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--ms-ink);
+  margin: 0.35rem 0;
+}
+.ms-il-hero-sub { font-size: 0.85rem; color: var(--ms-ink-light); }
+
+.ms-il-quote {
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1.5;
+  margin: 0 0 1rem;
+  color: var(--ms-ink);
+}
+
+.ms-il-detail {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid var(--ms-border);
+  background: #fff;
+  margin-bottom: 0.9rem;
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+.ms-il-detail h5 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  color: var(--ms-gold);
+  font-weight: 600;
+}
+.ms-il-detail-stems {
+  margin: 0.5rem 0 0;
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+}
+
+.ms-il-section-title {
+  margin: 0 0 0.45rem;
+  font-size: 0.9rem;
+  font-family: var(--ms-font-serif);
+  color: var(--ms-ink);
+}
+
+.ms-il-hour-list {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  background: var(--ms-paper);
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.ms-il-hour-list li {
+  padding: 0.4rem 0.65rem;
+  border-bottom: 1px solid var(--ms-border);
+}
+.ms-il-hour-list li:last-child { border-bottom: none; }
+.ms-il-gh-good { color: #2d6a4f; font-weight: 600; }
+.ms-il-gh-bad { color: var(--ms-red); font-weight: 600; }
+.ms-il-gh-mid { color: var(--ms-ink-light); font-weight: 600; }
+
+.ms-il-rec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+  margin-bottom: 0.65rem;
+}
+.ms-il-rec-card {
+  padding: 0.6rem 0.7rem;
+  border-radius: 10px;
+  border: 1px solid var(--ms-border);
+  background: #fff;
+  font-size: 0.8rem;
+}
+.ms-il-rec-good { border-color: rgba(45, 106, 79, 0.35); background: rgba(72, 160, 110, 0.08); }
+.ms-il-rec-bad { border-color: rgba(139, 26, 26, 0.3); background: rgba(200, 72, 85, 0.06); }
+.ms-il-rec-card h5 { margin: 0 0 0.35rem; font-size: 0.76rem; color: var(--ms-ink-light); }
+.ms-il-rec-card ul { margin: 0; padding-left: 1.1rem; }
+.ms-il-luck {
+  font-size: 0.78rem;
+  color: var(--ms-ink-light);
+  margin: 0 0 1rem;
+}
+
+.ms-il-week { margin-bottom: 1.1rem; }
+.ms-il-week-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.ms-il-week-cell {
+  flex: 1 1 calc(14.28% - 0.35rem);
+  min-width: 72px;
+  padding: 0.45rem 0.25rem;
+  border-radius: 8px;
+  border: 1px solid var(--ms-border);
+  background: #fff;
+  text-align: center;
+  font-size: 0.72rem;
+}
+.ms-il-week-good { background: rgba(72, 160, 110, 0.12); border-color: rgba(45, 106, 79, 0.35); }
+.ms-il-week-bad { background: rgba(200, 72, 85, 0.1); border-color: rgba(139, 26, 26, 0.25); }
+.ms-il-week-today { outline: 2px solid var(--ms-gold); }
+.ms-il-week-emo { font-size: 0.95rem; margin-bottom: 0.1rem; }
+.ms-il-week-dow { color: var(--ms-ink-light); }
+.ms-il-week-dom { font-weight: 700; }
+.ms-il-week-gz { margin-top: 0.12rem; font-size: 0.8rem; }
+.ms-il-week-hint { font-size: 0.62rem; color: var(--ms-ink-light); margin-top: 0.2rem; line-height: 1.25; }
+
+.ms-il-cal-section { margin-bottom: 1rem; }
+.ms-il-cal-grid {
+  border: 1px solid var(--ms-border);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--ms-shadow);
+}
+.ms-il-cal-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+}
+.ms-il-cal-head {
+  background: var(--ms-paper-dk);
+  font-size: 0.72rem;
+  color: var(--ms-ink-light);
+  font-weight: 600;
+}
+.ms-il-cal-head > div,
+.ms-il-cal-cell {
+  padding: 0.35rem 0.2rem;
+  text-align: center;
+  border-right: 1px solid var(--ms-border);
+  border-bottom: 1px solid var(--ms-border);
+  min-height: 2.85rem;
+  font-size: 0.76rem;
+}
+.ms-il-cal-row > div:last-child { border-right: none; }
+.ms-il-cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+}
+.ms-il-cal-good { background: rgba(72, 160, 110, 0.18); }
+.ms-il-cal-bad { background: rgba(200, 72, 85, 0.14); }
+.ms-il-cal-pad { opacity: 0.35; background: var(--ms-paper); }
+.ms-il-cal-today { outline: 2px inset var(--ms-gold); font-weight: 700; }
+.ms-il-cal-dom { font-weight: 600; }
+.ms-il-cal-badges { font-size: 0.58rem; line-height: 1.1; white-space: nowrap; color: var(--ms-ink-light); }
+
 /* ── 반응형 ─────────────────────────────────────────── */
 @media (max-width: 640px) {
   .ms-header { padding: 1rem; flex-wrap: wrap; gap: 8px; }
@@ -1248,6 +1424,8 @@
   .ms-search-row { grid-template-columns: 1fr; }
   .ms-saju-row { grid-template-columns: 1fr 1fr; }
   .ms-taekil-results { grid-template-columns: 1fr; }
+  .ms-il-rec-grid { grid-template-columns: 1fr; }
+  .ms-il-week-cell { flex: 1 1 calc(33% - 0.35rem); }
   .ms-saju-panel { padding: 0 1rem 1rem; }
   .ms-saju-pillars { grid-template-columns: repeat(2, 1fr); }
   .ms-modal-content { padding: 1.4rem 1.2rem 0.8rem; }

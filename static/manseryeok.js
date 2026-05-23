@@ -256,11 +256,12 @@ function applySajuProfile(profile, opts = {}) {
   renderSajuSummary(profile);
   applyMatchDropdowns(profile.match_params);
   prefillMonthFilters(profile.birth_month_label);
+  renderMsIlwoonPane(profile);
   updateTaekilGuide();
   if (!opts.silent) {
     document.getElementById('msSajuSummary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     setTimeout(() => {
-      document.querySelector('[data-tab="taekil"]')?.click();
+      document.querySelector('[data-tab="calendar"]')?.click();
     }, 400);
   }
 }
@@ -394,65 +395,146 @@ function prefillMonthFilters(monthLabel) {
   if (!monthLabel) return;
   const taekilMonth = document.getElementById('taekilMonth');
   if (taekilMonth) taekilMonth.value = monthLabel;
-  document.querySelectorAll('.ms-month-btn').forEach((b) => {
-    b.classList.toggle('active', b.dataset.month === monthLabel);
-  });
-  if (_sajuProfile) loadCalendar(monthLabel);
 }
 
 /* ══════════════════════════════════════════════════════
-   TAB 1: 달력·절기
+   TAB 1: 일운·달력 (KT 사주 품 일운 UI)
 ══════════════════════════════════════════════════════ */
 function initCalendarTab() {
-  // 절기 띠 렌더
-  renderJeolgiStrip();
+  renderMsIlwoonPane(_sajuProfile);
+}
 
-  // 월 버튼
-  document.querySelectorAll('.ms-month-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.ms-month-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      loadCalendar(btn.dataset.month);
+function msTodayISO() {
+  const d = new Date();
+  const p = (x) => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+function renderMsIlwoonPane(profile) {
+  const pane = document.getElementById('msIlwoonPane');
+  const guide = document.getElementById('msIlwoonGuide');
+  if (!pane) return;
+
+  const pack = profile?.ilwoon;
+  const today = pack?.['오늘'];
+  if (!today) {
+    pane.innerHTML = '<div class="ms-empty">상단에서 <strong>사주 계산</strong>을 하면 오늘 일운·주간·월간 달력이 표시됩니다.</div>';
+    if (guide) {
+      guide.innerHTML = '상단에서 <strong>사주 계산</strong>을 하면 오늘 일진·시간대 운세·이번 주·이번 달 달력이 표시됩니다.';
+    }
+    return;
+  }
+
+  const isoToday = msTodayISO();
+  const name = profile.user_name ? `${escHtml(profile.user_name)}님 · ` : '';
+  if (guide) {
+    guide.textContent = `${name}사주에 맞춘 오늘 일운과 이번 달 일진 달력입니다.`;
+  }
+
+  const detHead = today['오늘_일진_상세'];
+  const subExtra = detHead?.['오늘의_십신'] ? ` · 십신 ${escHtml(detHead['오늘의_십신'])}` : '';
+  const stems = Array.isArray(detHead?.['천간_원국_메모'])
+    ? detHead['천간_원국_메모'].map((s) => escHtml(String(s))).join(' · ')
+    : '';
+
+  let hourHtml = '';
+  const hours = today['시간대별_운세'];
+  if (Array.isArray(hours) && hours.length) {
+    const items = hours.map((h) => {
+      const gh = escHtml(h['길흉'] || '');
+      const ghCls = gh === '길' ? 'ms-il-gh-good' : gh === '흉' ? 'ms-il-gh-bad' : 'ms-il-gh-mid';
+      return `<li><strong>${escHtml(h['시지'] || '')}시 (${escHtml(h['시간대'] || '')})</strong> <span class="${ghCls}">[${gh}]</span> ${escHtml(h['시주간지'] || '')}·${escHtml(h['시간천간십신'] || '')} — ${escHtml(h['한줄'] || '')}</li>`;
+    }).join('');
+    hourHtml = `<h4 class="ms-il-section-title">오늘 시간대별 운세 (十二時)</h4><ul class="ms-il-hour-list">${items}</ul>`;
+  }
+
+  let recHtml = '';
+  const rec = today['오늘_추천행동'];
+  if (rec && typeof rec === 'object') {
+    const luckNums = Array.isArray(rec['행운_숫자']) ? rec['행운_숫자'].join(', ') : '';
+    const goodLi = (rec['하면_좋은_일'] || []).map((x) => `<li>${escHtml(String(x))}</li>`).join('');
+    const badLi = (rec['피해야_할_일'] || []).map((x) => `<li>${escHtml(String(x))}</li>`).join('');
+    recHtml = `
+      <div class="ms-il-rec-grid">
+        <div class="ms-il-rec-card ms-il-rec-good"><h5>하면 좋은 일</h5><ul>${goodLi}</ul></div>
+        <div class="ms-il-rec-card ms-il-rec-bad"><h5>피해야 할 일</h5><ul>${badLi}</ul></div>
+      </div>
+      <p class="ms-il-luck">행운 방향·색상·숫자: <strong>${escHtml(rec['행운_방향'] || '—')}</strong> · ${escHtml(rec['행운_색상'] || '—')} · <strong>${escHtml(luckNums || '—')}</strong></p>`;
+  }
+
+  const weekPack = pack['이번주'];
+  const weekCells = (weekPack?.일자별 || []).map((d) => {
+    const isTd = (d['양력문자열'] || '') === isoToday;
+    const color = d['표시색'];
+    const cls = [
+      'ms-il-week-cell',
+      isTd ? 'ms-il-week-today' : '',
+      color === 'green' ? 'ms-il-week-good' : '',
+      color === 'red' ? 'ms-il-week-bad' : '',
+    ].filter(Boolean).join(' ');
+    const prev = d['미리보기'] || {};
+    return `<div class="${cls}" title="${escHtml(d['한줄판정'] || '')}">
+      <div class="ms-il-week-emo">${escHtml(prev['이모지등급'] || '')}</div>
+      <div class="ms-il-week-dow">${escHtml(d['요일한글'] || '')}</div>
+      <div class="ms-il-week-dom">${d['일'] != null ? escHtml(String(d['일'])) : ''}</div>
+      <div class="ms-il-week-gz">${escHtml(d['간지'] || '')}</div>
+      <div class="ms-il-week-hint">${escHtml(prev['핵심한마디'] || d['한줄판정'] || '')}</div>
+    </div>`;
+  }).join('');
+
+  const mo = pack['이번달'];
+  const wdays = ['월', '화', '수', '목', '금', '토', '일'];
+  let calRows = '';
+  (mo?.달력 || []).forEach((week) => {
+    let cells = '';
+    week.forEach((cell) => {
+      if (cell['패딩']) {
+        cells += `<div class="ms-il-cal-cell ms-il-cal-pad">${cell['일'] ?? ''}</div>`;
+        return;
+      }
+      const cls = [
+        'ms-il-cal-cell',
+        cell['표시색'] === 'green' ? 'ms-il-cal-good' : '',
+        cell['표시색'] === 'red' ? 'ms-il-cal-bad' : '',
+        (cell['양력문자열'] || '') === isoToday ? 'ms-il-cal-today' : '',
+      ].filter(Boolean).join(' ');
+      const markers = cell['달력_표시'] || {};
+      const badgeStr = [...(markers['길표시'] || []), ...(markers['흉경고'] || [])].join('');
+      const tip = [cell['한줄판정'], ...(markers['길표시'] || []), ...(markers['흉경고'] || [])].filter(Boolean).join(' | ');
+      cells += `<div class="${cls}" title="${escHtml(tip)}"><span class="ms-il-cal-dom">${cell['일'] ?? ''}</span><span class="ms-il-cal-badges">${escHtml(badgeStr)}</span></div>`;
     });
+    calRows += `<div class="ms-il-cal-row">${cells}</div>`;
   });
-}
 
-function renderJeolgiStrip() {
-  const strip = document.getElementById('jeolgiStrip');
-  // 절기표 항목 추출
-  const jeolgi = _allData.filter(d => d.sub_category === '절기표·월표');
-  if (!jeolgi.length) { strip.innerHTML = ''; return; }
+  const detailHtml = detHead ? `
+    <div class="ms-il-detail">
+      <h5>오늘 일진 상세</h5>
+      <p>${escHtml(detHead['내러티브'] || '')}</p>
+      ${stems ? `<p class="ms-il-detail-stems">${stems}</p>` : ''}
+    </div>` : '';
 
-  // 24절기 키워드 추출
-  const keywords24 = ['대한','소한','동지','입춘','우수','경칩','춘분','청명','곡우',
-    '입하','소만','망종','하지','소서','대서','처서','입추','백로','추분','상강','한로','입동','소설','대설'];
-
-  let html = keywords24.map(k =>
-    `<button class="ms-jeolgi-chip" onclick="searchByJeolgi('${k}')">${k}</button>`
-  ).join('');
-  strip.innerHTML = html;
-}
-
-async function loadCalendar(month) {
-  const grid = document.getElementById('calendarGrid');
-  grid.innerHTML = '<div class="ms-loading">불러오는 중…</div>';
-  try {
-    const url = month ? `${API.calendar}?month=${encodeURIComponent(month)}` : API.calendar;
-    const res  = await fetch(url);
-    const json = await res.json();
-    renderCards(grid, json.data, `${month || '전체'} 달력 항목 ${json.total}건`);
-  } catch (e) {
-    grid.innerHTML = '<div class="ms-empty">데이터를 불러올 수 없습니다.</div>';
-  }
-}
-
-function searchByJeolgi(keyword) {
-  document.querySelector('[data-tab="calendar"]')?.click();
-  const inp = document.getElementById('searchKeyword');
-  if (inp) {
-    inp.value = keyword;
-    doSearch();
-  }
+  pane.innerHTML = `
+    ${pack['안내'] ? `<p class="ms-il-note">${escHtml(pack['안내'])}</p>` : ''}
+    <div class="ms-il-hero">
+      <div class="ms-il-hero-date">${escHtml(today['양력문자열'] || isoToday)} · ${escHtml(today['요일한글'] || '')}요일</div>
+      <div class="ms-il-hero-gz">${escHtml(today['간지'] || '')}</div>
+      <div class="ms-il-hero-sub">${escHtml(today['간지한글'] || '')} · 길흉등급 ${escHtml(today['길흉등급'] || '')} (${escHtml(today['표시색한글'] || '')})${subExtra}</div>
+    </div>
+    <p class="ms-il-quote">${escHtml(today['한줄판정'] || '')}</p>
+    ${detailHtml}
+    ${hourHtml}
+    ${recHtml}
+    <div class="ms-il-week">
+      <h4 class="ms-il-section-title">이번 주 미리보기 (월~일)</h4>
+      <div class="ms-il-week-strip">${weekCells}</div>
+    </div>
+    <div class="ms-il-cal-section">
+      <h4 class="ms-il-section-title">이번 달 일진 달력 (${mo?.연 ?? ''}.${String(mo?.월 ?? '').padStart(2, '0')})</h4>
+      <div class="ms-il-cal-grid">
+        <div class="ms-il-cal-row ms-il-cal-head">${wdays.map((w) => `<div>${w}</div>`).join('')}</div>
+        ${calRows}
+      </div>
+    </div>`;
 }
 
 /* ══════════════════════════════════════════════════════

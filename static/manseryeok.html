@@ -101,47 +101,21 @@
 <!-- ── 탭 네비게이션 ── -->
 <nav class="ms-tab-nav" role="tablist">
   <button class="ms-tab active" data-tab="calendar" role="tab" aria-selected="true">
-    <span class="ms-tab-icon">📅</span> 달력 · 절기
+    <span class="ms-tab-icon">📅</span> 일운 · 달력
   </button>
   <button class="ms-tab" data-tab="taekil" role="tab" aria-selected="false">
     <span class="ms-tab-icon">📌</span> 택일
   </button>
 </nav>
 
-<!-- ══════════════════════════════════════ -->
-<!-- TAB 1: 달력·절기                       -->
-<!-- ══════════════════════════════════════ -->
+<!-- TAB 1: 일운·달력 (KT 사주 품 일운 UI, 만세력 밝은 톤) -->
 <section class="ms-tab-panel active" id="tab-calendar" role="tabpanel">
   <div class="ms-section-header">
-    <h2>2026 丙午年 달력 · 절기</h2>
-    <p class="ms-section-desc">날짜를 선택하면 해당 월의 음력·일진·절기 정보를 확인합니다</p>
+    <h2>일운 · 달력</h2>
+    <p class="ms-section-desc" id="msIlwoonGuide">상단에서 <strong>사주 계산</strong>을 하면 오늘 일진·시간대 운세·이번 주·이번 달 달력이 표시됩니다.</p>
   </div>
-
-  <!-- 절기표 요약 카드 -->
-  <div class="ms-jeolgi-strip" id="jeolgiStrip">
-    <div class="ms-jeolgi-loading">절기 정보 불러오는 중…</div>
-  </div>
-
-  <!-- 월 선택 -->
-  <div class="ms-month-selector">
-    <button class="ms-month-btn" data-month="">전체</button>
-    <button class="ms-month-btn" data-month="1월">1월</button>
-    <button class="ms-month-btn" data-month="2월">2월</button>
-    <button class="ms-month-btn" data-month="3월">3월</button>
-    <button class="ms-month-btn" data-month="4월">4월</button>
-    <button class="ms-month-btn" data-month="5월">5월</button>
-    <button class="ms-month-btn" data-month="6월">6월</button>
-    <button class="ms-month-btn" data-month="7월">7월</button>
-    <button class="ms-month-btn" data-month="8월">8월</button>
-    <button class="ms-month-btn" data-month="9월">9월</button>
-    <button class="ms-month-btn" data-month="10월">10월</button>
-    <button class="ms-month-btn" data-month="11월">11월</button>
-    <button class="ms-month-btn" data-month="12월">12월</button>
-  </div>
-
-  <!-- 결과 카드 그리드 -->
-  <div class="ms-card-grid" id="calendarGrid">
-    <div class="ms-empty">월을 선택하거나 전체를 클릭하세요</div>
+  <div id="msIlwoonPane" class="ms-ilwoon-pane" aria-live="polite">
+    <div class="ms-empty">사주를 계산해 주세요.</div>
   </div>
 </section>
 
