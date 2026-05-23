@@ -602,7 +602,9 @@
 
 .ms-panel-hidden,
 .ms-taekil-theory,
-.ms-ref-docs-wrap {
+.ms-ref-docs-wrap,
+#tab-saju,
+.ms-saju-linked {
   display: none !important;
 }
 

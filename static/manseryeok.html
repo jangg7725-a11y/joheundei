@@ -35,7 +35,7 @@
 <section class="ms-saju-panel" id="msSajuPanel">
   <div class="ms-saju-panel-head">
     <h2 class="ms-saju-panel-title">사주 입력</h2>
-    <p class="ms-saju-panel-desc">생년월일시를 넣으면 원국·용신·신살과 택일·생활 안내가 연결됩니다</p>
+    <p class="ms-saju-panel-desc">생년월일시를 넣으면 원국·용신·신살과 택일에 연결됩니다</p>
   </div>
   <form id="msSajuForm" class="ms-saju-form" autocomplete="on">
     <label class="ms-saju-field ms-saju-field-wide">
@@ -92,7 +92,7 @@
       <button type="button" class="ms-saju-opt-btn" id="msHourUnknownBtn" aria-pressed="false">생시 모름</button>
     </div>
     <button type="submit" class="ms-search-btn" id="msSajuSubmitBtn">🔮 사주 계산 · 만세력 연동</button>
-    <p class="ms-saju-status" id="msSajuStatus" role="status"></p>
+    <p class="ms-saju-status fallback-hidden" id="msSajuStatus" role="status" aria-live="polite"></p>
   </form>
 
   <div class="ms-saju-summary fallback-hidden" id="msSajuSummary" aria-live="polite"></div>
@@ -105,9 +105,6 @@
   </button>
   <button class="ms-tab" data-tab="taekil" role="tab" aria-selected="false">
     <span class="ms-tab-icon">📌</span> 택일
-  </button>
-  <button class="ms-tab" data-tab="saju" role="tab" aria-selected="false">
-    <span class="ms-tab-icon">🌙</span> 내 사주 안내
   </button>
 </nav>
 
@@ -270,12 +267,11 @@
   </div>
 </section>
 
-<!-- ══════════════════════════════════════ -->
-<!-- TAB: 내 사주 안내                       -->
-<!-- ══════════════════════════════════════ -->
-<section class="ms-tab-panel" id="tab-saju" role="tabpanel">
+<!-- 내 사주 안내 — UI 비표시 (추후 운세 출력 개편 예정) -->
+<section class="ms-tab-panel ms-panel-hidden" id="tab-saju" role="tabpanel" hidden aria-hidden="true">
   <div class="ms-section-header">
-    <h2>나에게 맞는 생활 안내</h2>
+    <h2>내 사주 운세</h2>
+    <p class="ms-section-desc ms-coming-soon">준비 중입니다. 곧 이곳에서 운세를 쉬운 말로 보여 드릴 예정입니다.</p>
   </div>
 
   <div id="sajuBriefBox" class="ms-saju-brief-box fallback-hidden" aria-live="polite"></div>

@@ -211,11 +211,9 @@ function setMsSegValue(sel, attr, val) {
 }
 
 async function runManseryeokCompute() {
-  const status = document.getElementById('msSajuStatus');
   const btn = document.getElementById('msSajuSubmitBtn');
   const body = collectSajuFormBody();
-  status.textContent = '사주 계산 중…';
-  status.classList.remove('error');
+  setMsSajuStatus('사주 계산 중…');
   if (btn) btn.disabled = true;
   try {
     const res = await fetch(API.compute, {
@@ -229,13 +227,21 @@ async function runManseryeokCompute() {
     try {
       localStorage.setItem(MS_PROFILE_KEY, JSON.stringify({ form: body, profile: json.profile }));
     } catch (_) { /* ignore */ }
-    status.textContent = '계산 완료 — 아래 탭에서 달력·택일·문헌을 확인하세요.';
+    setMsSajuStatus('');
   } catch (e) {
-    status.textContent = e.message || String(e);
-    status.classList.add('error');
+    setMsSajuStatus(e.message || String(e), true);
   } finally {
     if (btn) btn.disabled = false;
   }
+}
+
+function setMsSajuStatus(msg, isError = false) {
+  const status = document.getElementById('msSajuStatus');
+  if (!status) return;
+  const text = msg || '';
+  status.textContent = text;
+  status.classList.toggle('error', !!isError);
+  status.classList.toggle('fallback-hidden', !text);
 }
 
 function parseApiError(json, res) {
@@ -249,13 +255,12 @@ function applySajuProfile(profile, opts = {}) {
   _sajuProfile = profile;
   renderSajuSummary(profile);
   applyMatchDropdowns(profile.match_params);
-  renderSajuMatchedDocs(profile);
   prefillMonthFilters(profile.birth_month_label);
   updateTaekilGuide();
   if (!opts.silent) {
     document.getElementById('msSajuSummary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     setTimeout(() => {
-      document.querySelector('[data-tab="saju"]')?.click();
+      document.querySelector('[data-tab="taekil"]')?.click();
     }, 400);
   }
 }
@@ -288,9 +293,6 @@ function renderSajuSummary(p) {
     <p class="ms-saju-meta">${escHtml(p.yongsin?.판단_요약 || '')}</p>
     <p class="ms-saju-meta"><strong>오늘 일운</strong> ${escHtml(il.간지 || '')} ${escHtml(il.간지한글 || '')} — ${escHtml(il.길흉등급 || '')} · ${escHtml((il.한줄판정 || '').slice(0, 80))}</p>
     ${sins ? `<p class="ms-saju-meta"><strong>신살</strong> ${sins}</p>` : ''}
-    <p class="ms-saju-linked">
-      <button type="button" class="ms-saju-linked-btn" onclick="goToSajuMatchTab()">나에게 맞는 안내 ${p.matched_total ?? 0}건 보기 →</button>
-    </p>
   `;
   box.classList.remove('fallback-hidden');
 }
@@ -384,15 +386,8 @@ function renderSajuInsights(insights, docs) {
 
 }
 
-function renderSajuMatchedDocs(p) {
-  const info = document.getElementById('sajuInfo');
-  if (info) {
-    info.style.display = 'block';
-    info.textContent = (p.match_brief?.matched_note)
-      || `쉬운 안내 ${p.matched_total ?? 0}건을 정리했습니다.`;
-  }
-  renderSajuBrief(p.match_brief);
-  renderSajuInsights(p.match_insights, p.matched_docs || []);
+function renderSajuMatchedDocs(_p) {
+  /* 내 사주 안내 탭 숨김 — API 데이터는 유지, UI는 추후 운세 개편 시 사용 */
 }
 
 function prefillMonthFilters(monthLabel) {
