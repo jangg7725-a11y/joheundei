@@ -104,7 +104,6 @@ def test_taekil_api():
     body = r.json()
     assert body["event"] == "결혼"
     assert body["total_parsed_days"] >= 0
-    assert "related_docs" in body
     if body["good_days"]:
         d = body["good_days"][0]
         assert d.get("day_label_kr")

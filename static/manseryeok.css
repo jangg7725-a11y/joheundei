@@ -600,6 +600,12 @@
   margin-top: 0.75rem;
 }
 
+.ms-panel-hidden,
+.ms-taekil-theory,
+.ms-ref-docs-wrap {
+  display: none !important;
+}
+
 .ms-modal-hanja-sub {
   margin: -0.35rem 0 0.85rem;
   font-size: 0.82rem;

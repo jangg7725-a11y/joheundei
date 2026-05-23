@@ -175,10 +175,9 @@ def build_match_brief(
         "lead": lead,
         "param_cards": explains,
         "matched_note": (
-            f"고전 자료 {matched_total}곳에서 비슷한 내용을 찾았습니다. "
-            "아래는 어려운 문헌 이름 대신 '무엇을 하면 좋은지'만 정리했습니다."
+            f"사주와 맞는 생활 안내 {matched_total}가지를 쉬운 말로 정리했습니다."
             if matched_total
-            else "조건을 선택하면 생활 주제별 안내가 표시됩니다."
+            else "사주 계산 후 안내가 표시됩니다."
         ),
     }
 

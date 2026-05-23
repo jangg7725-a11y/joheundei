@@ -896,7 +896,6 @@ async def manseryeok_taekil(
         event = "택일"
     cal = _manseryeok_calendar_items(month)
     pack = mst.rank_days_for_event(cal, event, month=month, limit=min(limit, 60))
-    pack["related_docs"] = mst.related_theory_items(_MANSERYEOK_DB, event, limit=8)
     return JSONResponse(content=pack)
 
 

@@ -24,7 +24,7 @@
   </a>
   <div class="ms-title-wrap">
     <h1 class="ms-main-title">萬歲曆</h1>
-    <p class="ms-subtitle">사주 입력 → 만세력·택일·고전 문헌 (단독 이용)</p>
+    <p class="ms-subtitle">사주 입력 → 택일·생활 안내 (단독 이용)</p>
   </div>
   <button class="ms-pdf-btn" id="pdfBtn" onclick="printPage()">
     🖨 인쇄 · PDF
@@ -106,14 +106,8 @@
   <button class="ms-tab" data-tab="taekil" role="tab" aria-selected="false">
     <span class="ms-tab-icon">📌</span> 택일
   </button>
-  <button class="ms-tab" data-tab="search" role="tab" aria-selected="false">
-    <span class="ms-tab-icon">🔍</span> 찾아보기
-  </button>
   <button class="ms-tab" data-tab="saju" role="tab" aria-selected="false">
     <span class="ms-tab-icon">🌙</span> 내 사주 안내
-  </button>
-  <button class="ms-tab" data-tab="category" role="tab" aria-selected="false">
-    <span class="ms-tab-icon">📚</span> 카테고리
   </button>
 </nav>
 
@@ -159,8 +153,8 @@
 <!-- ══════════════════════════════════════ -->
 <section class="ms-tab-panel" id="tab-taekil" role="tabpanel">
   <div class="ms-section-header">
-    <h2>행사별 택일 (擇日)</h2>
-    <p class="ms-section-desc">만세력 일진 달력의 宜·忌 원문을 분석해 길일·피할 날을 계산합니다</p>
+    <h2>택일</h2>
+    <p class="ms-section-desc" id="taekilGuide">상단에서 <strong>사주 계산</strong> 후, 행사 유형과 <strong>달(1~12월)</strong>을 고르면 해당 월의 길한 날·피할 날만 보여 드립니다.</p>
   </div>
 
   <div class="ms-taekil-form">
@@ -182,7 +176,7 @@
       <div class="ms-taekil-field">
         <label>달력 월</label>
         <select id="taekilMonth">
-          <option value="">전체 월 (연간 월별 비교)</option>
+          <option value="">— 월 선택 —</option>
           <option value="1월">1월</option>
           <option value="2월">2월</option>
           <option value="3월">3월</option>
@@ -203,19 +197,11 @@
 
   <div class="ms-result-info" id="taekilSummary" style="display:none"></div>
 
-  <div class="ms-taekil-month-overview" id="taekilMonthOverview" hidden>
-    <h3 class="ms-taekil-overview-title">📅 연간 월별 한눈에 보기</h3>
-    <p class="ms-taekil-overview-desc" id="taekilOverviewLine"></p>
-    <div class="ms-taekil-overview-picks" id="taekilOverviewPicks"></div>
-    <div class="ms-month-grid" id="taekilMonthGrid" role="list"></div>
-    <p class="ms-taekil-overview-hint">월 칸을 누르면 해당 월의 길일·흉일만 아래에 모아서 볼 수 있습니다.</p>
-  </div>
-
   <div class="ms-taekil-results">
     <div class="ms-taekil-col">
       <h3 class="ms-taekil-col-title good">✓ 길한 날 <span class="ms-yiji-hint">의(宜)</span></h3>
       <div class="ms-taekil-day-list" id="taekilGoodList">
-        <div class="ms-empty">행사와 월을 선택한 뒤 택일 계산을 눌러주세요</div>
+        <div class="ms-empty">사주 계산 후, 행사·월을 선택하고 「택일 계산」을 눌러 주세요.</div>
       </div>
     </div>
     <div class="ms-taekil-col">
@@ -224,18 +210,10 @@
     </div>
   </div>
 
-  <div class="ms-taekil-theory">
-    <h3 class="ms-taekil-col-title">📚 관련 택일 문헌</h3>
-    <div class="ms-card-grid" id="taekilTheoryGrid">
-      <div class="ms-empty">택일 계산 후 관련 고전 문헌이 표시됩니다</div>
-    </div>
-  </div>
 </section>
 
-<!-- ══════════════════════════════════════ -->
-<!-- TAB 3: 찾아보기                         -->
-<!-- ══════════════════════════════════════ -->
-<section class="ms-tab-panel" id="tab-search" role="tabpanel">
+<!-- 찾아보기·카테고리(고전 DB) — UI 비표시, 데이터는 서버 JSON만 사용 -->
+<section class="ms-tab-panel ms-panel-hidden" id="tab-search" role="tabpanel" hidden>
   <div class="ms-section-header">
     <h2>고전 찾아보기</h2>
     <p class="ms-section-desc">키워드·카테고리·행사 유형으로 관련 문헌을 찾습니다</p>
@@ -302,7 +280,7 @@
 <section class="ms-tab-panel" id="tab-saju" role="tabpanel">
   <div class="ms-section-header">
     <h2>나에게 맞는 생활 안내</h2>
-    <p class="ms-section-desc">위에서 사주를 계산하면, 어려운 고전 이름 대신 <strong>쉬운 말로 풀어 드립니다</strong>. 원문 자료는 각 항목의 「원문 보기」에서만 참고하세요.</p>
+    <p class="ms-section-desc">위에서 사주를 계산하면 <strong>쉬운 말로 풀어 드립니다</strong>. (고전 원문 목록은 화면에 표시하지 않습니다.)</p>
   </div>
 
   <div id="sajuBriefBox" class="ms-saju-brief-box fallback-hidden" aria-live="polite"></div>
@@ -377,16 +355,9 @@
     <div class="ms-empty">먼저 상단에서 생년월일을 입력하고 「사주 계산」을 눌러 주세요.</div>
   </div>
 
-  <details class="ms-ref-docs-wrap fallback-hidden" id="sajuRefWrap">
-    <summary>📚 고전 원문 참고 목록 (전문가·추가 확인용)</summary>
-    <div class="ms-card-grid ms-ref-grid" id="sajuRefGrid"></div>
-  </details>
 </section>
 
-<!-- ══════════════════════════════════════ -->
-<!-- TAB 4: 카테고리 전체                   -->
-<!-- ══════════════════════════════════════ -->
-<section class="ms-tab-panel" id="tab-category" role="tabpanel">
+<section class="ms-tab-panel ms-panel-hidden" id="tab-category" role="tabpanel" hidden>
   <div class="ms-section-header">
     <h2>카테고리 전체 보기</h2>
     <p class="ms-section-desc">분야별로 정리된 58개 고전 문헌 항목을 확인합니다</p>

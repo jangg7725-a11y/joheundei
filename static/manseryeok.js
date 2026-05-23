@@ -71,8 +71,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   initSajuPanel();
   initCalendarTab();
   initTaekilTab();
-  initCategoryTab();
-  initSearchEnter();
 });
 
 async function loadAllData() {
@@ -253,6 +251,7 @@ function applySajuProfile(profile, opts = {}) {
   applyMatchDropdowns(profile.match_params);
   renderSajuMatchedDocs(profile);
   prefillMonthFilters(profile.birth_month_label);
+  updateTaekilGuide();
   if (!opts.silent) {
     document.getElementById('msSajuSummary')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     setTimeout(() => {
@@ -349,9 +348,6 @@ function renderInsightCard(ins) {
       <p class="ms-insight-why">💡 ${escHtml(ins.why || '')}</p>
       <p class="ms-insight-tip">✅ ${escHtml(ins.tip || '')}</p>
       ${evs ? `<div class="ms-insight-evs">${evs}</div>` : ''}
-      <button type="button" class="ms-insight-ref-btn" onclick="openModal('${escHtml(ins.id || '')}')">
-        원문·고전 참고: ${escHtml(ins.ref_label || '자세히')} →
-      </button>
     </article>
   `;
 }
@@ -386,12 +382,6 @@ function renderSajuInsights(insights, docs) {
   }
   grid.innerHTML = html;
 
-  if (refWrap && refGrid && docs?.length) {
-    refWrap.classList.remove('fallback-hidden');
-    renderCards(refGrid, docs, '');
-  } else if (refWrap) {
-    refWrap.classList.add('fallback-hidden');
-  }
 }
 
 function renderSajuMatchedDocs(p) {
@@ -462,24 +452,58 @@ async function loadCalendar(month) {
 }
 
 function searchByJeolgi(keyword) {
-  // 검색 탭으로 이동 후 검색
-  document.querySelector('[data-tab="search"]').click();
-  document.getElementById('searchKeyword').value = keyword;
-  doSearch();
+  document.querySelector('[data-tab="calendar"]')?.click();
+  const inp = document.getElementById('searchKeyword');
+  if (inp) {
+    inp.value = keyword;
+    doSearch();
+  }
 }
 
 /* ══════════════════════════════════════════════════════
    TAB 2: 택일 (만세력 宜·忌 계산)
 ══════════════════════════════════════════════════════ */
 function initTaekilTab() {
-  const tab = document.querySelector('[data-tab="taekil"]');
-  if (!tab) return;
-  tab.addEventListener('click', () => {
-    const good = document.getElementById('taekilGoodList');
-    if (good && good.querySelector('.ms-empty') && !good.dataset.loaded) {
-      runTaekil();
-    }
-  });
+  const eventSel = document.getElementById('taekilEvent');
+  const monthSel = document.getElementById('taekilMonth');
+  if (eventSel) eventSel.addEventListener('change', resetTaekilResults);
+  if (monthSel) monthSel.addEventListener('change', resetTaekilResults);
+  updateTaekilGuide();
+}
+
+function resetTaekilResults() {
+  const goodEl = document.getElementById('taekilGoodList');
+  const badEl = document.getElementById('taekilBadList');
+  const sumEl = document.getElementById('taekilSummary');
+  if (goodEl) {
+    goodEl.dataset.loaded = '';
+    goodEl.innerHTML = '<div class="ms-empty">행사·월을 선택한 뒤 「택일 계산」을 눌러 주세요.</div>';
+  }
+  if (badEl) badEl.innerHTML = '';
+  if (sumEl) sumEl.style.display = 'none';
+}
+
+function updateTaekilGuide() {
+  const guide = document.getElementById('taekilGuide');
+  if (!guide) return;
+  if (!_sajuProfile) {
+    guide.innerHTML = '먼저 상단에서 <strong>사주 계산</strong>을 해 주세요.';
+    return;
+  }
+  const name = _sajuProfile.user_name ? `${escHtml(_sajuProfile.user_name)}님 · ` : '';
+  guide.innerHTML =
+    `${name}<strong>행사 유형</strong>과 <strong>달(1~12월)</strong>을 고른 뒤 「택일 계산」을 누르면 그 달의 길한 날·피할 날만 표시됩니다.`;
+}
+
+function taekilPrerequisiteMessage() {
+  if (!_sajuProfile) {
+    return '먼저 상단에서 생년월일을 입력하고 「사주 계산」을 눌러 주세요.';
+  }
+  const month = document.getElementById('taekilMonth')?.value || '';
+  if (!month) {
+    return '행사 유형과 달(1~12월)을 선택해 주세요.';
+  }
+  return '';
 }
 
 const TAEKIL_GRADE_CLASS = {
@@ -496,47 +520,40 @@ async function runTaekil() {
   const goodEl = document.getElementById('taekilGoodList');
   const badEl  = document.getElementById('taekilBadList');
   const sumEl  = document.getElementById('taekilSummary');
-  const theory = document.getElementById('taekilTheoryGrid');
 
-  goodEl.innerHTML = '<div class="ms-loading">만세력 달력 분석 중…</div>';
+  const prereq = taekilPrerequisiteMessage();
+  if (prereq) {
+    goodEl.innerHTML = `<div class="ms-empty">${escHtml(prereq)}</div>`;
+    badEl.innerHTML = '';
+    if (sumEl) sumEl.style.display = 'none';
+    return;
+  }
+
+  goodEl.innerHTML = '<div class="ms-loading">해당 월 길일·흉일 계산 중…</div>';
   badEl.innerHTML = '';
-  theory.innerHTML = '<div class="ms-loading">관련 문헌 불러오는 중…</div>';
 
   try {
-    const params = new URLSearchParams({ event, limit: '30' });
-    if (month) params.set('month', month);
+    const params = new URLSearchParams({ event, month, limit: '30' });
     const res  = await fetch(`${API.taekil}?${params}`);
     const json = await res.json();
     if (!res.ok) throw new Error(json.detail || '택일 계산 실패');
 
-    const monthLabel = month || '연간 전체';
     sumEl.style.display = 'block';
     sumEl.textContent =
-      `${json.event_label || event} · ${monthLabel} — ` +
-      `분석 ${json.total_parsed_days}일 · 길일 ${json.good_days.length} · 피할 날 ${json.avoid_days.length}`;
-
-    renderTaekilMonthOverview(json.month_overview, !month);
+      `${json.event_label || event} · ${month} — ` +
+      `길한 날 ${json.good_days.length}건 · 피할 날 ${json.avoid_days.length}건`;
 
     goodEl.dataset.loaded = '1';
     goodEl.innerHTML = json.good_days.length
       ? renderTaekilDaysGrouped(json.good_days, true, month)
-      : '<div class="ms-empty">조건에 맞는 길일이 없습니다. 월을 바꾸거나 행사 유형을 조정해 보세요.</div>';
+      : '<div class="ms-empty">이 달에는 조건에 맞는 길일이 없습니다. 다른 월이나 행사를 바꿔 보세요.</div>';
 
     badEl.innerHTML = json.avoid_days.length
       ? renderTaekilDaysGrouped(json.avoid_days, false, month)
-      : '<div class="ms-empty">강한 흉일 후보가 없습니다.</div>';
-
-    const docs = json.related_docs || [];
-    if (docs.length) {
-      renderCards(theory, docs, `관련 문헌 ${docs.length}건`);
-    } else {
-      theory.innerHTML = '<div class="ms-empty">관련 문헌이 없습니다.</div>';
-    }
+      : '<div class="ms-empty">이 달에 특별히 피할 만한 날은 없습니다.</div>';
   } catch (e) {
     goodEl.innerHTML = `<div class="ms-empty">오류: ${escHtml(String(e.message || e))}</div>`;
-    theory.innerHTML = '';
     sumEl.style.display = 'none';
-    renderTaekilMonthOverview(null, false);
   }
 }
 
@@ -901,20 +918,6 @@ function renderModal(item) {
     <div class="ms-modal-section">
       <div class="ms-modal-section-label">📌 적용 행사</div>
       <div class="ms-modal-conditions">${events}</div>
-    </div>` : ''}
-
-    ${(kg.see_also||[]).length ? `
-    <div class="ms-modal-section">
-      <div class="ms-modal-section-label">🔁 관련 문헌</div>
-      <div class="ms-modal-conditions">
-        ${(kg.see_also||[]).map(rid => {
-          const rel = _allData.find(d => d.id === rid);
-          return rel
-            ? `<button class="ms-cond-tag" style="cursor:pointer;border-color:var(--ms-gold);color:var(--ms-gold)"
-                onclick="openModal('${rid}')">${escHtml(msTitle(rel).slice(0,24))}…</button>`
-            : '';
-        }).join('')}
-      </div>
     </div>` : ''}
 
     <div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--ms-border);
