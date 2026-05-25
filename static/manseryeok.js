@@ -24,6 +24,8 @@ let _allData   = [];
 let _curModal  = null;
 let _sajuProfile = null;
 let _msFortuneCache = null;
+/** 겹친 사주 계산 요청 — 늦게 도착한 응답이 화면을 덮어쓰지 않도록 */
+let _msComputeSeq = 0;
 
 /* ── 카테고리 색상 맵 ────────────────────────────────── */
 const CAT_CLASS = {
@@ -113,15 +115,15 @@ function initSajuPanel() {
   const form = document.getElementById('msSajuForm');
   if (!form) return;
 
-  bindMsSeg('.ms-seg [data-ms-calendar]', 'data-ms-calendar', (v) => {
+  bindMsSeg('#msSajuForm [data-ms-calendar]', 'data-ms-calendar', (v) => {
     document.getElementById('msCalendar').value = v;
     const leapWrap = document.getElementById('msLeapWrap');
     if (leapWrap) leapWrap.classList.toggle('fallback-hidden', v !== 'lunar');
   });
-  bindMsSeg('.ms-seg [data-ms-gender]', 'data-ms-gender', (v) => {
+  bindMsSeg('#msSajuForm [data-ms-gender]', 'data-ms-gender', (v) => {
     document.getElementById('msGender').value = v;
   });
-  bindMsSeg('.ms-seg [data-ms-leap]', 'data-ms-leap', (v) => {
+  bindMsSeg('#msSajuForm [data-ms-leap]', 'data-ms-leap', (v) => {
     document.getElementById('msLunarLeap').value = v;
   });
 
@@ -145,9 +147,12 @@ function initSajuPanel() {
     if (saved) {
       const p = JSON.parse(saved);
       restoreSajuForm(p.form);
+      syncMsSajuSegHiddenFields();
       if (p.profile) applySajuProfile(p.profile, { silent: true });
     }
   } catch (_) { /* ignore */ }
+
+  form.addEventListener('change', syncMsSajuSegHiddenFields);
 }
 
 function bindMsSeg(selector, dataAttr, onPick) {
@@ -165,7 +170,34 @@ function bindMsSeg(selector, dataAttr, onPick) {
   });
 }
 
+/** 세그먼트 버튼(양력/음력·성별·윤달) UI ↔ hidden input 동기화 */
+function syncMsSajuSegHiddenFields() {
+  const form = document.getElementById('msSajuForm');
+  if (!form) return;
+
+  const calBtn = form.querySelector('[data-ms-calendar].active');
+  const calEl = document.getElementById('msCalendar');
+  if (calBtn && calEl) {
+    calEl.value = calBtn.getAttribute('data-ms-calendar') || 'solar';
+  }
+  const leapWrap = document.getElementById('msLeapWrap');
+  if (leapWrap) leapWrap.classList.toggle('fallback-hidden', calEl?.value !== 'lunar');
+
+  const genBtn = form.querySelector('[data-ms-gender].active');
+  const genEl = document.getElementById('msGender');
+  if (genBtn && genEl) {
+    genEl.value = genBtn.getAttribute('data-ms-gender') || 'male';
+  }
+
+  const leapBtn = form.querySelector('[data-ms-leap].active');
+  const leapEl = document.getElementById('msLunarLeap');
+  if (leapBtn && leapEl) {
+    leapEl.value = leapBtn.getAttribute('data-ms-leap') || '0';
+  }
+}
+
 function collectSajuFormBody() {
+  syncMsSajuSegHiddenFields();
   const calendar = document.getElementById('msCalendar').value;
   const hourUnk = document.getElementById('msHourUnknownBtn')?.getAttribute('aria-pressed') === 'true';
   const body = {
@@ -191,11 +223,19 @@ function restoreSajuForm(form) {
   document.getElementById('msDay').value = form.day;
   document.getElementById('msHour').value = form.hour ?? 12;
   document.getElementById('msMinute').value = form.minute ?? 0;
-  setMsSegValue('[data-ms-calendar]', 'data-ms-calendar', form.calendar || 'solar');
-  setMsSegValue('[data-ms-gender]', 'data-ms-gender', form.gender || 'male');
-  setMsSegValue('[data-ms-leap]', 'data-ms-leap', form.lunar_leap ? '1' : '0');
+
+  const calendar = form.calendar || 'solar';
+  const gender = form.gender || 'male';
+  const leapVal = form.lunar_leap ? '1' : '0';
+  document.getElementById('msCalendar').value = calendar;
+  document.getElementById('msGender').value = gender;
+  document.getElementById('msLunarLeap').value = leapVal;
+  setMsSegValue('#msSajuForm [data-ms-calendar]', 'data-ms-calendar', calendar);
+  setMsSegValue('#msSajuForm [data-ms-gender]', 'data-ms-gender', gender);
+  setMsSegValue('#msSajuForm [data-ms-leap]', 'data-ms-leap', leapVal);
+
   const leapWrap = document.getElementById('msLeapWrap');
-  if (leapWrap) leapWrap.classList.toggle('fallback-hidden', form.calendar !== 'lunar');
+  if (leapWrap) leapWrap.classList.toggle('fallback-hidden', calendar !== 'lunar');
   const hourUnk = !!form.hour_unknown;
   const btn = document.getElementById('msHourUnknownBtn');
   if (btn) {
@@ -215,6 +255,7 @@ function setMsSegValue(sel, attr, val) {
 
 async function runManseryeokCompute() {
   const btn = document.getElementById('msSajuSubmitBtn');
+  const seq = ++_msComputeSeq;
   const body = collectSajuFormBody();
   setMsSajuStatus('사주 계산 중…');
   if (btn) btn.disabled = true;
@@ -225,6 +266,7 @@ async function runManseryeokCompute() {
       body: JSON.stringify(body),
     });
     const json = await res.json();
+    if (seq !== _msComputeSeq) return;
     if (!res.ok) throw new Error(parseApiError(json, res));
     applySajuProfile(json.profile);
     try {
@@ -232,9 +274,10 @@ async function runManseryeokCompute() {
     } catch (_) { /* ignore */ }
     setMsSajuStatus('');
   } catch (e) {
+    if (seq !== _msComputeSeq) return;
     setMsSajuStatus(e.message || String(e), true);
   } finally {
-    if (btn) btn.disabled = false;
+    if (seq === _msComputeSeq && btn) btn.disabled = false;
   }
 }
 
