@@ -8,6 +8,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple
 
 from . import ganji as gj
@@ -121,11 +122,78 @@ def _kongwang_wolwoon_hit(mon_zhi: str, pillars: dict) -> bool:
     return mon_zhi in {k1, k2, ky1, ky2}
 
 
-def _append_period_hit(hits: List[Dict[str, Any]], row: Dict[str, Any], *, key: str) -> None:
-    dedupe = key if key else f"{row.get('신살')}:{row.get('글자')}"
-    if any(f"{r.get('신살')}:{r.get('글자')}" == dedupe or str(r.get("신살") or "") == dedupe for r in hits):
+def _append_period_hit(hits: List[Dict[str, Any]], row: Dict[str, Any], *, key: str = "") -> None:
+    dedupe = key or f"{row.get('신살')}:{row.get('글자')}:{row.get('위치')}"
+    if any(f"{r.get('신살')}:{r.get('글자')}:{r.get('위치')}" == dedupe for r in hits):
         return
     hits.append(row)
+
+
+def _split_positions(where: str) -> List[str]:
+    """「년지, 일지」처럼 쉼표로 나열된 위치를 분리합니다."""
+    s = str(where or "").strip()
+    if not s:
+        return [s]
+    if "→" in s or "기준" in s or "공망" in s:
+        return [s]
+    parts = [p.strip() for p in re.split(r"[,，、]", s) if p.strip()]
+    return parts if len(parts) > 1 else [s]
+
+
+def expand_sinsal_rows_by_position(rows: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    """한 신살이 여러 궁에 걸리면 주(위치)별로 행을 나눕니다."""
+    out: List[Dict[str, str]] = []
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        where = str(r.get("위치") or "")
+        parts = _split_positions(where)
+        if len(parts) <= 1:
+            out.append(dict(r))
+            continue
+        for part in parts:
+            nr = dict(r)
+            nr["위치"] = part
+            out.append(nr)
+    return out
+
+
+def build_pillar_sinsal_index(rows: List[Dict[str, str]]) -> Dict[str, List[Dict[str, str]]]:
+    """원국 연·월·일·시주에 해당하는 신살 목록."""
+    out: Dict[str, List[Dict[str, str]]] = {k: [] for k in PILLAR_KEYS}
+    seen: Dict[str, Set[str]] = {k: set() for k in PILLAR_KEYS}
+    ju_map = {"년주": "year", "월주": "month", "일주": "day", "시주": "hour"}
+
+    for r in rows:
+        if not isinstance(r, dict):
+            continue
+        name = str(r.get("신살") or "").strip()
+        if not name:
+            continue
+        where = str(r.get("위치") or "")
+        matched: Set[str] = set()
+        for pk in PILLAR_KEYS:
+            if ZHI_LABEL[pk] in where or GAN_LABEL_KR[pk] in where:
+                matched.add(pk)
+        for ju, pk in ju_map.items():
+            if ju in where:
+                matched.add(pk)
+        if name == "괴강살" and ("일주" in where or where == "일주"):
+            matched.add("day")
+        if not matched and where in ("해당없음", ""):
+            continue
+        mini = {
+            "신살": name,
+            "길흉": str(r.get("길흉") or ""),
+            "글자": str(r.get("글자") or ""),
+        }
+        for pk in matched:
+            sig = f"{name}:{mini['글자']}:{pk}"
+            if sig in seen[pk]:
+                continue
+            seen[pk].add(sig)
+            out[pk].append(mini)
+    return out
 
 
 def _wolwoon_period_extras(
@@ -137,11 +205,12 @@ def _wolwoon_period_extras(
     *,
     native_zhi: Set[str],
     native_names: Set[str],
+    scope: str = "월운",
 ) -> List[Dict[str, Any]]:
-    """월운표 ``analyze_wolwoon_month`` 와 맞춘 충·공망·복음·삼합 신호."""
+    """월운·세운 시기에 원국과 맞물리는 충·공망·복음·삼합 신호."""
     extra: List[Dict[str, Any]] = []
-    scope = "월운"
     pk_label = {"year": "년지", "month": "월지", "day": "일지", "hour": "시지"}
+    period_word = "세운 지지" if scope == "세운" else "이달 월지"
 
     for pk in PILLAR_KEYS:
         nz = pillars[pk]["zhi"]
@@ -154,7 +223,7 @@ def _wolwoon_period_extras(
                     "길흉": "흉",
                     "글자": glyph,
                     "위치": scope,
-                    "해석": f"이달 월지 {period_zhi}가 원국 {pk_label[pk]} {nz}와 충합니다. {ZHI_LABEL[pk]} 축 변동을 의식하세요.",
+                    "해석": f"{period_word} {period_zhi}가 원국 {pk_label[pk]} {nz}와 충합니다. {ZHI_LABEL[pk]} 축 변동을 의식하세요.",
                     "중첩": period_zhi == nz or nz in native_zhi,
                 },
                 key=f"{pk_label[pk]}충",
@@ -163,40 +232,40 @@ def _wolwoon_period_extras(
             _append_period_hit(
                 extra,
                 {
-                    "신살": "월운파",
+                    "신살": f"{scope}파",
                     "길흉": "흉",
                     "글자": f"{period_zhi}×{nz}",
                     "위치": scope,
                     "해석": f"{pk_label[pk]}({nz})와 파(破) — 계약·재물 이탈을 조심하세요.",
                     "중첩": False,
                 },
-                key="월운파",
+                key=f"{scope}파",
             )
         if _branch_hai(period_zhi, nz):
             _append_period_hit(
                 extra,
                 {
-                    "신살": "월운해",
+                    "신살": f"{scope}해",
                     "길흉": "흉",
                     "글자": f"{period_zhi}×{nz}",
                     "위치": scope,
                     "해석": f"{pk_label[pk]}({nz})와 해(害) — 인연·건강 마찰을 의식하세요.",
                     "중첩": False,
                 },
-                key="월운해",
+                key=f"{scope}해",
             )
         if _branch_liu_he(period_zhi, nz):
             _append_period_hit(
                 extra,
                 {
-                    "신살": "월운육합",
+                    "신살": f"{scope}육합",
                     "길흉": "길",
                     "글자": glyph,
                     "위치": scope,
                     "해석": f"{pk_label[pk]}({nz})와 육합 — 협력·인연이 붙기 쉬운 달입니다.",
                     "중첩": False,
                 },
-                key="월운육합",
+                key=f"{scope}육합",
             )
 
     dual_where: List[str] = []
@@ -236,14 +305,14 @@ def _wolwoon_period_extras(
         _append_period_hit(
             extra,
             {
-                "신살": "공망(월운)",
+                "신살": f"공망({scope})",
                 "길흉": "흉",
                 "글자": period_zhi,
                 "위치": scope,
-                "해석": "일·년 공망 지지에 이달 월지가 걸려 실속·약속 허실을 의식하세요.",
+                "해석": f"일·년 공망 지지에 {period_word} {period_zhi}가 걸려 실속·약속 허실을 의식하세요.",
                 "중첩": period_zhi in native_zhi,
             },
-            key="공망(월운)",
+            key=f"공망({scope})",
         )
 
     all_z = {period_zhi, sewoon_zhi, *native_zhi} if sewoon_zhi else {period_zhi, *native_zhi}
@@ -795,27 +864,55 @@ def analyze_sinsal(
     km_list = kongmang_list_for_pillars(pillars)
     female = gender.strip().lower() in ("female", "f", "여", "여자", "여성")
     km_story = kongmang_story(km_list, pillars, female)
+    rows_expanded = expand_sinsal_rows_by_position(rows)
 
     return {
-        "신살_목록": rows,
+        "신살_목록": rows_expanded,
+        "신살_목록_요약": rows,
+        "신살_주별": build_pillar_sinsal_index(rows_expanded),
+        "신살_개수": {
+            "전체": len(rows_expanded),
+            "길": sum(1 for r in rows_expanded if r.get("길흉") == "길"),
+            "흉": sum(1 for r in rows_expanded if r.get("길흉") == "흉"),
+            "중": sum(1 for r in rows_expanded if r.get("길흉") not in ("길", "흉")),
+        },
         "공망": km_list,
         "공망_맞춤": km_story,
         **by_name,
     }
 
 
-_PERIOD_STAR_RULES = (
-    ("천을귀인", "길", lambda dm, yz, yg, g, z: z in _cheoneul(dm), "귀인·도움 손길이 들어옵니다."),
-    ("문창귀인", "길", lambda dm, yz, yg, g, z: z in _munchang(dm), "학문·시험·표현력이 살아납니다."),
-    ("학당귀인", "길", lambda dm, yz, yg, g, z: z in _hakdang(dm), "배움·자격·전문성에 유리합니다."),
-    ("복성귀인", "길", lambda dm, yz, yg, g, z: z in _bokseong(dm), "복록·인연·완충 기운이 붙습니다."),
-    ("역마살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[0], "이동·전환·외부 활동이 늘기 쉽습니다."),
-    ("도화살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[1], "이성·매력·대인 접촉이 활발해집니다."),
-    ("백호살", "흉", None, "급성·외상·수술·교통 리스크를 의식하세요. (백호 지와 충·일치 시)"),
-    ("양인살", "흉", lambda dm, yz, yg, g, z: z == _yangin_branch(dm), "결단력은 강하나 충동·외상·수술 주의가 필요합니다."),
-    ("원진살", "흉", None, "반복 갈등·거리두기 이슈가 생기기 쉽습니다."),
-    ("상문살", "흉", lambda dm, yz, yg, g, z: z == gj.BRANCHES[(_BRANCH_IDX[yz] + 2) % 12], "조문·상가·가족 건강을 챙기세요."),
-)
+def _period_jiesha_zhi(year_zhi: str) -> str:
+    jie, _ = _jie_sha_and_wang_shen()
+    return jie.get(year_zhi, "")
+
+
+def _period_wangshen_zhi(year_zhi: str) -> str:
+    _, wang = _jie_sha_and_wang_shen()
+    return wang.get(year_zhi, "")
+
+
+def _period_star_rules(month_zhi: str) -> Tuple[Tuple[str, str, Any, str], ...]:
+    wg = _woldeok_month_gan(month_zhi) or ""
+    cg = _cheondeok_gan(month_zhi) or ""
+    return (
+        ("천을귀인", "길", lambda dm, yz, yg, g, z: z in _cheoneul(dm), "귀인·도움 손길이 들어옵니다."),
+        ("문창귀인", "길", lambda dm, yz, yg, g, z: z in _munchang(dm), "학문·시험·표현력이 살아납니다."),
+        ("학당귀인", "길", lambda dm, yz, yg, g, z: z in _hakdang(dm), "배움·자격·전문성에 유리합니다."),
+        ("복성귀인", "길", lambda dm, yz, yg, g, z: z in _bokseong(dm), "복록·인연·완충 기운이 붙습니다."),
+        ("월덕귀인", "길", lambda dm, yz, yg, g, z, _wg=wg: bool(_wg and g == _wg), "월덕으로 재난·소송을 덜어 주는 덕성 별입니다."),
+        ("천덕귀인", "길", lambda dm, yz, yg, g, z, _cg=cg: bool(_cg and g == _cg), "하늘의 덕으로 큰 화를 멀리하는 길신입니다."),
+        ("역마살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[0], "이동·전환·외부 활동이 늘기 쉽습니다."),
+        ("도화살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[1], "이성·매력·대인 접촉이 활발해집니다."),
+        ("화개살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[2], "예술·종교·고독·내면 탐구 기운이 붙습니다."),
+        ("겁살", "흉", lambda dm, yz, yg, g, z: z == _period_jiesha_zhi(yz), "급변·탈취·우발 손실을 조심하세요."),
+        ("망신살", "흉", lambda dm, yz, yg, g, z: z == _period_wangshen_zhi(yz), "망실·허탕·계획 차질을 의식하세요."),
+        ("백호살", "흉", None, "급성·외상·수술·교통 리스크를 의식하세요. (백호 지와 충·일치 시)"),
+        ("양인살", "흉", lambda dm, yz, yg, g, z: z == _yangin_branch(dm), "결단력은 강하나 충동·외상·수술 주의가 필요합니다."),
+        ("원진살", "흉", None, "반복 갈등·거리두기 이슈가 생기기 쉽습니다."),
+        ("상문살", "흉", lambda dm, yz, yg, g, z: z == gj.BRANCHES[(_BRANCH_IDX[yz] + 2) % 12], "조문·상가·가족 건강을 챙기세요."),
+        ("조객살", "흉", lambda dm, yz, yg, g, z: z == gj.BRANCHES[(_BRANCH_IDX[yz] - 2) % 12], "애도·이별·마음 공황을 조심하세요."),
+    )
 
 
 def _period_sinsal_rows(
@@ -831,11 +928,16 @@ def _period_sinsal_rows(
     zhis = _collect_zhis(pillars)
     gans = _collect_gans(pillars)
     native_zhi = set(zhis.values())
-    native_names = {r.get("신살") for r in (analyze_sinsal(day_master, pillars, gender=gender).get("신살_목록") or []) if isinstance(r, dict)}
+    native_block = analyze_sinsal(day_master, pillars, gender=gender)
+    native_rows = native_block.get("신살_목록_요약") or native_block.get("신살_목록") or []
+    native_names = {
+        r.get("신살") for r in native_rows if isinstance(r, dict) and r.get("신살")
+    }
     yz = zhis["year"]
     yg = gans["year"]
+    mz = zhis["month"]
     hits: List[Dict[str, Any]] = []
-    for name, luck, rule, note in _PERIOD_STAR_RULES:
+    for name, luck, rule, note in _period_star_rules(mz):
         if name == "원진살":
             wj = _wonjin_zhi(yz, yg, gender)
             fired = bool(wj and period_zhi == wj)
@@ -906,18 +1008,20 @@ def _period_sinsal_rows(
                     "중첩": period_zhi in native_zhi,
                 }
             )
-    if scope == "월운" and sewoon_zhi:
+    if scope in ("월운", "세운"):
+        sw_z = sewoon_zhi if scope == "월운" else (sewoon_zhi or period_zhi)
         extra = _wolwoon_period_extras(
             day_master,
             pillars,
             period_gan,
             period_zhi,
-            sewoon_zhi,
+            sw_z,
             native_zhi=native_zhi,
             native_names=native_names,
+            scope=scope,
         )
         for row in extra:
-            _append_period_hit(hits, row, key=str(row.get("신살") or ""))
+            _append_period_hit(hits, row)
     return hits
 
 

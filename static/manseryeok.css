@@ -476,7 +476,8 @@
 .ms-oh-bar-stack { display: flex; height: 100%; min-width: 2px; }
 .ms-oh-bar-surf { background: #c9a227; }
 .ms-oh-bar-hid { background: #8b7355; flex: 1; }
-.ms-oh-val { font-size: 0.72rem; color: var(--ms-ink-light); white-space: nowrap; }
+.ms-oh-val { font-size: 0.88rem; color: var(--ms-ink); white-space: nowrap; }
+.ms-oh-num { font-size: 0.9rem; font-weight: 600; }
 .ms-oh-pct { color: var(--ms-ink-light); }
 
 .ms-wonguk-table-wrap { margin: 0.6rem 0; overflow-x: auto; }
@@ -580,11 +581,47 @@
 .ms-jj-slot { color: var(--ms-gold); font-weight: 600; font-size: 0.76rem; }
 .ms-jj-arrow { margin: 0 0.2rem; color: var(--ms-ink-light); }
 
+.ms-pillar-sinsal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: center;
+  margin-top: 6px;
+  max-width: 100%;
+}
+.ms-sinsal-badge {
+  display: inline-block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--ms-border);
+  background: rgba(255, 252, 245, 0.95);
+}
+.ms-sinsal-badge-good { color: #1a5c38; border-color: #8fd4a8; }
+.ms-sinsal-badge-bad { color: #8b2e24; border-color: #e8b4ae; }
+.ms-sinsal-badge-mid { color: #6a5a20; border-color: #d4c48a; }
 .ms-sinsal-section { margin-top: 0.5rem; }
+.ms-sinsal-summary {
+  font-size: 0.9rem;
+  margin: 0.25rem 0 0.65rem;
+  color: var(--ms-ink);
+}
+.ms-sinsal-count,
+.ms-sinsal-count-total {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ms-gold);
+  margin-left: 0.15rem;
+}
+.ms-sinsal-count-total { font-size: 1.15rem; }
 .ms-sinsal-block { margin-bottom: 0.75rem; }
-.ms-sinsal-sub { font-size: 0.82rem; margin: 0.4rem 0 0.25rem; color: var(--ms-ink); }
+.ms-sinsal-sub { font-size: 0.9rem; margin: 0.4rem 0 0.25rem; color: var(--ms-ink); }
+.ms-sinsal-table { font-size: 0.86rem; }
 .ms-sinsal-good td:first-child { color: #1a7a4a; }
 .ms-sinsal-bad td:first-child { color: #c0392e; }
+.ms-sinsal-mid td:first-child { color: #7a6520; }
 .ms-sinsal-period {
   background: rgba(255, 252, 240, 0.95);
   border: 1px solid var(--ms-gold);
@@ -596,7 +633,7 @@
 .ms-period-sinsal-list {
   margin: 0;
   padding: 0 0 0 1.1rem;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   line-height: 1.55;
 }
 .ms-period-sinsal-list li { margin: 0.35rem 0; }

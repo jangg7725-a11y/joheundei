@@ -11,6 +11,7 @@ from . import sibiunsung as sb
 from . import sinsal as sn
 from . import sipsin as sp
 from . import sewoon as sw
+from . import tone as tn
 from . import unteim_narrative_bridge as unb
 from . import wolwoon as ww
 
@@ -571,7 +572,7 @@ def build_manseryeok_fortune(
         months_out, 7, 12, "하반기(7~12절월)", flow.get("하반기_총평") or ""
     )
 
-    return {
+    pack = {
         "center_year": cy,
         "sewoon": {
             "year": cy,
@@ -609,3 +610,4 @@ def build_manseryeok_fortune(
             "slot_note": wo.get("절월_안내") or "",
         },
     }
+    return tn.apply_voice_to_manseryeok_fortune(pack)

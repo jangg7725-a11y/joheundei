@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import datetime
+import re
+from datetime import date
 from typing import Any
 
 from . import ilwoon as il
@@ -15,6 +17,7 @@ from . import sibiunsung as sb
 from . import sewoon as sw
 from . import sinsal as sn
 from . import sipsin as sp
+from . import wolwoon as ww
 from . import yongsin as ys
 
 PILLAR_KEYS = ("year", "month", "day", "hour")
@@ -243,6 +246,7 @@ def compute_manseryeok_profile(
         counts, dm, pillars["month"]["zhi"], pillars=pillars
     )
     sinsal_block = sn.analyze_sinsal(dm, pillars, gender=gender)
+    il_pack = il.ilwoon_snapshot_pack(dm, pillars)
     sewoon_year = datetime.datetime.now().year
     sew_now = sw.yearly_pillar_for_solar_year(sewoon_year)
     sinsal_block["세운_신살"] = sn.sewoon_sinsal(
@@ -252,6 +256,43 @@ def compute_manseryeok_profile(
         sew_now["gan"],
         sew_now["zhi"],
     )
+    wol_pack = ww.wolwoon_year_pack(
+        dm,
+        pillars,
+        sewoon_year,
+        gender=gender,
+        counts=counts,
+        yong=yong_block,
+    )
+    today_iso = date.today().isoformat()
+    wol_cur = None
+    for m in wol_pack.get("월별") or []:
+        rng = str(m.get("구간_양력") or "")
+        m2 = re.match(r"(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})", rng)
+        if m2 and m2.group(1) <= today_iso <= m2.group(2):
+            wol_cur = m
+            break
+    if not wol_cur:
+        months = wol_pack.get("월별") or []
+        wol_cur = months[0] if months else None
+    if wol_cur:
+        mg = str(wol_cur.get("월간") or "")
+        mz = str(wol_cur.get("월지") or "")
+        if mg and mz:
+            sinsal_block["월운_신살"] = sn.wolwoon_sinsal(
+                dm,
+                pillars,
+                gender,
+                mg,
+                mz,
+                sewoon_zhi=sew_now["zhi"],
+            )
+    il_today = (il_pack.get("오늘") or {}) if isinstance(il_pack, dict) else {}
+    il_gz = str(il_today.get("간지") or "")
+    if len(il_gz) >= 2:
+        sinsal_block["일운_신살"] = sn.ilwoon_sinsal(
+            dm, pillars, gender, il_gz[0], il_gz[1]
+        )
     wonguk = _build_wonguk_pack(
         pillars,
         dm,
@@ -271,7 +312,6 @@ def compute_manseryeok_profile(
         sip_stems=sip_stems,
     )
 
-    il_pack = il.ilwoon_snapshot_pack(dm, pillars)
     today = il_pack.get("오늘") or {}
     fortune = mfort.build_manseryeok_fortune(
         dm, pillars, gender, counts, yong_block, center_year=sewoon_year

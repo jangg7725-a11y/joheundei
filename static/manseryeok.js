@@ -409,9 +409,16 @@ function renderMsOhaengBars(ohaeng) {
   return `<div class="ms-oh-chart"><h4 class="ms-wonguk-subtitle">오행 五行 분포</h4>${legend}${rows}</div>`;
 }
 
+function msSinsalBadgeClass(luck) {
+  if (luck === '길') return 'ms-sinsal-badge ms-sinsal-badge-good';
+  if (luck === '흉') return 'ms-sinsal-badge ms-sinsal-badge-bad';
+  return 'ms-sinsal-badge ms-sinsal-badge-mid';
+}
+
 function renderMsWongukPillars(wk) {
   const pillars = wk?.pillars || {};
   const hourUnknown = !!wk?.meta?.hour_unknown;
+  const byPillar = (wk?.sinsal || {})['신살_주별'] || {};
   return MS_PILLAR_KEYS.map((k) => {
     const row = pillars[k];
     if (!row) {
@@ -426,6 +433,12 @@ function renderMsWongukPillars(wk) {
     const ganOh = row.stem_element || MS_STEM_OH[row.gan] || '';
     const zhiOh = row.branch_element || MS_BRANCH_OH[row.zhi] || '';
     const unk = hourUnknown && k === 'hour';
+    const pillarSinsal = (byPillar[k] || []).map((sr) => (
+      `<span class="${msSinsalBadgeClass(sr.길흉)}" title="${escHtml(sr.글자 || '')}">${escHtml(sr.신살 || '')}</span>`
+    )).join('');
+    const sinsalBlock = pillarSinsal
+      ? `<div class="ms-pillar-sinsal" aria-label="${escHtml(MS_PILLAR_SHORT[k])} 신살">${pillarSinsal}</div>`
+      : '';
     return `<div class="ms-saju-pillar${unk ? ' ms-pillar-hour-unknown' : ''}">
       <div class="lab">${escHtml(MS_PILLAR_SHORT[k])}</div>
       <div class="gz han-inline">
@@ -436,6 +449,7 @@ function renderMsWongukPillars(wk) {
         <span class="ms-oh-tag oh-${ganOh}" title="천간 오행">干 ${escHtml(ganOh)}</span>
         <span class="ms-oh-tag oh-${zhiOh}" title="지지 오행">支 ${escHtml(zhiOh)}</span>
       </div>
+      ${sinsalBlock}
       ${unk ? '<span class="ms-pillar-unk">생시 미상·참고</span>' : ''}
     </div>`;
   }).join('');
@@ -560,28 +574,39 @@ function renderMsSinsalTables(wk, p) {
   const rows = sinsal['신살_목록'] || [];
   const cy = p?.sewoon_year || p?.fortune?.center_year || p?.fortune?.sewoon?.year || new Date().getFullYear();
   const sewPack = sinsal['세운_신살'];
+  const wolPack = sinsal['월운_신살'];
+  const ilPack = sinsal['일운_신살'];
   const sewGz = p?.sewoon_ganzhi || sewPack?.간지 || '';
-  if (!rows.length && !sewPack) return '';
+  if (!rows.length && !sewPack && !wolPack && !ilPack) return '';
 
   const good = rows.filter((x) => x.길흉 === '길');
-  const bad = rows.filter((x) => x.길흉 !== '길');
+  const bad = rows.filter((x) => x.길흉 === '흉');
+  const mid = rows.filter((x) => x.길흉 && x.길흉 !== '길' && x.길흉 !== '흉');
+  const cnt = sinsal['신살_개수'] || {};
+  const total = cnt['전체'] ?? rows.length;
   const mkRows = (list, rowCls) => list.map((row) => `
     <tr class="${rowCls || ''}">
       <td>${escHtml(row.신살 || '')}</td>
       <td class="han-inline">${escHtml(row.글자 || '')}</td>
       <td>${escHtml(row.위치 || '')}</td>
-      <td>${escHtml((row.해석 || '').slice(0, 160))}</td>
+      <td>${escHtml(row.해석 || '')}</td>
     </tr>`).join('') || '<tr><td colspan="4">해당 없음</td></tr>';
 
   const nativeHtml = rows.length ? `
       <div class="ms-sinsal-block">
-        <h5 class="ms-sinsal-sub">원국 · 길신</h5>
+        <h5 class="ms-sinsal-sub">원국 · 길신 <span class="ms-sinsal-count">${good.length}</span></h5>
         <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
           <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
         </tr></thead><tbody>${mkRows(good, 'ms-sinsal-good')}</tbody></table>
       </div>
+      ${mid.length ? `<div class="ms-sinsal-block">
+        <h5 class="ms-sinsal-sub">원국 · 중성 <span class="ms-sinsal-count">${mid.length}</span></h5>
+        <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
+          <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
+        </tr></thead><tbody>${mkRows(mid, 'ms-sinsal-mid')}</tbody></table>
+      </div>` : ''}
       <div class="ms-sinsal-block">
-        <h5 class="ms-sinsal-sub">원국 · 흉신·기타</h5>
+        <h5 class="ms-sinsal-sub">원국 · 흉신 <span class="ms-sinsal-count">${bad.length}</span></h5>
         <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
           <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
         </tr></thead><tbody>${mkRows(bad, 'ms-sinsal-bad')}</tbody></table>
@@ -594,12 +619,28 @@ function renderMsSinsalTables(wk, p) {
       ? `${cy}년 들어오는 운(세운) ${escHtml(sewGz)}와 원국이 맞물릴 때 발동하는 신살입니다.`
       : `${cy}년 세운과 원국이 맞물릴 때 발동하는 신살입니다.`,
   );
+  const wolHtml = renderMsPeriodSinsal(
+    wolPack,
+    '이달 월운 신살',
+    '이번 달 절월 운이 원국과 맞물릴 때 발동하는 신살입니다.',
+  );
+  const ilHtml = renderMsPeriodSinsal(
+    ilPack,
+    '오늘 일운 신살',
+    '오늘 일진이 원국과 맞물릴 때 발동하는 신살입니다.',
+  );
+  const summary = total
+    ? `<p class="ms-sinsal-summary">원국 신살 <strong class="ms-sinsal-count-total">${total}</strong>건 · 길 <span class="ms-sinsal-count">${good.length}</span> · 흉 <span class="ms-sinsal-count">${bad.length}</span>${mid.length ? ` · 중 <span class="ms-sinsal-count">${mid.length}</span>` : ''}</p>`
+    : '';
 
   return `
     <div class="ms-sinsal-section">
       <h4 class="ms-wonguk-subtitle">신살 神煞</h4>
-      ${sewHtml}
+      ${summary}
       ${nativeHtml}
+      ${sewHtml}
+      ${wolHtml}
+      ${ilHtml}
     </div>`;
 }
 

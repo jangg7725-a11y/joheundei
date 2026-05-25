@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """manseryeok_fortune — 세운·월운 요약."""
 
+import re
+
 from saju import manseryeok_fortune as mf
 from saju import manseryeok_profile as msp
+from saju import tone as tn
 
 
 def test_build_fortune_has_sewoon_and_twelve_months():
@@ -64,3 +67,43 @@ def test_fortune_uses_unteim_and_differs_by_daymaster():
     assert fa.get("monthly", {}).get("first_half") != fb.get("monthly", {}).get("first_half") or (
         fa.get("sewoon", {}).get("headline") != fb.get("sewoon", {}).get("headline")
     )
+
+
+_PLAIN_ENDING_MARKERS = (
+    "미친다",
+    "단계다",
+    "작동한다",
+    "움직인다",
+    "나온다",
+    "연결된다",
+    "올라온다",
+    "상태다",
+)
+
+
+def test_manseryeok_voice_plain_to_honorific() -> None:
+    assert "미칠 수 있습니다" in tn.manseryeok_voice("건강에 영향을 미친다.")
+    assert "단계입니다" in tn.manseryeok_voice("에너지가 연결되는 단계.")
+    assert "작동합니다" in tn.manseryeok_voice("기반이 작동한다.")
+
+
+def test_fortune_story_avoids_plain_endings() -> None:
+    p = msp.compute_manseryeok_profile(
+        calendar="solar",
+        year=1984,
+        month=3,
+        day=10,
+        hour=9,
+        minute=0,
+        gender="male",
+    )
+    texts: list[str] = []
+    se = p.get("fortune", {}).get("sewoon") or {}
+    texts.extend(se.get("story") or [])
+    texts.append(se.get("headline") or "")
+    texts.append(se.get("closing") or "")
+    blob = "\n".join(t for t in texts if t)
+    for marker in _PLAIN_ENDING_MARKERS:
+        assert marker not in blob, f"plain ending {marker!r} in fortune text"
+    assert not re.search(r"연결되는 단계\.", blob)
+    assert re.search(r"(습니다|입니다|세요|하시면)", blob)

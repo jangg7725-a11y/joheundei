@@ -315,6 +315,223 @@ def say(text: str) -> str:
     return voice_text(text)
 
 
+# ── 만세력 총운: DB·십이운성 해체(한다/다) → 존댓말 ─────────────────
+_HONORIFIC_END_RE = re.compile(
+    r"(습니다|입니다|니다|하세요|하십시오|드립니다|하시면|이십니다|으십니다|세요|ㅂ니다|"
+    r"겠습니다|할까요|주세요|있으십니다|되십니다|좋습니다|보이십니다)\s*[.!?]?$"
+)
+
+_POLITE_BASE_END_RE = re.compile(
+    r"(습니다|입니다|니다|세요|ㅂ니다|겠습니다|할까요|주세요|있으십니다|되십니다)$"
+)
+
+_PLAIN_PHRASE_FIXES: Tuple[Tuple[str, str], ...] = (
+    ("영향을 미친다", "영향을 미칠 수 있습니다"),
+    ("영향을 미칩니다", "영향을 미칠 수 있습니다"),
+    ("강하게 올라온다", "강하게 올라옵니다"),
+    ("안정적인 기반에서 꾸준히 성과를 내는 방식으로 움직인다", "안정적인 기반에서 꾸준히 성과를 내는 방식으로 움직입니다"),
+)
+
+_VERB_ENDING_FIXES: Tuple[Tuple[str, str], ...] = (
+    ("미친다", "미칠 수 있습니다"),
+    ("단계다", "단계입니다"),
+    ("상태다", "상태입니다"),
+    ("올라온다", "올라옵니다"),
+    ("작동한다", "작동합니다"),
+    ("움직인다", "움직입니다"),
+    ("연결된다", "연결됩니다"),
+    ("나온다", "나옵니다"),
+    ("돌아온다", "돌아옵니다"),
+    ("맞는다", "맞습니다"),
+    ("된다", "됩니다"),
+    ("한다", "합니다"),
+    ("있다", "있습니다"),
+    ("없다", "없습니다"),
+    ("크다", "큽니다"),
+    ("맞다", "맞습니다"),
+    ("동한다", "움직이기 쉽습니다"),
+)
+
+_CLAUSE_SPLIT_RE = re.compile(r"(\n+|\.\s+|。\s*)")
+
+
+def _ends_honorific(clause: str) -> bool:
+    return bool(_HONORIFIC_END_RE.search(clause.strip()))
+
+
+def _strip_trailing_punct(text: str) -> Tuple[str, str]:
+    s = text.rstrip()
+    m = re.search(r"([.!?])\s*$", s)
+    if m:
+        return s[: m.start()].rstrip(), m.group(1)
+    return s, ""
+
+
+def _polish_clause_core(core: str) -> str:
+    t = core
+    for old, new in sorted(_PLAIN_PHRASE_FIXES, key=lambda x: -len(x[0])):
+        if old:
+            t = t.replace(old, new)
+
+    base, punct = _strip_trailing_punct(t)
+    if _ends_honorific(t) or _POLITE_BASE_END_RE.search(base):
+        return t
+
+    if re.search(r"단계\s*$", base) and not re.search(r"단계(입니다|습니다)", base):
+        return base + "입니다" + punct
+    if re.search(r"상태\s*$", base) and not re.search(r"상태(입니다|습니다)", base):
+        return base + "입니다" + punct
+
+    if not base.endswith("다"):
+        return t
+
+    for ending, repl in _VERB_ENDING_FIXES:
+        if base.endswith(ending):
+            t = base[: -len(ending)] + repl + punct
+            break
+    else:
+        t = base[:-1] + "습니다" + punct
+
+    t = t.replace("단계습니다", "단계입니다").replace("상태습니다", "상태입니다")
+    return t
+
+
+def _polish_clause(clause: str) -> str:
+    if not clause.strip() or not _HANGUL_RE.search(clause):
+        return clause
+    m = re.match(r"^(\s*)(.*?)(\s*)$", clause, re.DOTALL)
+    if not m:
+        return clause
+    lead, core, trail = m.group(1), m.group(2), m.group(3)
+    if not core.strip():
+        return clause
+    polished = _polish_clause_core(core.strip())
+    return lead + polished + trail
+
+
+def polish_plain_endings(text: str) -> str:
+    """해체(한다/다/단계) 문장을 존댓말로 맞춥니다."""
+    if not text or not isinstance(text, str):
+        return text
+    t = str(text)
+    if not _HANGUL_RE.search(t):
+        return text
+    parts = _CLAUSE_SPLIT_RE.split(t)
+    if len(parts) == 1:
+        return _polish_clause(t)
+    out: list[str] = []
+    for part in parts:
+        if part and _CLAUSE_SPLIT_RE.fullmatch(part):
+            out.append(part)
+        else:
+            out.append(_polish_clause(part))
+    return "".join(out)
+
+
+def manseryeok_voice(text: str) -> str:
+    """만세력 총운·월운 서사 — 법적 안전 치환 + 해체 종결을 존댓말로."""
+    if not text or not isinstance(text, str):
+        return text
+    t = voice_text_wolwoon(str(text).strip())
+    if not t or not _HANGUL_RE.search(t):
+        return text
+    return polish_plain_endings(t)
+
+
+def _voice_manseryeok_str(key: str, value: str) -> str:
+    if not _should_voice(key, value, f"manseryeok.{key}"):
+        return value
+    return manseryeok_voice(value)
+
+
+def apply_voice_to_manseryeok_fortune(fortune: Dict[str, Any]) -> Dict[str, Any]:
+    """``build_manseryeok_fortune`` 결과의 사용자-facing 문장에 존댓말 적용."""
+    if not isinstance(fortune, dict):
+        return fortune
+
+    out = dict(fortune)
+    se = dict(out.get("sewoon") or {})
+    for k in ("headline", "closing", "ipchun_note"):
+        if se.get(k):
+            se[k] = _voice_manseryeok_str(k, str(se[k]))
+    if se.get("story"):
+        se["story"] = [_voice_manseryeok_str("story", str(x)) for x in se["story"]]
+    if se.get("event_notes"):
+        se["event_notes"] = [
+            _voice_manseryeok_str("event_notes", str(x)) for x in se["event_notes"]
+        ]
+
+    pos = dict(se.get("position") or {})
+    if pos.get("intro"):
+        pos["intro"] = [_voice_manseryeok_str("intro", str(x)) for x in pos["intro"]]
+    if pos.get("impacts"):
+        pos["impacts"] = [_voice_manseryeok_str("impacts", str(x)) for x in pos["impacts"]]
+    assigns = []
+    for row in pos.get("assignments") or []:
+        if not isinstance(row, dict):
+            continue
+        a = dict(row)
+        for fk in ("prediction", "role", "relation", "status"):
+            if a.get(fk):
+                a[fk] = _voice_manseryeok_str(fk, str(a[fk]))
+        assigns.append(a)
+    pos["assignments"] = assigns
+    se["position"] = pos
+
+    phases = []
+    for ph in se.get("phases") or []:
+        if not isinstance(ph, dict):
+            continue
+        p = dict(ph)
+        if p.get("paragraphs"):
+            p["paragraphs"] = [
+                _voice_manseryeok_str("paragraphs", str(x)) for x in p["paragraphs"]
+            ]
+        phases.append(p)
+    se["phases"] = phases
+    out["sewoon"] = se
+
+    mo = dict(out.get("monthly") or {})
+    for hk in ("first_half", "second_half", "slot_note"):
+        if mo.get(hk):
+            mo[hk] = _voice_manseryeok_str(hk, str(mo[hk]))
+    for ak in ("alerts_good", "alerts_bad", "alerts_kong"):
+        if mo.get(ak):
+            mo[ak] = [_voice_manseryeok_str(ak, str(x)) for x in mo[ak]]
+    months = []
+    for m in mo.get("months") or []:
+        if not isinstance(m, dict):
+            continue
+        row = dict(m)
+        for mk in ("summary", "action"):
+            if row.get(mk):
+                row[mk] = _voice_manseryeok_str(mk, str(row[mk]))
+        det = dict(row.get("detail") or {})
+        for dk in (
+            "story",
+            "action",
+            "tips",
+            "caution",
+            "overlap",
+            "sewoon_overlay",
+            "energy",
+            "health",
+            "wealth",
+            "body",
+        ):
+            if det.get(dk):
+                det[dk] = _voice_manseryeok_str(dk, str(det[dk]))
+        if det.get("actions"):
+            det["actions"] = [
+                _voice_manseryeok_str("actions", str(x)) for x in det["actions"]
+            ]
+        row["detail"] = det
+        months.append(row)
+    mo["months"] = months
+    out["monthly"] = mo
+    return out
+
+
 def apply_voice_to_value(obj: Any, path: str = "") -> Any:
     """dict/list/str 재귀 적용."""
     if isinstance(obj, dict):

@@ -148,10 +148,14 @@ def test_manseryeok_compute_api():
     assert wk.get("jijanggan")
     assert wk.get("ohaeng", {}).get("counts")
     assert (wk.get("sinsal") or {}).get("신살_목록") is not None
+    assert (wk.get("sinsal") or {}).get("신살_주별")
+    assert (wk.get("sinsal") or {}).get("신살_개수", {}).get("전체", 0) >= 0
     assert p.get("sewoon_year")
     sew_ps = (wk.get("sinsal") or {}).get("세운_신살") or {}
     assert sew_ps.get("범위") == "세운"
     assert "발동_목록" in sew_ps
+    assert (wk.get("sinsal") or {}).get("월운_신살")
+    assert (wk.get("sinsal") or {}).get("일운_신살")
 
 
 def test_sikshin_rank_prefers_myungri_over_honin(db):
