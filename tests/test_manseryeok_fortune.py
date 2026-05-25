@@ -81,6 +81,31 @@ _PLAIN_ENDING_MARKERS = (
 )
 
 
+def test_truncate_narrative_avoids_orphan_after_bracket() -> None:
+    sample = (
+        "앞부분 문장입니다. " * 8
+        + "【일주 · 사】 한 사이클이 마무리되는 단계. 놓아줌과 정리의 에너지가 작동합니다."
+    )
+    out = tn.truncate_narrative_text(sample, 120)
+    assert not re.search(r"【일주 · 사】\s*한\s*$", out)
+    assert not out.rstrip().endswith("한")
+    if out.endswith("…"):
+        assert "한 사이클" not in out or "마무리" in out
+
+
+def test_fortune_twelve_excerpt_no_orphan_han() -> None:
+    twelve = (
+        "【년 · 장생】 에너지가 싹트는 단계입니다.\n\n"
+        "【월 · 건록】 속도보다 두께가 만들어지는 단계다.\n\n"
+        "【일주 · 사】 한 사이클이 마무리되는 단계. 놓아줌과 정리의 에너지가 작동한다.\n\n"
+        "【시 · 묘】 내면 정리가 필요한 시기다."
+    )
+    excerpt = mf._twelve_excerpt_for_fortune(twelve)
+    assert not re.search(r"【일주 · 사】\s*한\s*$", excerpt)
+    assert "일주 · 사" in excerpt
+    assert "마무리" in excerpt
+
+
 def test_manseryeok_voice_plain_to_honorific() -> None:
     assert "미칠 수 있습니다" in tn.manseryeok_voice("건강에 영향을 미친다.")
     assert "단계입니다" in tn.manseryeok_voice("에너지가 연결되는 단계.")
@@ -107,3 +132,6 @@ def test_fortune_story_avoids_plain_endings() -> None:
         assert marker not in blob, f"plain ending {marker!r} in fortune text"
     assert not re.search(r"연결되는 단계\.", blob)
     assert re.search(r"(습니다|입니다|세요|하시면)", blob)
+    for line in se.get("story") or []:
+        assert not re.search(r"】\s*한\s*$", str(line))
+        assert not str(line).rstrip().endswith("한")

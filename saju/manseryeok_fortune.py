@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import datetime
+import re
 from typing import Any
 
 from . import chung_pa_hae as cph
@@ -44,6 +45,26 @@ def _plain_grade(raw: str | None) -> str:
     if not raw:
         return "보통"
     return _PLAIN_GRADE.get(str(raw).strip(), "보통")
+
+
+def _clip_story_line(text: str, max_len: int) -> str:
+    """총운 스토리 한 줄 — 존댓말 적용 후 경계에서 자릅니다."""
+    raw = str(text or "").strip()
+    if not raw:
+        return ""
+    voiced = tn.manseryeok_voice(raw)
+    return tn.truncate_narrative_text(voiced, max_len)
+
+
+def _twelve_excerpt_for_fortune(twelve: str) -> str:
+    """십이운성 서사 — 총운에는 월·일주 위주로 담고 잘리지 않게 합니다."""
+    text = str(twelve or "").strip()
+    if not text:
+        return ""
+    blocks = [b.strip() for b in re.split(r"(?=【)", text) if b.strip()]
+    picked = [b for b in blocks if b.startswith("【월") or b.startswith("【일")]
+    body = "\n\n".join(picked) if picked else text
+    return tn.truncate_narrative_text(tn.manseryeok_voice(body), 520)
 
 
 def _avg_phase_score(months: list[dict[str, Any]], lo: int, hi: int) -> float:
@@ -297,34 +318,34 @@ def _build_story_arc(
     wealth_u = _unteim_pack_text(sup.get("재물"))
     wealth_r = (se.get("재물운_상세") or {}).get("서술") or ""
     if wealth_u:
-        lines.append(f"【재물】 {wealth_u[:280]}")
+        lines.append(f"【재물】 {_clip_story_line(wealth_u, 280)}")
     elif wealth_r:
-        lines.append(f"【재물】 {wealth_r[:200]}")
+        lines.append(f"【재물】 {_clip_story_line(wealth_r, 220)}")
 
     career_u = _unteim_pack_text(sup.get("직업")) or unb.career_boost_text(sup)
     career_r = (se.get("직업운_상세") or {}).get("서술") or ""
     if career_u:
-        lines.append(f"【직업】 {career_u[:280]}")
+        lines.append(f"【직업】 {_clip_story_line(career_u, 280)}")
     elif career_r:
-        lines.append(f"【직업】 {career_r[:200]}")
+        lines.append(f"【직업】 {_clip_story_line(career_r, 220)}")
 
     love_u = _unteim_pack_text(sup.get("관계"))
     love_r = (se.get("애정운_상세") or {}).get("서술") or ""
     if love_u:
-        lines.append(f"【애정】 {love_u[:280]}")
+        lines.append(f"【애정】 {_clip_story_line(love_u, 280)}")
     elif love_r:
-        lines.append(f"【애정】 {love_r[:200]}")
+        lines.append(f"【애정】 {_clip_story_line(love_r, 220)}")
 
     health_u = _unteim_pack_text(sup.get("건강"))
     health_r = (se.get("건강_상세") or {}).get("권장_검진") or ""
     if health_u:
-        lines.append(f"【건강】 {health_u[:200]}")
+        lines.append(f"【건강】 {_clip_story_line(health_u, 220)}")
     if health_r and isinstance(health_r, str):
-        lines.append(f"【검진 참고】 {health_r[:120]}")
+        lines.append(f"【검진 참고】 {_clip_story_line(health_r, 140)}")
 
     shinsal_psy = str(sup.get("신살_심리") or "").strip()
     if shinsal_psy:
-        lines.append(f"【신살 심리】 {shinsal_psy[:200]}")
+        lines.append(f"【신살 심리】 {_clip_story_line(shinsal_psy, 220)}")
 
     lines.append(
         _half_year_line(
@@ -347,7 +368,9 @@ def _build_story_arc(
 
     twelve = str(sup.get("십이운성_서사") or "").strip()
     if twelve:
-        lines.append(twelve[:320])
+        excerpt = _twelve_excerpt_for_fortune(twelve)
+        if excerpt:
+            lines.append(excerpt)
 
     if se.get("이해_총평_한마디"):
         closing = str(se["이해_총평_한마디"])

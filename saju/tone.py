@@ -428,6 +428,41 @@ def polish_plain_endings(text: str) -> str:
     return "".join(out)
 
 
+_INCOMPLETE_BRACKET_TAIL_RE = re.compile(r"【[^】\n]{0,40}$")
+_TRUNCATED_AFTER_BRACKET_RE = re.compile(
+    r"【[^】]+】\s*[^\n.【]{0,12}$"
+)
+
+
+def truncate_narrative_text(text: str, max_len: int = 400) -> str:
+    """총운·월운 서사를 길이 제한할 때 문장·단락 경계에서 자르고, 끊긴 【】 블록을 제거합니다."""
+    if not text or not isinstance(text, str):
+        return text
+    t = str(text).strip()
+    if len(t) <= max_len:
+        return t
+
+    cut = t[:max_len]
+    best = -1
+    for sep in ("\n\n", ".\n", ". ", "。", "】 "):
+        pos = cut.rfind(sep)
+        if pos > max_len * 0.45:
+            best = max(best, pos + len(sep))
+
+    out = cut[:best].strip() if best > 0 else cut.rstrip()
+
+    if _INCOMPLETE_BRACKET_TAIL_RE.search(out):
+        out = _INCOMPLETE_BRACKET_TAIL_RE.sub("", out).strip()
+
+    m = _TRUNCATED_AFTER_BRACKET_RE.search(out)
+    if m and "." not in m.group(0) and "입니다" not in m.group(0) and "습니다" not in m.group(0):
+        out = out[: m.start()].strip()
+
+    if len(t) > len(out):
+        out = out.rstrip(".,;·") + "…"
+    return out
+
+
 def manseryeok_voice(text: str) -> str:
     """만세력 총운·월운 서사 — 법적 안전 치환 + 해체 종결을 존댓말로."""
     if not text or not isinstance(text, str):

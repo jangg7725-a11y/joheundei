@@ -204,11 +204,13 @@ def _pack_twelve_narrative(
             continue
         entry = _stage_entry(db, st)
         if not entry:
-            parts.append(f"【{_PILLAR_LABEL[pk]} · {st}】{sb.get('해설_통합') or sb.get('단계_해설') or ''}")
+            parts.append(
+                f"【{_PILLAR_LABEL[pk]} · {st}】 {sb.get('해설_통합') or sb.get('단계_해설') or ''}".strip()
+            )
             continue
         rng = _rng("12f", pk, day_master, st)
         chunk = [
-            f"【{_PILLAR_LABEL[pk]} · {st}】{entry.get('core_energy', '')}",
+            f"【{_PILLAR_LABEL[pk]} · {st}】 {entry.get('core_energy', '')}".strip(),
             nl.pick_from_pool(entry.get("behavior_pattern"), rng),
             nl.pick_from_pool(entry.get("reframe"), rng),
         ]
