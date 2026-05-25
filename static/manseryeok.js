@@ -288,6 +288,13 @@ const MS_BRANCH_OH = {
 };
 const MS_OH_ORDER = ['목', '화', '토', '금', '수'];
 
+/** 지장간 슬롯 — 입문자용 짧은 설명 */
+const MS_JJ_SLOT_HINT = {
+  정기: '가장 강한 숨은 기운 (지지의 주인)',
+  중기: '중간 기운 (상황·시기에 따라 드러남)',
+  여기: '남은 기운 (특정 때에만 약하게 작용)',
+};
+
 function msOhClass(ch) {
   const e = MS_STEM_OH[ch] || MS_BRANCH_OH[ch] || '';
   return e ? `oh-${e}` : '';
@@ -447,8 +454,13 @@ function renderMsJijanggan(wk, p) {
     const hiddenHtml = hidden.map((h, idx) => {
       const sp = spRows[idx] || spRows.find((x) => x.gan === h.gan) || {};
       const yuk = (sp.yukchin || []).map((x) => escHtml(x)).join(' · ');
+      const slotName = h.slot || '';
+      const slotHint = MS_JJ_SLOT_HINT[slotName] || '';
       return `<div class="ms-jj-row">
-        <span class="ms-jj-slot">${escHtml(h.slot || '')}</span>
+        <span class="ms-jj-slot-wrap">
+          <span class="ms-jj-slot">${escHtml(slotName)}</span>
+          ${slotHint ? `<span class="ms-jj-slot-hint">${escHtml(slotHint)}</span>` : ''}
+        </span>
         ${msColoredHan(h.gan)}
         <span class="ms-jj-kr">(${escHtml(h.kr || '')}·${escHtml(h.element || '')})</span>
         <span class="ms-jj-arrow">→</span>
@@ -468,7 +480,12 @@ function renderMsJijanggan(wk, p) {
   return `
     <div class="ms-jj-section">
       <h4 class="ms-wonguk-subtitle">지장간 支藏干 · 십신</h4>
-      <p class="ms-wonguk-note">일간 <strong>${escHtml(dm)}(${escHtml(dmKr)})</strong> 기준 · 정기→중기→여기 순</p>
+      <p class="ms-wonguk-note">일간 <strong>${escHtml(dm)}(${escHtml(dmKr)})</strong> 기준 · 지지 안에 숨은 천간을 십신으로 읽습니다.</p>
+      <ul class="ms-jj-legend" aria-label="정기·중기·여기 설명">
+        <li><strong>정기</strong> — ${escHtml(MS_JJ_SLOT_HINT.정기)}</li>
+        <li><strong>중기</strong> — ${escHtml(MS_JJ_SLOT_HINT.중기)}</li>
+        <li><strong>여기</strong> — ${escHtml(MS_JJ_SLOT_HINT.여기)}</li>
+      </ul>
       <div class="ms-jj-list">${cards}</div>
     </div>`;
 }
