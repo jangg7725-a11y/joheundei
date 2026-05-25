@@ -162,23 +162,18 @@ def build_pillar_sinsal_index(rows: List[Dict[str, str]]) -> Dict[str, List[Dict
     """원국 연·월·일·시주에 해당하는 신살 목록."""
     out: Dict[str, List[Dict[str, str]]] = {k: [] for k in PILLAR_KEYS}
     seen: Dict[str, Set[str]] = {k: set() for k in PILLAR_KEYS}
-    ju_map = {"년주": "year", "월주": "month", "일주": "day", "시주": "hour"}
-
     for r in rows:
         if not isinstance(r, dict):
             continue
         name = str(r.get("신살") or "").strip()
-        if not name:
+        if not name or name == "공망(空亡)":
             continue
         where = str(r.get("위치") or "")
         matched: Set[str] = set()
         for pk in PILLAR_KEYS:
             if ZHI_LABEL[pk] in where or GAN_LABEL_KR[pk] in where:
                 matched.add(pk)
-        for ju, pk in ju_map.items():
-            if ju in where:
-                matched.add(pk)
-        if name == "괴강살" and ("일주" in where or where == "일주"):
+        if name == "괴강살" and where in ("일주",):
             matched.add("day")
         if not matched and where in ("해당없음", ""):
             continue
@@ -598,6 +593,197 @@ def _wonjin_zhi(year_zhi: str, year_gan: str, gender: str) -> Optional[str]:
 
 GOEGANG_PILLARS = frozenset({"戊戌", "戊辰", "庚戌", "庚辰", "壬辰"})
 
+# 삼합 왕지(将星) — 장성살이 걸리는 지지
+_SANHE_WANG_ZHI = frozenset({"子", "午", "卯", "酉"})
+
+
+def _dohwa_branch_by_stem(stem: str) -> str:
+    """六甲常識 桃花 — 甲戌庚→酉, 乙亥辛→午, 丙丁壬→卯, 戊己癸→子."""
+    if stem in {"甲", "庚"}:
+        return "酉"
+    if stem in {"乙", "辛"}:
+        return "午"
+    if stem in {"丙", "丁", "壬"}:
+        return "卯"
+    if stem in {"戊", "己", "癸"}:
+        return "子"
+    return ""
+
+
+def _hongyeom_branch(day_master: str) -> str:
+    """홍염살 — 일간 기준 지지 (辛→酉 등)."""
+    return {
+        "甲": "午",
+        "乙": "午",
+        "丙": "寅",
+        "丁": "未",
+        "戊": "辰",
+        "己": "辰",
+        "庚": "戌",
+        "辛": "酉",
+        "壬": "子",
+        "癸": "申",
+    }.get(day_master, "")
+
+
+def _mungok_branch(day_master: str) -> str:
+    """문곡귀인(文曲) — 일간 기준 지지."""
+    return {
+        "甲": "亥",
+        "乙": "子",
+        "丙": "寅",
+        "丁": "卯",
+        "戊": "寅",
+        "己": "卯",
+        "庚": "巳",
+        "辛": "午",
+        "壬": "申",
+        "癸": "酉",
+    }.get(day_master, "")
+
+
+def _cheonbok_branch(day_master: str) -> str:
+    """천복귀인(天福) — 일간 기준 지지."""
+    return {
+        "甲": "酉",
+        "乙": "申",
+        "丙": "子",
+        "丁": "亥",
+        "戊": "子",
+        "己": "亥",
+        "庚": "卯",
+        "辛": "巳",
+        "壬": "午",
+        "癸": "巳",
+    }.get(day_master, "")
+
+
+def _row_sig(row: Dict[str, str]) -> Tuple[str, str, str]:
+    return (
+        str(row.get("신살") or ""),
+        str(row.get("글자") or ""),
+        str(row.get("위치") or ""),
+    )
+
+
+def _append_branch_star(
+    rows: List[Dict[str, str]],
+    seen: Set[Tuple[str, str, str]],
+    *,
+    kind: str,
+    luck: str,
+    target_zhi: str,
+    zhis: Dict[str, str],
+    note: str,
+) -> None:
+    """대상 지지가 실제로 걸린 주(년·월·일·시 지)에만 신살 행을 추가합니다."""
+    if not target_zhi:
+        return
+    for pk in PILLAR_KEYS:
+        if zhis[pk] != target_zhi:
+            continue
+        where = ZHI_LABEL[pk]
+        sig = (kind, target_zhi, where)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        rows.append(_row(kind, luck, target_zhi, where, note))
+
+
+def _append_native_pillar_stars(
+    rows: List[Dict[str, str]],
+    day_master: str,
+    pillars: dict,
+    zhis: Dict[str, str],
+    gans: Dict[str, str],
+) -> None:
+    """만세력 앱과 같이 지지·간지가 놓인 주(柱)에 직접 붙는 신살."""
+    seen = {_row_sig(r) for r in rows}
+
+    for pk in PILLAR_KEYS:
+        z = zhis[pk]
+        if z not in _SANHE_WANG_ZHI:
+            continue
+        where = ZHI_LABEL[pk]
+        sig = ("장성살", z, where)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        rows.append(
+            _row(
+                "장성살",
+                "길",
+                z,
+                where,
+                "삼합 왕지(中神)에 해당하는 자리로 권위·주관·존재감이 두드러지기 쉽습니다.",
+            )
+        )
+
+    for stem, label in ((day_master, "일간"), (gans["year"], "년간")):
+        dh = _dohwa_branch_by_stem(stem)
+        if dh:
+            _append_branch_star(
+                rows,
+                seen,
+                kind="도화살",
+                luck="중",
+                target_zhi=dh,
+                zhis=zhis,
+                note=f"{label} 기준 도화(桃花) 지지로 인기·이성·표현력이 붙기 쉽습니다.",
+            )
+
+    _append_branch_star(
+        rows,
+        seen,
+        kind="홍염살",
+        luck="중",
+        target_zhi=_hongyeom_branch(day_master),
+        zhis=zhis,
+        note="홍염(红艳)으로 매력·대인 접촉이 강해지나 감정 기복·관계 변수를 조절할 필요가 있습니다.",
+    )
+    _append_branch_star(
+        rows,
+        seen,
+        kind="문곡귀인",
+        luck="길",
+        target_zhi=_mungok_branch(day_master),
+        zhis=zhis,
+        note="문곡(文曲)으로 예술·표현·설득력·학습 재능이 살아나기 쉬운 별입니다.",
+    )
+    _append_branch_star(
+        rows,
+        seen,
+        kind="천복귀인",
+        luck="길",
+        target_zhi=_cheonbok_branch(day_master),
+        zhis=zhis,
+        note="천복(天福)으로 복덕·후원·생활 안정에 도움이 되는 길신입니다.",
+    )
+
+    km_day = set(_xunkong_for_pillar(pillars["day"]["pillar"]))
+    for pk in PILLAR_KEYS:
+        z = zhis[pk]
+        if z not in km_day:
+            continue
+        where = ZHI_LABEL[pk]
+        sig = ("공망살", z, where)
+        if sig in seen:
+            continue
+        seen.add(sig)
+        glyphs = "".join(sorted(km_day))
+        rows.append(
+            _row(
+                "공망살",
+                "흉",
+                z,
+                where,
+                (
+                    f"일주 순공(旬空) {glyphs}에 해당하는 지지로 "
+                    "허무·실속 부족·인연 공허를 의식할 필요가 있습니다."
+                ),
+            )
+        )
+
 
 def analyze_sinsal(
     day_master: str,
@@ -806,28 +992,6 @@ def analyze_sinsal(
             )
         )
 
-    # 공망 — 일주·년주 순각
-    # 충공(沖空): 대운·세운이 공망 지지를 충(沖)하면 오히려 공망이 깨져 발동됨 — UI에 안내
-    for label_key, pk in (("일주", "day"), ("년주", "year")):
-        pillar = pillars[pk]["pillar"]
-        k1, k2 = _xunkong_for_pillar(pillar)
-        kong_set = {k1, k2}
-        hit_labels = [ZHI_LABEL[k] for k in PILLAR_KEYS if zhis[k] in kong_set]
-        if hit_labels:
-            rows.append(
-                _row(
-                    "공망(空亡)",
-                    "흉",
-                    f"{k1}{k2}",
-                    f"{label_key} 기준 공망: {k1}{k2} → 원국 {_format_where(hit_labels)} 해당",
-                    (
-                        "공망한 자리는 허무·실속 부족·인연 공허로 읽습니다. "
-                        "단, 대운·세운에서 공망 지지를 충(沖)하면 충공(沖空)이 일어나 "
-                        "오히려 잠재 에너지가 활성화될 수 있으니 그 시기에 주목하세요."
-                    ),
-                )
-            )
-
     sm = gj.BRANCHES[(_BRANCH_IDX[year_zhi] + 2) % 12]
     dk = gj.BRANCHES[(_BRANCH_IDX[year_zhi] - 2) % 12]
     sm_pos = _positions_with_zhi(zhis, sm)
@@ -852,6 +1016,24 @@ def analyze_sinsal(
                 "애도·이별·공연 한파 기운이 들어와 마음 공황을 조심합니다.",
             )
         )
+
+    _append_native_pillar_stars(rows, day_master, pillars, zhis, gans)
+
+    # 공망 요약(空亡) — 주별 공망살과 별도로 순공 안내·스토리 연동용
+    k1, k2 = _xunkong_for_pillar(pillars["day"]["pillar"])
+    km_hit = [ZHI_LABEL[k] for k in PILLAR_KEYS if zhis[k] in {k1, k2}]
+    rows.append(
+        _row(
+            "공망(空亡)",
+            "흉",
+            f"{k1}{k2}",
+            _format_where(km_hit) if km_hit else "원국 지지 해당 없음",
+            (
+                "일주 순공(旬空)에 해당하는 지지는 허무·실속 부족·인연 공허로 읽습니다. "
+                "대운·세운에서 공망 지지를 충(沖)하면 충공(沖空)으로 오히려 활성화될 수 있습니다."
+            ),
+        )
+    )
 
     # 요약: 신살별 문자열 + 표준 행 목록 (표준 행만 객체 — 프론트에서 표 처리)
     def _fmt(r: Dict[str, str]) -> str:
@@ -892,9 +1074,10 @@ def _period_wangshen_zhi(year_zhi: str) -> str:
     return wang.get(year_zhi, "")
 
 
-def _period_star_rules(month_zhi: str) -> Tuple[Tuple[str, str, Any, str], ...]:
+def _period_star_rules(month_zhi: str, *, day_pillar: str = "") -> Tuple[Tuple[str, str, Any, str], ...]:
     wg = _woldeok_month_gan(month_zhi) or ""
     cg = _cheondeok_gan(month_zhi) or ""
+    km_day = set(_xunkong_for_pillar(day_pillar)) if day_pillar else set()
     return (
         ("천을귀인", "길", lambda dm, yz, yg, g, z: z in _cheoneul(dm), "귀인·도움 손길이 들어옵니다."),
         ("문창귀인", "길", lambda dm, yz, yg, g, z: z in _munchang(dm), "학문·시험·표현력이 살아납니다."),
@@ -903,8 +1086,13 @@ def _period_star_rules(month_zhi: str) -> Tuple[Tuple[str, str, Any, str], ...]:
         ("월덕귀인", "길", lambda dm, yz, yg, g, z, _wg=wg: bool(_wg and g == _wg), "월덕으로 재난·소송을 덜어 주는 덕성 별입니다."),
         ("천덕귀인", "길", lambda dm, yz, yg, g, z, _cg=cg: bool(_cg and g == _cg), "하늘의 덕으로 큰 화를 멀리하는 길신입니다."),
         ("역마살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[0], "이동·전환·외부 활동이 늘기 쉽습니다."),
-        ("도화살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[1], "이성·매력·대인 접촉이 활발해집니다."),
+        ("도화살", "중", lambda dm, yz, yg, g, z: z in {_dohwa_branch_by_stem(dm), _dohwa_branch_by_stem(yg), _yeolma_dohwa_hwagae(yz)[1]}, "이성·매력·대인 접촉이 활발해집니다."),
         ("화개살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[2], "예술·종교·고독·내면 탐구 기운이 붙습니다."),
+        ("장성살", "길", lambda dm, yz, yg, g, z: z in _SANHE_WANG_ZHI, "권위·주관·존재감이 강해지는 시기입니다."),
+        ("홍염살", "중", lambda dm, yz, yg, g, z: z == _hongyeom_branch(dm), "매력·대인 접촉이 늘기 쉬우나 감정 기복을 조절하세요."),
+        ("문곡귀인", "길", lambda dm, yz, yg, g, z: z == _mungok_branch(dm), "예술·표현·학습 재능이 살아납니다."),
+        ("천복귀인", "길", lambda dm, yz, yg, g, z: z == _cheonbok_branch(dm), "복덕·후원·안정 기운이 붙습니다."),
+        ("공망살", "흉", lambda dm, yz, yg, g, z, _km=km_day: z in _km, "공망 지지에 해당해 허실·인연 공허를 의식하세요."),
         ("겁살", "흉", lambda dm, yz, yg, g, z: z == _period_jiesha_zhi(yz), "급변·탈취·우발 손실을 조심하세요."),
         ("망신살", "흉", lambda dm, yz, yg, g, z: z == _period_wangshen_zhi(yz), "망실·허탕·계획 차질을 의식하세요."),
         ("백호살", "흉", None, "급성·외상·수술·교통 리스크를 의식하세요. (백호 지와 충·일치 시)"),
@@ -937,7 +1125,7 @@ def _period_sinsal_rows(
     yg = gans["year"]
     mz = zhis["month"]
     hits: List[Dict[str, Any]] = []
-    for name, luck, rule, note in _period_star_rules(mz):
+    for name, luck, rule, note in _period_star_rules(mz, day_pillar=pillars["day"]["pillar"]):
         if name == "원진살":
             wj = _wonjin_zhi(yz, yg, gender)
             fired = bool(wj and period_zhi == wj)

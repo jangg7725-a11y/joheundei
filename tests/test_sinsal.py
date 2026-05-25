@@ -20,6 +20,47 @@ def test_step8_sinsal(day_master: str, sample_pillars, sample_birth) -> None:
     assert out["신살_개수"]["전체"] >= len(out.get("신살_목록_요약") or [])
 
 
+def test_pillar_native_sinsal_1966_solar() -> None:
+    """양력 1966-09-19 18:27 여 — 타 만세력과 맞는 주별 신살."""
+    from saju.saju_calc import BirthInput, compute_saju
+
+    raw = compute_saju(
+        BirthInput(
+            calendar="solar",
+            year=1966,
+            month=9,
+            day=19,
+            hour=18,
+            minute=27,
+            gender="female",
+        )
+    )
+    pillars = raw["pillars"]
+    dm = pillars["day"]["gan"]
+    out = sn.analyze_sinsal(dm, pillars, gender="female")
+    by = out["신살_주별"]
+
+    def names(pk: str) -> set[str]:
+        return {x["신살"] for x in by.get(pk, [])}
+
+    assert "도화살" in names("year")
+    assert "천을귀인" in names("year")
+    assert "문곡귀인" in names("year")
+    assert "장성살" in names("year")
+
+    assert "장성살" in names("month")
+    assert "홍염살" in names("month")
+    assert "공망살" in names("month")
+
+    assert "망신살" in names("day")
+    assert "천복귀인" in names("day")
+    assert "공망살" not in names("day")
+
+    assert "장성살" in names("hour")
+    assert "홍염살" in names("hour")
+    assert "공망살" in names("hour")
+
+
 def test_sewoon_sinsal_includes_chong_when_applicable() -> None:
     """세운 지지가 원국과 충이면 세운 신살에 충 항목이 포함되어야 한다."""
     pillars = {
