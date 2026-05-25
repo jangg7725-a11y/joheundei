@@ -700,7 +700,7 @@ function renderMsFortune(fortune) {
   const posAssign = (pos.assignments || []).map((a) => `
     <div class="ms-fort-assign-card">
       <h5>${escHtml(a.title || '')}</h5>
-      <p class="ms-fort-assign-meta"><strong>맞물림</strong> ${escHtml(a.status || '')}</p>
+      <p class="ms-fort-assign-meta"><strong>${escHtml(a.relation_label || '지지 관계')}</strong> ${escHtml(a.relation || a.status || '')}</p>
       <p class="ms-fort-assign-meta">${escHtml(a.role || '')}</p>
       <p class="ms-fort-assign-pred">${escHtml(a.prediction || '')}</p>
     </div>

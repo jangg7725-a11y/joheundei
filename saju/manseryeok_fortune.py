@@ -6,8 +6,20 @@ from __future__ import annotations
 import datetime
 from typing import Any
 
+from . import chung_pa_hae as cph
+from . import sibiunsung as sb
+from . import sinsal as sn
+from . import sipsin as sp
 from . import sewoon as sw
+from . import unteim_narrative_bridge as unb
 from . import wolwoon as ww
+
+_RELATION_LABEL = {
+    "일지_상태": "일지와 세운",
+    "년지_상태": "년지와 세운",
+    "시지_상태": "시지와 세운",
+    "월지_상태": "월지와 세운",
+}
 
 _PLAIN_GRADE = {
     "길운": "길한 편",
@@ -55,6 +67,7 @@ def _phase_narrative(
     *,
     label: str,
     period: str,
+    by_month: dict[str, Any] | None = None,
 ) -> list[str]:
     if not phase_months:
         return [f"{label}({period})은 월운 데이터가 없어 보통 흐름으로 봅니다."]
@@ -82,10 +95,74 @@ def _phase_narrative(
             lines.append(
                 f"반면 {w['slot']}월은 조심 구간으로, {w['summary']}"
             )
+    if by_month:
+        for m in sorted(phase_months, key=lambda x: -float(x.get("score") or 0))[:1]:
+            um = (by_month or {}).get(str(m.get("slot"))) or {}
+            extra = str(um.get("월운_서사") or "").strip()
+            if extra and extra not in " ".join(lines):
+                lines.append(extra[:180])
     return lines
 
 
-def _build_position_block(se: dict[str, Any], yong_block: dict[str, Any]) -> dict[str, Any]:
+def _unteim_pack_text(pack: dict[str, Any] | None, *, max_lines: int = 3) -> str:
+    if not pack:
+        return ""
+    lines = [str(x).strip() for x in (pack.get("문장_목록") or []) if str(x).strip()]
+    if pack.get("한줄_보강"):
+        head = str(pack["한줄_보강"]).strip()
+        if head and head not in lines:
+            lines.insert(0, head)
+    return unb._join_text(lines[:max_lines])
+
+
+def _load_unteim_context(
+    *,
+    day_master: str,
+    pillars: dict,
+    gender: str,
+    counts: dict[str, int],
+    yong_block: dict[str, Any],
+    sinsal_block: dict[str, Any],
+    se: dict[str, Any],
+    wo: dict[str, Any],
+) -> dict[str, Any]:
+    """운테임 narrative DB — 만세력 총운·월운 보강."""
+    female = sp.is_female_gender(gender)
+    rel_full = cph.analyze_relations_full(pillars)
+    sibi = sb.pillar_twelve_stages(day_master, pillars)
+    supplement = unb.build_unteim_story_supplement(
+        day_master=day_master,
+        pillars=pillars,
+        gender=gender,
+        counts=counts,
+        yong=yong_block,
+        female=female,
+        rel_full=rel_full,
+        sinsal=sinsal_block,
+        sibiunsung=sibi,
+        daewoon_cycles=(),
+    )
+    timeline = unb.build_unteim_timeline_supplement(
+        day_master=day_master,
+        counts=counts,
+        yong=yong_block,
+        sewoon_rows=[se],
+        wol_pack=wo,
+    )
+    return {
+        "supplement": supplement,
+        "timeline": timeline,
+        "rel_full": rel_full,
+        "loaded": bool((supplement or {}).get("_files_loaded")),
+    }
+
+
+def _build_position_block(
+    se: dict[str, Any],
+    yong_block: dict[str, Any],
+    *,
+    unteim: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     """세운이 원국에 놓이는 방식·궁별 배당."""
     sip_g = se.get("세운_천간_십신") or ""
     sip_z = se.get("세운_지지_본기십신_근사") or ""
@@ -94,11 +171,9 @@ def _build_position_block(se: dict[str, Any], yong_block: dict[str, Any]) -> dic
 
     intro = [
         f"{se.get('연도')}년 세운 {se.get('간지')}({se.get('표기한글', '')})은 "
-        "태어날 때의 사주(년·월·일·시) 위에 「올해 운세 한 장」을 얹어서 함께 읽는 방식입니다. "
-        "(전문 용어: 원국 위에 세운을 겹쳐 봄)",
-        f"하늘(천간) 쪽 십신 「{sip_g}」은 올해 하늘 기운이 내 일간과 어떤 관계인지, "
-        f"땅(지지) 쪽 「{sip_z}」은 올해 땅 기운이 내 네 칸(년·월·일·시 지지)과 "
-        "충·합·해처럼 맞닿는지를 뜻합니다.",
+        "당신 사주 원국 위에 「그 해 한 장의 운」으로 겹쳐 봅니다.",
+        f"세운 천간 십신 「{sip_g}」은 올해 들어오는 하늘 기운이 일간과 맺는 관계이고, "
+        f"지지 쪽은 「{sip_z}」 에너지가 땅(년·월·일·시)과 맞물립니다.",
     ]
     if yong:
         intro.append(
@@ -134,6 +209,10 @@ def _build_position_block(se: dict[str, Any], yong_block: dict[str, Any]) -> dic
     if stem_bits:
         impacts.append("천간합: " + " / ".join(stem_bits[:2]))
 
+    hap_txt = str((unteim or {}).get("합충_서사") or "").strip()
+    if hap_txt:
+        impacts.append(hap_txt[:220])
+
     assignments: list[dict[str, str]] = []
     yuk = se.get("육친별_상세") or {}
     for key, title in (
@@ -150,6 +229,8 @@ def _build_position_block(se: dict[str, Any], yong_block: dict[str, Any]) -> dic
         assignments.append(
             {
                 "title": title,
+                "relation_label": _RELATION_LABEL.get(status_key, "지지 관계"),
+                "relation": block.get(status_key, ""),
                 "status": block.get(status_key, ""),
                 "role": block.get(role_key, ""),
                 "prediction": block.get("예측", ""),
@@ -163,33 +244,142 @@ def _build_position_block(se: dict[str, Any], yong_block: dict[str, Any]) -> dic
     }
 
 
-def _build_story_arc(se: dict[str, Any], wo_flow: dict[str, Any]) -> list[str]:
-    """연간 스토리 서두·마무리."""
+def _half_year_line(
+    months_out: list[dict[str, Any]],
+    lo: int,
+    hi: int,
+    label: str,
+    fallback: str,
+) -> str:
+    pm = [m for m in months_out if lo <= int(m.get("slot") or 0) <= hi]
+    if not pm:
+        return fallback
+    parts = [fallback]
+    best = max(pm, key=lambda m: float(m.get("score") or 0))
+    worst = min(pm, key=lambda m: float(m.get("score") or 0))
+    if best.get("summary"):
+        parts.append(
+            f"두드러지는 달: {best['slot']}월({best.get('ganzhi', '')}) — {best['summary']}"
+        )
+    if (
+        worst.get("slot") != best.get("slot")
+        and worst.get("grade_class") == "caution"
+        and worst.get("summary")
+    ):
+        parts.append(f"조심 달: {worst['slot']}월 — {worst['summary']}")
+    return " ".join(parts)
+
+
+def _build_story_arc(
+    se: dict[str, Any],
+    wo_flow: dict[str, Any],
+    *,
+    unteim_ctx: dict[str, Any] | None = None,
+    months_out: list[dict[str, Any]] | None = None,
+) -> list[str]:
+    """연간 스토리 — 규칙(sewoon) + 운테임 DB."""
+    sup = (unteim_ctx or {}).get("supplement") or {}
+    timeline = (unteim_ctx or {}).get("timeline") or {}
+    months_out = months_out or []
+
     lines: list[str] = []
-    if se.get("세운_총평_한줄"):
+    year_line = str(timeline.get("현재_세운_서사") or "").strip()
+    if year_line:
+        lines.append(year_line)
+    elif se.get("세운_총평_한줄"):
         lines.append(str(se["세운_총평_한줄"]))
-    wealth = (se.get("재물운_상세") or {}).get("서술") or ""
-    career = (se.get("직업운_상세") or {}).get("서술") or ""
-    love = (se.get("애정운_상세") or {}).get("서술") or ""
-    health = (se.get("건강_상세") or {}).get("권장_검진") or ""
-    if wealth:
-        lines.append(f"【재물】 {wealth[:200]}")
-    if career:
-        lines.append(f"【직업】 {career[:200]}")
-    if love:
-        lines.append(f"【애정】 {love[:200]}")
-    if health and isinstance(health, str):
-        lines.append(f"【건강】 {health[:120]}")
-    if wo_flow.get("상반기_총평"):
-        lines.append(wo_flow["상반기_총평"])
-    if wo_flow.get("하반기_총평"):
-        lines.append(wo_flow["하반기_총평"])
+
+    healing = str(sup.get("힐링_메시지") or "").strip()
+    if healing and healing not in lines:
+        lines.append(healing)
+
+    wealth_u = _unteim_pack_text(sup.get("재물"))
+    wealth_r = (se.get("재물운_상세") or {}).get("서술") or ""
+    if wealth_u:
+        lines.append(f"【재물】 {wealth_u[:280]}")
+    elif wealth_r:
+        lines.append(f"【재물】 {wealth_r[:200]}")
+
+    career_u = _unteim_pack_text(sup.get("직업")) or unb.career_boost_text(sup)
+    career_r = (se.get("직업운_상세") or {}).get("서술") or ""
+    if career_u:
+        lines.append(f"【직업】 {career_u[:280]}")
+    elif career_r:
+        lines.append(f"【직업】 {career_r[:200]}")
+
+    love_u = _unteim_pack_text(sup.get("관계"))
+    love_r = (se.get("애정운_상세") or {}).get("서술") or ""
+    if love_u:
+        lines.append(f"【애정】 {love_u[:280]}")
+    elif love_r:
+        lines.append(f"【애정】 {love_r[:200]}")
+
+    health_u = _unteim_pack_text(sup.get("건강"))
+    health_r = (se.get("건강_상세") or {}).get("권장_검진") or ""
+    if health_u:
+        lines.append(f"【건강】 {health_u[:200]}")
+    if health_r and isinstance(health_r, str):
+        lines.append(f"【검진 참고】 {health_r[:120]}")
+
+    shinsal_psy = str(sup.get("신살_심리") or "").strip()
+    if shinsal_psy:
+        lines.append(f"【신살 심리】 {shinsal_psy[:200]}")
+
+    lines.append(
+        _half_year_line(
+            months_out,
+            1,
+            6,
+            "상반기",
+            wo_flow.get("상반기_총평") or "",
+        )
+    )
+    lines.append(
+        _half_year_line(
+            months_out,
+            7,
+            12,
+            "하반기",
+            wo_flow.get("하반기_총평") or "",
+        )
+    )
+
+    twelve = str(sup.get("십이운성_서사") or "").strip()
+    if twelve:
+        lines.append(twelve[:320])
+
     if se.get("이해_총평_한마디"):
-        lines.append(str(se["이해_총평_한마디"]))
-    return lines
+        closing = str(se["이해_총평_한마디"])
+        if closing not in lines:
+            lines.append(closing)
+    return [ln for ln in lines if ln and str(ln).strip()]
 
 
-def _build_phases(months_out: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def _merge_month_unteim(
+    months_out: list[dict[str, Any]],
+    by_month: dict[str, Any],
+) -> None:
+    for m in months_out:
+        slot = str(m.get("slot") or "")
+        um = by_month.get(slot) or {}
+        if not isinstance(um, dict):
+            continue
+        narr = str(um.get("월운_서사") or "").strip()
+        if narr:
+            m["summary"] = narr[:200]
+        tip = str(um.get("실천_팁") or "").strip()
+        if tip:
+            m["action"] = tip[:100]
+        caut = str(um.get("주의") or "").strip()
+        if caut and m.get("detail"):
+            m["detail"]["caution"] = caut[:220]
+
+
+def _build_phases(
+    months_out: list[dict[str, Any]],
+    *,
+    by_month: dict[str, Any] | None = None,
+) -> list[dict[str, Any]]:
     specs = [
         (1, 4, "초반", "1~4절월 · 입춘~곡우"),
         (5, 8, "중반", "5~8절월 · 입하~처서"),
@@ -208,7 +398,9 @@ def _build_phases(months_out: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "period": period,
                 "grade": plain,
                 "grade_class": _GRADE_CLASS.get(plain, "mid"),
-                "paragraphs": _phase_narrative(pm, label=label, period=period),
+                "paragraphs": _phase_narrative(
+                    pm, label=label, period=period, by_month=by_month
+                ),
                 "highlight_months": [
                     f"{m['slot']}월 {m.get('ganzhi', '')}"
                     for m in sorted(pm, key=lambda x: -float(x.get("score") or 0))[:2]
@@ -267,20 +459,15 @@ def _month_detail_for_ui(m: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _month_emoji(plain_grade: str, icons: list | None = None) -> str:
-    """월 카드 공 색 — 길흉 문구(grade)와 동일하게 맞춤.
-
-    특이아이콘(충·삼합 등)에 🔴가 있어도 전체 판정이 길한 편이면 초록 공을 씁니다.
-    """
-    cls = _GRADE_CLASS.get(plain_grade, "mid")
-    if cls == "good":
-        return "💚"
-    if cls == "caution":
-        return "🔴"
+def _month_emoji(luck: str, icons: list | None) -> str:
     ic = "".join(icons or [])
     if "🔴" in ic:
         return "🔴"
-    if "✅" in ic or "💚" in ic:
+    if "✅" in ic:
+        return "💚"
+    if luck in ("대흉우려", "약흉", "흉"):
+        return "🔴"
+    if luck in ("대길우려",):
         return "💚"
     return "⚪"
 
@@ -314,6 +501,19 @@ def build_manseryeok_fortune(
         yong=yong_block,
     )
 
+    sinsal_block = sn.analyze_sinsal(day_master, pillars, gender=gender)
+    unteim_ctx = _load_unteim_context(
+        day_master=day_master,
+        pillars=pillars,
+        gender=gender,
+        counts=counts,
+        yong_block=yong_block,
+        sinsal_block=sinsal_block,
+        se=se,
+        wo=wo,
+    )
+    by_month = (unteim_ctx.get("timeline") or {}).get("월별") or {}
+
     domains = se.get("종합점수_영역별") or {}
     domain_rows = []
     for key in ("건강", "재물", "직업", "애정"):
@@ -339,20 +539,37 @@ def build_manseryeok_fortune(
                 "grade": plain,
                 "grade_class": _GRADE_CLASS.get(plain, "mid"),
                 "score": float(m.get("길흉점수") or 3),
-                "emoji": _month_emoji(plain, m.get("특이아이콘")),
+                "emoji": _month_emoji(luck, m.get("특이아이콘")),
                 "summary": (m.get("월별_핵심스토리") or m.get("한줄요약") or "")[:160],
                 "action": (m.get("월별_행동지침_텍스트") or "")[:80],
                 "detail": _month_detail_for_ui(m),
             }
         )
+    _merge_month_unteim(months_out, by_month)
 
     se_plain = _plain_grade(se.get("운세등급"))
     flow = wo.get("연간_월운_요약") or {}
     alerts = wo.get("특별주의") or {}
-    position = _build_position_block(se, yong_block)
-    story_paragraphs = _build_story_arc(se, flow)
-    phases = _build_phases(months_out)
+    position = _build_position_block(
+        se, yong_block, unteim=unteim_ctx.get("supplement")
+    )
+    story_paragraphs = _build_story_arc(
+        se, flow, unteim_ctx=unteim_ctx, months_out=months_out
+    )
+    phases = _build_phases(months_out, by_month=by_month)
     event_notes = list(se.get("사건예측_설명") or [])[:6]
+
+    timeline = unteim_ctx.get("timeline") or {}
+    headline = str(timeline.get("현재_세운_서사") or "").strip()
+    if not headline:
+        headline = str(se.get("세운_총평_한줄") or "")
+
+    first_half = _half_year_line(
+        months_out, 1, 6, "상반기(1~6절월)", flow.get("상반기_총평") or ""
+    )
+    second_half = _half_year_line(
+        months_out, 7, 12, "하반기(7~12절월)", flow.get("하반기_총평") or ""
+    )
 
     return {
         "center_year": cy,
@@ -365,7 +582,8 @@ def build_manseryeok_fortune(
             "grade_raw": se.get("운세등급") or "",
             "stars": int(se.get("별점") or 0),
             "stars_bar": se.get("별점_문자") or "",
-            "headline": se.get("세운_총평_한줄") or "",
+            "headline": headline,
+            "unteim_loaded": bool(unteim_ctx.get("loaded")),
             "closing": se.get("이해_총평_한마디") or "",
             "luck_keywords": se.get("행운_키워드") or [],
             "caution_keywords": se.get("주의_키워드") or [],
@@ -381,8 +599,8 @@ def build_manseryeok_fortune(
         },
         "monthly": {
             "months": months_out,
-            "first_half": flow.get("상반기_총평") or "",
-            "second_half": flow.get("하반기_총평") or "",
+            "first_half": first_half,
+            "second_half": second_half,
             "best_months": flow.get("최고의달_TOP3") or [],
             "caution_months": flow.get("최악의달_TOP3") or [],
             "alerts_good": alerts.get("✅기회") or [],

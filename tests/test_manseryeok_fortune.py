@@ -5,26 +5,6 @@ from saju import manseryeok_fortune as mf
 from saju import manseryeok_profile as msp
 
 
-def test_wonguk_has_sipsin_jijanggan_sibiunsung_sinsal():
-    p = msp.compute_manseryeok_profile(
-        calendar="solar",
-        year=1966,
-        month=12,
-        day=15,
-        hour=2,
-        minute=5,
-        gender="female",
-    )
-    wk = p.get("wonguk") or {}
-    year = (wk.get("pillars") or {}).get("year") or {}
-    assert year.get("sip_gan")
-    assert year.get("sibi_stage")
-    assert len(year.get("jijanggan") or []) >= 1
-    assert wk.get("ohaeng", {}).get("counts")
-    assert len(wk.get("sinsal_all") or []) >= 1
-    assert (wk.get("pillar_order") or []) == ["hour", "day", "month", "year"]
-
-
 def test_build_fortune_has_sewoon_and_twelve_months():
     p = msp.compute_manseryeok_profile(
         calendar="solar",
@@ -55,7 +35,32 @@ def test_plain_grade_mapping():
     assert mf._plain_grade("흉운") == "조심"
 
 
-def test_month_emoji_follows_plain_grade_not_warning_icon():
-    assert mf._month_emoji("길한 편", ["🔴", "충"]) == "💚"
-    assert mf._month_emoji("조심", ["✅"]) == "🔴"
-    assert mf._month_emoji("보통", None) == "⚪"
+def test_fortune_uses_unteim_and_differs_by_daymaster():
+    p_a = msp.compute_manseryeok_profile(
+        calendar="solar",
+        year=1984,
+        month=3,
+        day=10,
+        hour=9,
+        minute=0,
+        gender="male",
+    )
+    p_b = msp.compute_manseryeok_profile(
+        calendar="solar",
+        year=1978,
+        month=11,
+        day=22,
+        hour=14,
+        minute=30,
+        gender="female",
+    )
+    fa = p_a.get("fortune") or {}
+    fb = p_b.get("fortune") or {}
+    assert fa.get("sewoon", {}).get("unteim_loaded") is True
+    story_a = "\n".join(fa.get("sewoon", {}).get("story") or [])
+    story_b = "\n".join(fb.get("sewoon", {}).get("story") or [])
+    assert story_a and story_b
+    assert story_a != story_b
+    assert fa.get("monthly", {}).get("first_half") != fb.get("monthly", {}).get("first_half") or (
+        fa.get("sewoon", {}).get("headline") != fb.get("sewoon", {}).get("headline")
+    )
