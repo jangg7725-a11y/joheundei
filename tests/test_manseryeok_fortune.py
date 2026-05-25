@@ -22,6 +22,7 @@ def test_wonguk_has_sipsin_jijanggan_sibiunsung_sinsal():
     assert len(year.get("jijanggan") or []) >= 1
     assert wk.get("ohaeng", {}).get("counts")
     assert len(wk.get("sinsal_all") or []) >= 1
+    assert (wk.get("pillar_order") or []) == ["hour", "day", "month", "year"]
 
 
 def test_build_fortune_has_sewoon_and_twelve_months():

@@ -18,6 +18,8 @@ from . import yongsin as ys
 
 PILLAR_KEYS = ("year", "month", "day", "hour")
 PILLAR_LABEL = {"year": "년", "month": "월", "day": "일", "hour": "시"}
+# 화면 배열: 좌→우 시·일·월·년 (우측이 년주, K사주마당 품 원국 탭과 동일)
+WONGUK_DISPLAY_ORDER = ("hour", "day", "month", "year")
 
 MATCH_SINSAL_NAMES = (
     "역마살",
@@ -311,7 +313,7 @@ def build_manseryeok_wonguk(
     counts_surface = oh.count_elements_surface(pillars)
     return {
         "pillars": pillar_detail,
-        "pillar_order": list(PILLAR_KEYS),
+        "pillar_order": list(WONGUK_DISPLAY_ORDER),
         "ohaeng": {
             "counts": counts,
             "counts_surface": counts_surface,

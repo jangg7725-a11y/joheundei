@@ -271,6 +271,8 @@ function applySajuProfile(profile, opts = {}) {
 }
 
 const MS_OH_CLASS = { 목: 'ms-oh-목', 화: 'ms-oh-화', 토: 'ms-oh-토', 금: 'ms-oh-금', 수: 'ms-oh-수' };
+/** 원국 표시 순서: 좌→우 시·일·월·년 (오른쪽이 년주) */
+const MS_WONGUK_ORDER = ['hour', 'day', 'month', 'year'];
 
 function msOhClass(el) {
   return MS_OH_CLASS[el] || '';
@@ -327,7 +329,7 @@ function renderMsOhaengBars(ohaeng) {
 }
 
 function renderMsWongukPillars(wk) {
-  const order = wk.pillar_order || ['year', 'month', 'day', 'hour'];
+  const order = wk.pillar_order || MS_WONGUK_ORDER;
   const pillars = wk.pillars || {};
   return order.map((pk) => {
     const row = pillars[pk];
@@ -359,7 +361,7 @@ function renderMsWongukPillars(wk) {
 }
 
 function renderMsWongukTable(wk) {
-  const order = wk.pillar_order || ['year', 'month', 'day', 'hour'];
+  const order = wk.pillar_order || MS_WONGUK_ORDER;
   const pillars = wk.pillars || {};
   const body = order.map((pk) => {
     const row = pillars[pk];
@@ -410,7 +412,7 @@ function renderSajuSummary(p) {
     wongukHtml = `
       <section class="ms-wk-section" aria-label="사주 원국">
         <h4 class="ms-wk-title">사주 원국 · 四柱</h4>
-        <p class="ms-wk-note">년 · 월 · 일 · 시 — 오행·십신·지장간·십이운성·신살 (K사주마당 품 원국과 동일 축)</p>
+        <p class="ms-wk-note">좌→우 <strong>시 · 일 · 월 · 년</strong>(오른쪽이 년주) — 오행·십신·지장간·십이운성·신살</p>
         <div class="ms-wk-pillars">${renderMsWongukPillars(wk)}</div>
         ${renderMsWongukTable(wk)}
         <div class="ms-wk-ohaeng-block">
@@ -420,7 +422,8 @@ function renderSajuSummary(p) {
         ${sinsAll ? `<div class="ms-wk-sinsal-block"><h4 class="ms-wk-subtitle">신살</h4><div class="ms-wk-sinsal-all">${sinsAll}</div>${sinsShared}</div>` : ''}
       </section>`;
   } else {
-    const pillars = (p.pillars || []).map((row) => `
+    const byKey = Object.fromEntries((p.pillars || []).map((row) => [row.key, row]));
+    const pillars = MS_WONGUK_ORDER.map((pk) => byKey[pk]).filter(Boolean).map((row) => `
       <div class="ms-saju-pillar">
         <div class="lab">${escHtml(row.label)}</div>
         <div class="gz">${escHtml(row.pillar)}</div>
