@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 from . import ilwoon as il
@@ -11,6 +12,7 @@ from . import manseryeok_fortune as mfort
 from . import ohaeng as oh
 from . import saju_calc as sc
 from . import sibiunsung as sb
+from . import sewoon as sw
 from . import sinsal as sn
 from . import sipsin as sp
 from . import yongsin as ys
@@ -241,6 +243,15 @@ def compute_manseryeok_profile(
         counts, dm, pillars["month"]["zhi"], pillars=pillars
     )
     sinsal_block = sn.analyze_sinsal(dm, pillars, gender=gender)
+    sewoon_year = datetime.datetime.now().year
+    sew_now = sw.yearly_pillar_for_solar_year(sewoon_year)
+    sinsal_block["세운_신살"] = sn.sewoon_sinsal(
+        dm,
+        pillars,
+        gender,
+        sew_now["gan"],
+        sew_now["zhi"],
+    )
     wonguk = _build_wonguk_pack(
         pillars,
         dm,
@@ -263,10 +274,12 @@ def compute_manseryeok_profile(
     il_pack = il.ilwoon_snapshot_pack(dm, pillars)
     today = il_pack.get("오늘") or {}
     fortune = mfort.build_manseryeok_fortune(
-        dm, pillars, gender, counts, yong_block
+        dm, pillars, gender, counts, yong_block, center_year=sewoon_year
     )
 
     return {
+        "sewoon_year": sewoon_year,
+        "sewoon_ganzhi": sew_now.get("pillar") or sinsal_block["세운_신살"].get("간지"),
         "user_name": (user_name or "").strip(),
         "calendar_input": calendar,
         "solar": raw.get("solar"),

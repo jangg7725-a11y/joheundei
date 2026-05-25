@@ -490,10 +490,36 @@ function renderMsJijanggan(wk, p) {
     </div>`;
 }
 
-function renderMsSinsalTables(wk) {
+function renderMsPeriodSinsal(pack, title, note) {
+  if (!pack || !Array.isArray(pack['발동_목록'])) return '';
+  const gz = pack.간지 || '';
+  const list = pack['발동_목록'];
+  const items = list.length
+    ? list.map((row) => {
+      const overlap = row.중첩 ? ' <span class="ms-sinsal-overlap">⚠ 이중 발동</span>' : '';
+      const gil = row.길흉 === '길' ? 'ms-sinsal-good' : 'ms-sinsal-bad';
+      return `<li class="${gil}"><strong>${escHtml(row.신살 || '')}</strong>
+        <span class="ms-muted">(${escHtml(row.글자 || '')})</span>
+        — ${escHtml(row.해석 || '')}${overlap}</li>`;
+    }).join('')
+    : '<li class="ms-muted">이 해에 두드러지게 발동하는 신살이 없습니다.</li>';
+  return `
+    <div class="ms-sinsal-block ms-sinsal-period">
+      <h5 class="ms-sinsal-sub">${escHtml(title)}</h5>
+      ${note ? `<p class="ms-wonguk-note">${note}</p>` : ''}
+      ${gz ? `<p class="ms-sinsal-gz">세운 간지 <strong class="han-inline">${escHtml(gz)}</strong></p>` : ''}
+      <ul class="ms-period-sinsal-list">${items}</ul>
+    </div>`;
+}
+
+function renderMsSinsalTables(wk, p) {
   const sinsal = wk?.sinsal || {};
   const rows = sinsal['신살_목록'] || [];
-  if (!rows.length) return '';
+  const cy = p?.sewoon_year || p?.fortune?.center_year || p?.fortune?.sewoon?.year || new Date().getFullYear();
+  const sewPack = sinsal['세운_신살'];
+  const sewGz = p?.sewoon_ganzhi || sewPack?.간지 || '';
+  if (!rows.length && !sewPack) return '';
+
   const good = rows.filter((x) => x.길흉 === '길');
   const bad = rows.filter((x) => x.길흉 !== '길');
   const mkRows = (list, rowCls) => list.map((row) => `
@@ -503,21 +529,34 @@ function renderMsSinsalTables(wk) {
       <td>${escHtml(row.위치 || '')}</td>
       <td>${escHtml((row.해석 || '').slice(0, 160))}</td>
     </tr>`).join('') || '<tr><td colspan="4">해당 없음</td></tr>';
-  return `
-    <div class="ms-sinsal-section">
-      <h4 class="ms-wonguk-subtitle">신살 神煞</h4>
+
+  const nativeHtml = rows.length ? `
       <div class="ms-sinsal-block">
-        <h5 class="ms-sinsal-sub">길신</h5>
+        <h5 class="ms-sinsal-sub">원국 · 길신</h5>
         <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
           <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
         </tr></thead><tbody>${mkRows(good, 'ms-sinsal-good')}</tbody></table>
       </div>
       <div class="ms-sinsal-block">
-        <h5 class="ms-sinsal-sub">흉신·기타</h5>
+        <h5 class="ms-sinsal-sub">원국 · 흉신·기타</h5>
         <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
           <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
         </tr></thead><tbody>${mkRows(bad, 'ms-sinsal-bad')}</tbody></table>
-      </div>
+      </div>` : '';
+
+  const sewHtml = renderMsPeriodSinsal(
+    sewPack,
+    `${cy}년 세운 신살 (그해에 들어온 신살)`,
+    sewGz
+      ? `${cy}년 들어오는 운(세운) ${escHtml(sewGz)}와 원국이 맞물릴 때 발동하는 신살입니다.`
+      : `${cy}년 세운과 원국이 맞물릴 때 발동하는 신살입니다.`,
+  );
+
+  return `
+    <div class="ms-sinsal-section">
+      <h4 class="ms-wonguk-subtitle">신살 神煞</h4>
+      ${sewHtml}
+      ${nativeHtml}
     </div>`;
 }
 
@@ -545,7 +584,7 @@ function renderSajuSummary(p) {
     ${renderMsOhaengBars(wk.ohaeng)}
     ${renderMsWongukTable(wk)}
     ${renderMsJijanggan(wk, p)}
-    ${renderMsSinsalTables(wk)}
+    ${renderMsSinsalTables(wk, p)}
   ` : '';
 
   box.innerHTML = `

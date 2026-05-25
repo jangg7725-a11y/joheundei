@@ -585,6 +585,28 @@
 .ms-sinsal-sub { font-size: 0.82rem; margin: 0.4rem 0 0.25rem; color: var(--ms-ink); }
 .ms-sinsal-good td:first-child { color: #1a7a4a; }
 .ms-sinsal-bad td:first-child { color: #c0392e; }
+.ms-sinsal-period {
+  background: rgba(255, 252, 240, 0.95);
+  border: 1px solid var(--ms-gold);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.ms-sinsal-gz { font-size: 0.78rem; margin: 0.2rem 0 0.45rem; }
+.ms-period-sinsal-list {
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+}
+.ms-period-sinsal-list li { margin: 0.35rem 0; }
+.ms-period-sinsal-list li.ms-sinsal-good { color: #1a5c38; }
+.ms-period-sinsal-list li.ms-sinsal-bad { color: #8b2e24; }
+.ms-sinsal-overlap {
+  font-size: 0.7rem;
+  color: var(--ms-gold);
+  font-weight: 600;
+}
 
 .ms-saju-meta {
   font-size: 0.82rem;
