@@ -141,6 +141,13 @@ def test_manseryeok_compute_api():
     assert p["day_master"]
     assert p["match_params"]
     assert "matched_docs" in p
+    wk = p.get("wonguk") or {}
+    assert wk.get("pillars", {}).get("day", {}).get("gan")
+    assert wk.get("sipsin_stems")
+    assert wk.get("sibiunsung")
+    assert wk.get("jijanggan")
+    assert wk.get("ohaeng", {}).get("counts")
+    assert (wk.get("sinsal") or {}).get("신살_목록") is not None
 
 
 def test_sikshin_rank_prefers_myungri_over_honin(db):

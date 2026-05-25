@@ -270,134 +270,237 @@ function applySajuProfile(profile, opts = {}) {
   }
 }
 
-const MS_OH_CLASS = { 목: 'ms-oh-목', 화: 'ms-oh-화', 토: 'ms-oh-토', 금: 'ms-oh-금', 수: 'ms-oh-수' };
-/** 원국 표시 순서: 좌→우 시·일·월·년 (오른쪽이 년주) */
-const MS_WONGUK_ORDER = ['hour', 'day', 'month', 'year'];
+const MS_PILLAR_KEYS = ['year', 'month', 'day', 'hour'];
+const MS_PILLAR_SHORT = { year: '년', month: '월', day: '일', hour: '시' };
+const MS_PILLAR_ROW_LABEL = {
+  year: '年柱 · 년주',
+  month: '月柱 · 월주',
+  day: '日柱 · 일주',
+  hour: '時柱 · 시주',
+};
+const MS_STEM_OH = {
+  甲: '목', 乙: '목', 丙: '화', 丁: '화', 戊: '토', 己: '토',
+  庚: '금', 辛: '금', 壬: '수', 癸: '수',
+};
+const MS_BRANCH_OH = {
+  子: '수', 丑: '토', 寅: '목', 卯: '목', 辰: '토', 巳: '화',
+  午: '화', 未: '토', 申: '금', 酉: '금', 戌: '토', 亥: '수',
+};
+const MS_OH_ORDER = ['목', '화', '토', '금', '수'];
 
-function msOhClass(el) {
-  return MS_OH_CLASS[el] || '';
+function msOhClass(ch) {
+  const e = MS_STEM_OH[ch] || MS_BRANCH_OH[ch] || '';
+  return e ? `oh-${e}` : '';
 }
 
-function msSipRoleClass(role) {
-  if (role === 'yong') return 'ms-sip-yong';
-  if (role === 'hee') return 'ms-sip-hee';
-  if (role === 'gi') return 'ms-sip-gi';
+function msColoredHan(ch) {
+  if (!ch) return '';
+  const cls = msOhClass(ch);
+  return cls
+    ? `<span class="han-inline ${cls}">${escHtml(ch)}</span>`
+    : `<span class="han-inline">${escHtml(ch)}</span>`;
+}
+
+function msSipRowClass(stemElem, yong) {
+  const yongE = yong?.용신_오행 || '';
+  const heeArr = yong?.희신 || [];
+  const giArr = yong?.기신 || [];
+  if (!stemElem) return 'ms-sip-neutral';
+  if (stemElem === yongE) return 'ms-sip-yong';
+  if (heeArr.includes(stemElem)) return 'ms-sip-hee';
+  if (giArr.includes(stemElem)) return 'ms-sip-gi';
+  return 'ms-sip-neutral';
+}
+
+function msSipYongBadge(cls) {
+  if (cls === 'ms-sip-yong') return " <span class='ms-sip-badge ms-sip-yong'>[용신]</span>";
+  if (cls === 'ms-sip-hee') return " <span class='ms-sip-badge ms-sip-hee'>[희신]</span>";
+  if (cls === 'ms-sip-gi') return " <span class='ms-sip-badge ms-sip-gi'>[기신]</span>";
   return '';
-}
-
-function msSipRoleBadge(role) {
-  if (role === 'yong') return '<span class="ms-sip-badge ms-sip-badge-yong">용신</span>';
-  if (role === 'hee') return '<span class="ms-sip-badge ms-sip-badge-hee">희신</span>';
-  if (role === 'gi') return '<span class="ms-sip-badge ms-sip-badge-gi">기신</span>';
-  return '';
-}
-
-function renderMsJijangganRows(items) {
-  if (!items || !items.length) return '<span class="ms-wk-muted">—</span>';
-  return items.map((h) => {
-    const slot = h.slot ? `<span class="ms-wk-jjg-slot">${escHtml(h.slot)}</span>` : '';
-    return `<span class="ms-wk-jjg-item">${slot}<span class="ms-wk-han ${msOhClass(h.element)}">${escHtml(h.gan)}</span><span class="ms-wk-kr">(${escHtml(h.kr)})</span> <strong>${escHtml(h.sipsin || '—')}</strong></span>`;
-  }).join('');
-}
-
-function renderMsSinsalChips(list, limit = 0) {
-  const rows = limit > 0 ? (list || []).slice(0, limit) : (list || []);
-  if (!rows.length) return '';
-  return rows.map((s) => {
-    const luck = s.길흉 === '길' ? 'good' : s.길흉 === '흉' ? 'bad' : 'norm';
-    const where = s.위치 ? ` title="${escHtml(s.위치)}"` : '';
-    return `<span class="ms-wk-sinsal ms-wk-sinsal-${luck}"${where}>${escHtml(s.신살)}</span>`;
-  }).join('');
-}
-
-function msMonthEmoji(m) {
-  const cls = m.grade_class || 'mid';
-  if (cls === 'good') return '💚';
-  if (cls === 'caution') return '🔴';
-  return '⚪';
 }
 
 function renderMsOhaengBars(ohaeng) {
-  const counts = ohaeng?.counts || {};
-  const order = ['목', '화', '토', '금', '수'];
-  const max = Math.max(1, ...order.map((k) => Number(counts[k]) || 0));
-  const cells = order.map((el) => {
-    const n = Number(counts[el]) || 0;
-    const pct = Math.round((n / max) * 100);
-    return `<div class="ms-wk-oh-row"><span class="ms-wk-oh-lab ${msOhClass(el)}">${el}</span><div class="ms-wk-oh-track"><div class="ms-wk-oh-fill ${msOhClass(el)}" style="width:${pct}%"></div></div><span class="ms-wk-oh-num">${n}</span></div>`;
+  if (!ohaeng?.counts) return '';
+  const counts = ohaeng.counts;
+  const surf = ohaeng.counts_surface;
+  const hid = ohaeng.counts_hidden;
+  const hasSplit = surf && hid
+    && MS_OH_ORDER.every((k) => typeof (surf[k] ?? 0) === 'number' && typeof (hid[k] ?? 0) === 'number');
+  const total = MS_OH_ORDER.reduce((s, k) => s + (Number(counts[k]) || 0), 0) || 1;
+  const maxV = Math.max(...MS_OH_ORDER.map((k) => Number(counts[k]) || 0), 1);
+  const rows = MS_OH_ORDER.map((k) => {
+    const v = Number(counts[k]) || 0;
+    const pct = Math.round((100 * v) / total);
+    const wOuter = Math.max(0, Math.round((100 * v) / maxV));
+    const sVal = hasSplit ? Number(surf[k]) || 0 : v;
+    const hVal = hasSplit ? Number(hid[k]) || 0 : 0;
+    let barInner = '';
+    if (hasSplit && v > 0) {
+      const ws = Math.round((100 * sVal) / v);
+      barInner = `<div class="ms-oh-bar-stack" style="width:${wOuter}%">
+        <div class="ms-oh-bar-surf" style="width:${ws}%"></div>
+        <div class="ms-oh-bar-hid" style="width:${100 - ws}%"></div>
+      </div>`;
+    } else {
+      barInner = `<div class="ms-oh-bar-fill" style="width:${wOuter}%"></div>`;
+    }
+    const numTxt = hasSplit
+      ? `<span class="ms-oh-num">${sVal}+${hVal}=${v}</span> <span class="ms-oh-pct">(${pct}%)</span>`
+      : `${v} <span class="ms-oh-pct">(${pct}%)</span>`;
+    return `<div class="ms-oh-row">
+      <span class="ms-oh-el oh-${k}">${k}</span>
+      <div class="ms-oh-bar-bg">${barInner}</div>
+      <span class="ms-oh-val">${numTxt}</span>
+    </div>`;
   }).join('');
-  const lines = (ohaeng?.summary_lines || []).map((l) => escHtml(l)).join(' · ');
-  const dw = ohaeng?.dominant_weak || {};
-  const dwTxt = [
-    dw.strong?.length ? `강 ${dw.strong.join('·')}` : '',
-    dw.weak?.length ? `약 ${dw.weak.join('·')}` : '',
-  ].filter(Boolean).join(' / ');
-  return `<div class="ms-wk-oh-bars">${cells}</div>${lines ? `<p class="ms-wk-oh-note">${lines}</p>` : ''}${dwTxt ? `<p class="ms-wk-oh-note">${escHtml(dwTxt)} (표면+지장간 합산)</p>` : ''}`;
+  const legend = hasSplit
+    ? '<p class="ms-oh-legend">■ 표면(천간·지지) ■ 지장간 · 숫자는 표면+지장간 합계</p>'
+    : '';
+  return `<div class="ms-oh-chart"><h4 class="ms-wonguk-subtitle">오행 五行 분포</h4>${legend}${rows}</div>`;
 }
 
 function renderMsWongukPillars(wk) {
-  const order = wk.pillar_order || MS_WONGUK_ORDER;
-  const pillars = wk.pillars || {};
-  return order.map((pk) => {
-    const row = pillars[pk];
-    if (!row) return '';
-    const sipCls = msSipRoleClass(row.sip_gan_role);
-    const isDay = pk === 'day';
-    const sipGanLabel = isDay ? '일간(본인)' : escHtml(row.sip_gan || '—');
-    const sibiCls = ['장생', '관대', '건록', '제왕'].includes(row.sibi_stage) ? 'strong'
-      : ['병', '사', '묘', '절'].includes(row.sibi_stage) ? 'weak' : 'mid';
-    const sinsLocal = renderMsSinsalChips(row.sinsal);
-    return `
-    <article class="ms-wk-pillar">
-      <div class="ms-wk-pillar-lab">${escHtml(row.label)}</div>
-      <div class="ms-wk-pillar-gz">
-        <span class="ms-wk-han ${msOhClass(row.gan_element)}">${escHtml(row.gan)}</span>
-        <span class="ms-wk-han ${msOhClass(row.zhi_element)}">${escHtml(row.zhi)}</span>
+  const pillars = wk?.pillars || {};
+  const hourUnknown = !!wk?.meta?.hour_unknown;
+  return MS_PILLAR_KEYS.map((k) => {
+    const row = pillars[k];
+    if (!row) {
+      const legacy = (wk._legacy_pillars || []).find((r) => r.key === k);
+      if (!legacy) return '';
+      return `<div class="ms-saju-pillar">
+        <div class="lab">${escHtml(legacy.label)}</div>
+        <div class="gz">${escHtml(legacy.pillar)}</div>
+        <div class="sub">${escHtml(legacy.label_kr)}</div>
+      </div>`;
+    }
+    const ganOh = row.stem_element || MS_STEM_OH[row.gan] || '';
+    const zhiOh = row.branch_element || MS_BRANCH_OH[row.zhi] || '';
+    const unk = hourUnknown && k === 'hour';
+    return `<div class="ms-saju-pillar${unk ? ' ms-pillar-hour-unknown' : ''}">
+      <div class="lab">${escHtml(MS_PILLAR_SHORT[k])}</div>
+      <div class="gz han-inline">
+        <span class="${msOhClass(row.gan)}">${escHtml(row.gan)}</span><span class="${msOhClass(row.zhi)}">${escHtml(row.zhi)}</span>
       </div>
-      <div class="ms-wk-pillar-kr">${escHtml(row.label_kr || '')}</div>
-      <dl class="ms-wk-pillar-meta">
-        <div><dt>천간 십신</dt><dd class="${sipCls}">${sipGanLabel}${msSipRoleBadge(row.sip_gan_role)}</dd></div>
-        <div><dt>지지 십신</dt><dd>${escHtml(row.sip_zhi_main || '—')}${row.sip_zhi_summary ? `<span class="ms-wk-muted"> · ${escHtml(row.sip_zhi_summary)}</span>` : ''}</dd></div>
-        <div><dt>십이운성</dt><dd class="ms-wk-sibi ms-wk-sibi-${sibiCls}" title="${escHtml(row.sibi_meaning || '')}">${escHtml(row.sibi_stage || '—')}</dd></div>
-        <div><dt>지장간</dt><dd class="ms-wk-jjg">${renderMsJijangganRows(row.jijanggan)}</dd></div>
-        <div><dt>오행</dt><dd><span class="${msOhClass(row.gan_element)}">${escHtml(row.gan_element)}</span> · <span class="${msOhClass(row.zhi_element)}">${escHtml(row.zhi_element)}</span></dd></div>
-        ${sinsLocal ? `<div><dt>신살</dt><dd class="ms-wk-sinsal-wrap">${sinsLocal}</dd></div>` : ''}
-      </dl>
-    </article>`;
+      <div class="sub">${escHtml(row.label_kr || '')}</div>
+      <div class="ms-pillar-oh">
+        <span class="ms-oh-tag oh-${ganOh}" title="천간 오행">干 ${escHtml(ganOh)}</span>
+        <span class="ms-oh-tag oh-${zhiOh}" title="지지 오행">支 ${escHtml(zhiOh)}</span>
+      </div>
+      ${unk ? '<span class="ms-pillar-unk">생시 미상·참고</span>' : ''}
+    </div>`;
   }).join('');
 }
 
 function renderMsWongukTable(wk) {
-  const order = wk.pillar_order || MS_WONGUK_ORDER;
-  const pillars = wk.pillars || {};
-  const body = order.map((pk) => {
-    const row = pillars[pk];
-    if (!row) return '';
-    const jjg = (row.jijanggan || []).map((h) =>
-      `${h.slot || ''} ${h.gan}→${h.sipsin || '—'}`
-    ).join(' / ');
-    const sins = (row.sinsal || []).map((s) => s.신살).join(' · ');
-    const sipCls = msSipRoleClass(row.sip_gan_role);
-    const sipGan = pk === 'day' ? '일간' : (row.sip_gan || '—');
+  const pillars = wk?.pillars || {};
+  const yong = wk?.yongsin || {};
+  const sipStems = wk?.sipsin_stems || {};
+  const sibi = wk?.sibiunsung || {};
+  const rows = MS_PILLAR_KEYS.map((k) => {
+    const p = pillars[k];
+    if (!p) return '';
+    const sip = sipStems[k] || {};
+    const sb = sibi[k] || {};
+    const stemElem = p.stem_element || '';
+    const sipCls = msSipRowClass(stemElem, yong);
+    const sipLabel = sip.sipsin || '—';
+    const yuk = (sip.yukchin || []).map((x) => escHtml(x)).join(', ');
+    const stage = sb.stage || '';
+    const stageCls = ['장생', '관대', '건록', '제왕'].includes(stage) ? 'ms-sibi-strong'
+      : ['병', '사', '묘', '절'].includes(stage) ? 'ms-sibi-weak' : 'ms-sibi-mid';
     return `<tr>
-      <th>${escHtml(row.label)}</th>
-      <td><span class="ms-wk-han ${msOhClass(row.gan_element)}">${escHtml(row.gan)}</span> <small>${escHtml(row.gan_kr)}</small></td>
-      <td><span class="ms-wk-han ${msOhClass(row.zhi_element)}">${escHtml(row.zhi)}</span> <small>${escHtml(row.zhi_kr)}</small></td>
-      <td class="${sipCls}">${escHtml(sipGan)}${msSipRoleBadge(row.sip_gan_role)}</td>
-      <td>${escHtml(row.sibi_stage || '—')}</td>
-      <td class="ms-wk-muted">${escHtml(row.sibi_meaning || '')}</td>
-      <td class="ms-wk-jjg-cell">${escHtml(jjg)}</td>
-      <td>${sins ? renderMsSinsalChips(row.sinsal) : '<span class="ms-wk-muted">—</span>'}</td>
+      <td>${escHtml(MS_PILLAR_ROW_LABEL[k])}</td>
+      <td>${msColoredHan(p.gan)} <small>${escHtml(sip.gan_kr || p.gan_kr || '')}</small></td>
+      <td>${msColoredHan(p.zhi)} <small>${escHtml(sb.zhi_kr || p.zhi_kr || '')}</small></td>
+      <td class="${sipCls}">${escHtml(sipLabel)}${msSipYongBadge(sipCls)}${yuk ? `<br><small class="ms-muted">(${yuk})</small>` : ''}</td>
+      <td class="${stageCls}">${escHtml(stage)}</td>
+      <td class="ms-muted">${escHtml(sb.meaning || '')}</td>
     </tr>`;
   }).join('');
   return `
-    <div class="ms-wk-table-wrap">
-      <table class="ms-wk-table">
+    <div class="ms-wonguk-table-wrap">
+      <h4 class="ms-wonguk-subtitle">천간 · 지지 · 십신 · 십이운성</h4>
+      <p class="ms-wonguk-note">년주 → 월주 → 일주 → 시주 순 · 십이운성은 지지 기준</p>
+      <table class="ms-wonguk-table">
         <thead><tr>
-          <th>주</th><th>천간</th><th>지지</th><th>십신</th><th>십이운성</th><th>의미</th><th>지장간·십신</th><th>신살</th>
+          <th>주柱</th><th>천간干</th><th>지지支</th><th>십신十神</th><th>십이運星</th><th>運星 의미</th>
         </tr></thead>
-        <tbody>${body}</tbody>
+        <tbody>${rows}</tbody>
       </table>
+    </div>`;
+}
+
+function renderMsJijanggan(wk, p) {
+  const jj = wk?.jijanggan;
+  const sipStems = wk?.sipsin_stems || {};
+  const sipHidden = wk?.sipsin_hidden || {};
+  if (!jj) return '';
+  const dm = p.day_master || '';
+  const dmKr = p.day_master_kr || '';
+  const cards = MS_PILLAR_KEYS.map((k) => {
+    const block = jj[k];
+    if (!block) return '';
+    const hidden = block.hidden || [];
+    const spRows = sipHidden[k] || [];
+    const stemSip = sipStems[k] || {};
+    const ganStem = stemSip.gan || (wk.pillars?.[k]?.gan) || '';
+    const hiddenHtml = hidden.map((h, idx) => {
+      const sp = spRows[idx] || spRows.find((x) => x.gan === h.gan) || {};
+      const yuk = (sp.yukchin || []).map((x) => escHtml(x)).join(' · ');
+      return `<div class="ms-jj-row">
+        <span class="ms-jj-slot">${escHtml(h.slot || '')}</span>
+        ${msColoredHan(h.gan)}
+        <span class="ms-jj-kr">(${escHtml(h.kr || '')}·${escHtml(h.element || '')})</span>
+        <span class="ms-jj-arrow">→</span>
+        <strong>${escHtml(sp.sipsin || '—')}</strong>${yuk ? ` <span class="ms-muted">(${yuk})</span>` : ''}
+      </div>`;
+    }).join('');
+    return `<article class="ms-jj-card">
+      <div class="ms-jj-head">
+        <span class="ms-jj-label">${escHtml(MS_PILLAR_ROW_LABEL[k])}</span>
+        ${msColoredHan(block.zhi)} <span class="ms-muted">${escHtml(block.zhi_kr || '')}</span>
+      </div>
+      <p class="ms-jj-surface"><span class="ms-jj-surf-lab">천간(표면)</span>
+        ${escHtml(ganStem)} → <strong>${escHtml(stemSip.sipsin || '—')}</strong></p>
+      <div class="ms-jj-hidden">${hiddenHtml}</div>
+    </article>`;
+  }).join('');
+  return `
+    <div class="ms-jj-section">
+      <h4 class="ms-wonguk-subtitle">지장간 支藏干 · 십신</h4>
+      <p class="ms-wonguk-note">일간 <strong>${escHtml(dm)}(${escHtml(dmKr)})</strong> 기준 · 정기→중기→여기 순</p>
+      <div class="ms-jj-list">${cards}</div>
+    </div>`;
+}
+
+function renderMsSinsalTables(wk) {
+  const sinsal = wk?.sinsal || {};
+  const rows = sinsal['신살_목록'] || [];
+  if (!rows.length) return '';
+  const good = rows.filter((x) => x.길흉 === '길');
+  const bad = rows.filter((x) => x.길흉 !== '길');
+  const mkRows = (list, rowCls) => list.map((row) => `
+    <tr class="${rowCls || ''}">
+      <td>${escHtml(row.신살 || '')}</td>
+      <td class="han-inline">${escHtml(row.글자 || '')}</td>
+      <td>${escHtml(row.위치 || '')}</td>
+      <td>${escHtml((row.해석 || '').slice(0, 160))}</td>
+    </tr>`).join('') || '<tr><td colspan="4">해당 없음</td></tr>';
+  return `
+    <div class="ms-sinsal-section">
+      <h4 class="ms-wonguk-subtitle">신살 神煞</h4>
+      <div class="ms-sinsal-block">
+        <h5 class="ms-sinsal-sub">길신</h5>
+        <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
+          <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
+        </tr></thead><tbody>${mkRows(good, 'ms-sinsal-good')}</tbody></table>
+      </div>
+      <div class="ms-sinsal-block">
+        <h5 class="ms-sinsal-sub">흉신·기타</h5>
+        <table class="ms-wonguk-table ms-sinsal-table"><thead><tr>
+          <th>神煞</th><th>글자</th><th>위치</th><th>의미</th>
+        </tr></thead><tbody>${mkRows(bad, 'ms-sinsal-bad')}</tbody></table>
+      </div>
     </div>`;
 }
 
@@ -407,47 +510,36 @@ function renderSajuSummary(p) {
   const name = p.user_name ? `${escHtml(p.user_name)}님 · ` : '';
   const solar = p.solar?.label || '';
   const lunar = p.lunar?.label || '';
-  const il = p.ilwoon_today || {};
-  const wk = p.wonguk;
+  const wk = p.wonguk || null;
+  if (wk && p.pillars?.length) wk._legacy_pillars = p.pillars;
+  if (wk && p.meta) wk.meta = p.meta;
 
-  let wongukHtml = '';
-  if (wk?.pillars) {
-    const sinsAll = renderMsSinsalChips(wk.sinsal_all);
-    const sinsShared = (wk.sinsal_shared || []).length
-      ? `<p class="ms-wk-sinsal-shared"><span class="ms-wk-muted">전체</span> ${renderMsSinsalChips(wk.sinsal_shared)}</p>`
-      : '';
-    wongukHtml = `
-      <section class="ms-wk-section" aria-label="사주 원국">
-        <h4 class="ms-wk-title">사주 원국 · 四柱</h4>
-        <p class="ms-wk-note">좌→우 <strong>시 · 일 · 월 · 년</strong>(오른쪽이 년주) — 오행·십신·지장간·십이운성·신살</p>
-        <div class="ms-wk-pillars">${renderMsWongukPillars(wk)}</div>
-        ${renderMsWongukTable(wk)}
-        <div class="ms-wk-ohaeng-block">
-          <h4 class="ms-wk-subtitle">오행 분포</h4>
-          ${renderMsOhaengBars(wk.ohaeng)}
-        </div>
-        ${sinsAll ? `<div class="ms-wk-sinsal-block"><h4 class="ms-wk-subtitle">신살</h4><div class="ms-wk-sinsal-all">${sinsAll}</div>${sinsShared}</div>` : ''}
-      </section>`;
-  } else {
-    const byKey = Object.fromEntries((p.pillars || []).map((row) => [row.key, row]));
-    const pillars = MS_WONGUK_ORDER.map((pk) => byKey[pk]).filter(Boolean).map((row) => `
+  const pillarHtml = wk
+    ? renderMsWongukPillars(wk)
+    : (p.pillars || []).map((row) => `
       <div class="ms-saju-pillar">
         <div class="lab">${escHtml(row.label)}</div>
         <div class="gz">${escHtml(row.pillar)}</div>
         <div class="sub">${escHtml(row.label_kr)}</div>
-      </div>
-    `).join('');
-    wongukHtml = `<div class="ms-saju-pillars">${pillars}</div>`;
-  }
+      </div>`).join('');
+
+  const il = p.ilwoon_today || {};
+  const detailHtml = wk ? `
+    ${renderMsOhaengBars(wk.ohaeng)}
+    ${renderMsWongukTable(wk)}
+    ${renderMsJijanggan(wk, p)}
+    ${renderMsSinsalTables(wk)}
+  ` : '';
 
   box.innerHTML = `
     <div class="ms-saju-summary-head">
       <h3>${name}일간 ${escHtml(p.day_master)}(${escHtml(p.day_master_kr)}) · ${escHtml(p.day_master_element)}</h3>
       <span class="ms-saju-meta">${escHtml(solar)}</span>
     </div>
-    ${wongukHtml}
+    <div class="ms-saju-pillars">${pillarHtml}</div>
+    ${detailHtml}
     <p class="ms-saju-meta"><strong>음력</strong> ${escHtml(lunar)} · <strong>용신</strong> ${escHtml(p.yongsin?.용신_오행 || '')} · <strong>기신</strong> ${escHtml(p.yongsin?.기신_오행 || '')}</p>
-    <p class="ms-saju-meta">${escHtml(p.yongsin?.판단_요약 || '')}</p>
+    ${p.yongsin?.판단_요약 ? `<p class="ms-saju-meta">${escHtml(p.yongsin.판단_요약)}</p>` : ''}
     <p class="ms-saju-meta"><strong>오늘 일운</strong> ${escHtml(il.간지 || '')} ${escHtml(il.간지한글 || '')} — ${escHtml(il.길흉등급 || '')} · ${escHtml((il.한줄판정 || '').slice(0, 80))}</p>
   `;
   box.classList.remove('fallback-hidden');
@@ -485,7 +577,7 @@ function renderMsFortune(fortune) {
   const monthCells = (mo.months || []).map((m) => `
     <button type="button" class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}"
       data-wol-slot="${m.slot}" aria-label="${m.slot}월 월운 상세 보기">
-      <div class="ms-fort-month-emo">${escHtml(msMonthEmoji(m))}</div>
+      <div class="ms-fort-month-emo">${escHtml(m.emoji || '⚪')}</div>
       <div class="ms-fort-month-num">${m.slot}월</div>
       <div class="ms-fort-month-gz">${escHtml(m.ganzhi || '')}</div>
       <div class="ms-fort-month-grade">${escHtml(m.grade || '')}</div>

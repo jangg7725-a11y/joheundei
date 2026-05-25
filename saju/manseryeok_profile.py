@@ -5,21 +5,18 @@ from __future__ import annotations
 
 from typing import Any
 
-from . import ganji as gj
 from . import ilwoon as il
 from . import jijanggan as jj
 from . import manseryeok_fortune as mfort
 from . import ohaeng as oh
 from . import saju_calc as sc
-from . import sibiunsung as sibi_mod
+from . import sibiunsung as sb
 from . import sinsal as sn
 from . import sipsin as sp
 from . import yongsin as ys
 
 PILLAR_KEYS = ("year", "month", "day", "hour")
 PILLAR_LABEL = {"year": "년", "month": "월", "day": "일", "hour": "시"}
-# 화면 배열: 좌→우 시·일·월·년 (우측이 년주, K사주마당 품 원국 탭과 동일)
-WONGUK_DISPLAY_ORDER = ("hour", "day", "month", "year")
 
 MATCH_SINSAL_NAMES = (
     "역마살",
@@ -149,6 +146,44 @@ def extract_match_params(
     }
 
 
+def _build_wonguk_pack(
+    pillars: dict,
+    day_master: str,
+    *,
+    gender: str,
+    counts: dict[str, int],
+    sip_full: dict[str, Any],
+    yong_block: dict[str, Any],
+    sinsal_block: dict[str, Any],
+) -> dict[str, Any]:
+    """K사주마당 품 원국 탭과 동일한 오행·십신·지장간·십이운성·신살 묶음."""
+    counts_surface = oh.count_elements_surface(pillars)
+    counts_hidden = oh.count_elements_hidden_only(pillars)
+    hidden_block = jj.all_hidden_for_pillars(pillars)
+    hidden_sipsin = {k: sip_full["지지"][k]["hidden"] for k in PILLAR_KEYS}
+    female = gender.strip().lower() not in ("male", "m", "남", "남자")
+    hidden_block = jj.enrich_hidden_for_user(
+        hidden_block, hidden_sipsin, female=female
+    )
+    sibi_block = sb.pillar_twelve_stages(day_master, pillars)
+    return {
+        "pillars": pillars,
+        "ohaeng": {
+            "counts": counts,
+            "counts_surface": counts_surface,
+            "counts_hidden": counts_hidden,
+            "summary_lines": oh.element_summary(counts),
+            "dominant_weak": oh.dominant_weak_elements(counts),
+        },
+        "sipsin_stems": sip_full.get("천간") or {},
+        "sipsin_hidden": hidden_sipsin,
+        "jijanggan": hidden_block,
+        "sibiunsung": sibi_block,
+        "sinsal": sinsal_block,
+        "yongsin": yong_block,
+    }
+
+
 def _pillars_summary(pillars: dict) -> list[dict[str, str]]:
     rows = []
     for pk in PILLAR_KEYS:
@@ -163,180 +198,6 @@ def _pillars_summary(pillars: dict) -> list[dict[str, str]]:
             }
         )
     return rows
-
-
-_WHERE_TO_PILLAR = (
-    ("년지", "year"),
-    ("월지", "month"),
-    ("일지", "day"),
-    ("시지", "hour"),
-    ("년간", "year"),
-    ("월간", "month"),
-    ("일간", "day"),
-    ("시간", "hour"),
-    ("년주", "year"),
-    ("월주", "month"),
-    ("일주", "day"),
-    ("시주", "hour"),
-)
-
-
-def _sinsal_by_pillar(rows: list) -> tuple[dict[str, list], list]:
-    by_pk: dict[str, list] = {k: [] for k in PILLAR_KEYS}
-    shared: list[dict[str, str]] = []
-    for r in rows:
-        if not isinstance(r, dict) or not r.get("신살"):
-            continue
-        where = str(r.get("위치") or "")
-        hit: list[str] = []
-        for lab, pk in _WHERE_TO_PILLAR:
-            if lab in where and pk not in hit:
-                hit.append(pk)
-        item = {
-            "신살": r.get("신살"),
-            "길흉": r.get("길흉"),
-            "글자": r.get("글자"),
-            "위치": where,
-        }
-        if not hit:
-            shared.append(item)
-            continue
-        for pk in hit:
-            names = {x["신살"] for x in by_pk[pk]}
-            if item["신살"] not in names:
-                by_pk[pk].append(item)
-    return by_pk, shared
-
-
-def _merge_jijanggan_slots(
-    hidden_block: dict,
-    hidden_sipsin: dict,
-    pk: str,
-) -> list[dict[str, str]]:
-    block = hidden_block.get(pk) or {}
-    hidden = block.get("hidden") or []
-    sp_list = hidden_sipsin.get(pk) or []
-    if not isinstance(sp_list, list):
-        sp_list = []
-    out: list[dict[str, str]] = []
-    for i, h in enumerate(hidden):
-        if not isinstance(h, dict):
-            continue
-        sp = sp_list[i] if i < len(sp_list) else {}
-        if not isinstance(sp, dict):
-            sp = {}
-        gan = h.get("gan") or sp.get("gan") or ""
-        out.append(
-            {
-                "slot": h.get("slot") or "",
-                "gan": gan,
-                "kr": h.get("kr") or sp.get("gan_kr") or "",
-                "element": h.get("element") or gj.element_of_stem(gan) if gan else "",
-                "sipsin": sp.get("sipsin") or "",
-            }
-        )
-    return out
-
-
-def build_manseryeok_wonguk(
-    *,
-    pillars: dict,
-    day_master: str,
-    gender: str,
-    counts: dict[str, int],
-    sip_full: dict[str, Any],
-    yong_block: dict[str, Any],
-    sinsal_block: dict[str, Any],
-) -> dict[str, Any]:
-    """K사주마당 품 원국 탭과 동일 축(오행·십신·지장간·십이운성·신살) 요약."""
-    female = sp.is_female_gender(gender)
-    sip_stems = sip_full.get("천간") or {}
-    sip_branches = sip_full.get("지지") or {}
-    hidden_block = jj.all_hidden_for_pillars(pillars)
-    hidden_sipsin = {
-        k: (sip_branches.get(k) or {}).get("hidden") or [] for k in PILLAR_KEYS
-    }
-    hidden_block = jj.enrich_hidden_for_user(
-        hidden_block, hidden_sipsin, female=female
-    )
-    sibi_block = sibi_mod.pillar_twelve_stages(day_master, pillars)
-    sinsal_rows = sinsal_block.get("신살_목록") or []
-    sinsal_by_pillar, sinsal_shared = _sinsal_by_pillar(sinsal_rows)
-
-    yong_elem = str(yong_block.get("용신_오행") or "")
-    hee_arr = list(yong_block.get("희신") or [])
-    gi_arr = list(yong_block.get("기신") or [])
-
-    pillar_detail: dict[str, Any] = {}
-    for pk in PILLAR_KEYS:
-        p = pillars[pk]
-        gan = p["gan"]
-        zhi = p["zhi"]
-        stem = sip_stems.get(pk) or {}
-        branch = sip_branches.get(pk) or {}
-        sibi_row = sibi_block.get(pk) or {}
-        stem_elem = gj.element_of_stem(gan)
-        zhi_elem = gj.element_of_branch(zhi)
-        sip_gan = str(stem.get("sipsin") or "")
-        sip_role = ""
-        if pk != "day" and stem_elem:
-            if stem_elem == yong_elem:
-                sip_role = "yong"
-            elif stem_elem in hee_arr:
-                sip_role = "hee"
-            elif stem_elem in gi_arr:
-                sip_role = "gi"
-        hidden_main = ""
-        hidden_items = branch.get("hidden") or []
-        if hidden_items:
-            hidden_main = str(hidden_items[0].get("sipsin") or "")
-        pillar_detail[pk] = {
-            "label": PILLAR_LABEL[pk],
-            "gan": gan,
-            "zhi": zhi,
-            "gan_kr": p.get("gan_kr") or stem.get("gan_kr") or "",
-            "zhi_kr": p.get("zhi_kr") or branch.get("zhi_kr") or "",
-            "pillar": p.get("pillar", ""),
-            "label_kr": p.get("label_kr", ""),
-            "gan_element": stem_elem,
-            "zhi_element": zhi_elem,
-            "sip_gan": sip_gan,
-            "sip_gan_role": sip_role,
-            "sip_zhi_main": hidden_main,
-            "sip_zhi_summary": branch.get("summary") or "",
-            "sibi_stage": sibi_row.get("stage") or "",
-            "sibi_meaning": sibi_row.get("meaning") or "",
-            "jijanggan": _merge_jijanggan_slots(hidden_block, hidden_sipsin, pk),
-            "sinsal": sinsal_by_pillar.get(pk) or [],
-        }
-
-    counts_surface = oh.count_elements_surface(pillars)
-    return {
-        "pillars": pillar_detail,
-        "pillar_order": list(WONGUK_DISPLAY_ORDER),
-        "ohaeng": {
-            "counts": counts,
-            "counts_surface": counts_surface,
-            "summary_lines": oh.element_summary(counts),
-            "dominant_weak": oh.dominant_weak_elements(counts),
-        },
-        "yongsin_ref": {
-            "용신_오행": yong_elem,
-            "희신": hee_arr,
-            "기신": gi_arr,
-        },
-        "sinsal_all": [
-            {
-                "신살": r.get("신살"),
-                "길흉": r.get("길흉"),
-                "글자": r.get("글자"),
-                "위치": r.get("위치"),
-            }
-            for r in sinsal_rows
-            if isinstance(r, dict) and r.get("신살")
-        ],
-        "sinsal_shared": sinsal_shared,
-    }
 
 
 def compute_manseryeok_profile(
@@ -380,9 +241,9 @@ def compute_manseryeok_profile(
         counts, dm, pillars["month"]["zhi"], pillars=pillars
     )
     sinsal_block = sn.analyze_sinsal(dm, pillars, gender=gender)
-    wonguk = build_manseryeok_wonguk(
-        pillars=pillars,
-        day_master=dm,
+    wonguk = _build_wonguk_pack(
+        pillars,
+        dm,
         gender=gender,
         counts=counts,
         sip_full=sip_full,
@@ -416,11 +277,13 @@ def compute_manseryeok_profile(
         "day_master_kr": raw.get("day_master_kr"),
         "day_master_element": raw.get("day_master_element"),
         "pillars": _pillars_summary(pillars),
-        "wonguk": wonguk,
         "eight_char_string": raw.get("eight_char_string"),
+        "wonguk": wonguk,
         "yongsin": {
             "용신_오행": yong_block.get("용신_오행"),
             "기신_오행": yong_block.get("기신_오행"),
+            "희신": yong_block.get("희신") or [],
+            "기신": yong_block.get("기신") or [],
             "판단_요약": yong_block.get("판단_요약"),
         },
         "match_params": match_params,

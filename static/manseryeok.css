@@ -419,180 +419,147 @@
   color: var(--ms-ink);
 }
 .ms-saju-pillar .sub { font-size: 0.72rem; color: var(--ms-gold); }
+.ms-pillar-oh {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+.ms-oh-tag {
+  font-size: 0.62rem;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: rgba(255, 252, 245, 0.9);
+  border: 1px solid var(--ms-border);
+  font-weight: 600;
+}
+.ms-pillar-hour-unknown { opacity: 0.72; }
+.ms-pillar-unk {
+  display: block;
+  font-size: 0.62rem;
+  color: var(--ms-ink-light);
+  margin-top: 2px;
+}
+
+/* ── 원국 상세 (오행·십신·지장간·십이운성·신살) ── */
+.ms-wonguk-subtitle {
+  font-family: var(--ms-font-serif);
+  font-size: 0.95rem;
+  margin: 1rem 0 0.4rem;
+  color: var(--ms-ink);
+}
+.ms-wonguk-note {
+  font-size: 0.76rem;
+  color: var(--ms-ink-light);
+  margin: 0 0 0.5rem;
+}
+.ms-oh-chart { margin: 0.5rem 0 0.8rem; }
+.ms-oh-legend { font-size: 0.72rem; color: var(--ms-ink-light); margin: 0 0 0.35rem; }
+.ms-oh-row {
+  display: grid;
+  grid-template-columns: 1.8rem 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-size: 0.78rem;
+}
+.ms-oh-el { font-weight: 700; }
+.ms-oh-bar-bg {
+  height: 10px;
+  background: var(--ms-paper-dk);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.ms-oh-bar-fill,
+.ms-oh-bar-surf { height: 100%; background: var(--ms-gold); border-radius: 5px; }
+.ms-oh-bar-stack { display: flex; height: 100%; min-width: 2px; }
+.ms-oh-bar-surf { background: #c9a227; }
+.ms-oh-bar-hid { background: #8b7355; flex: 1; }
+.ms-oh-val { font-size: 0.72rem; color: var(--ms-ink-light); white-space: nowrap; }
+.ms-oh-pct { color: var(--ms-ink-light); }
+
+.ms-wonguk-table-wrap { margin: 0.6rem 0; overflow-x: auto; }
+.ms-wonguk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  background: rgba(255, 252, 245, 0.6);
+}
+.ms-wonguk-table th,
+.ms-wonguk-table td {
+  border: 1px solid var(--ms-border);
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+  vertical-align: top;
+}
+.ms-wonguk-table th {
+  background: var(--ms-paper-dk);
+  font-weight: 600;
+  font-size: 0.74rem;
+  color: var(--ms-gold);
+}
+.ms-muted { font-size: 0.72rem; color: var(--ms-ink-light); }
+
+/* 오행 색 (밝은 톤) */
+.ms-saju-summary .oh-목 { color: #1a7a4a !important; }
+.ms-saju-summary .oh-화 { color: #c0392e !important; }
+.ms-saju-summary .oh-토 { color: #9a6b1a !important; }
+.ms-saju-summary .oh-금 { color: #5a6270 !important; }
+.ms-saju-summary .oh-수 { color: #2563b8 !important; }
+
+.ms-sip-yong { color: #9a6b1a; font-weight: 700; }
+.ms-sip-hee { color: #1a7a4a; font-weight: 700; }
+.ms-sip-gi { color: #c0392e; }
+.ms-sip-badge {
+  font-size: 0.62rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 8px;
+  margin-left: 0.15rem;
+}
+.ms-sip-badge.ms-sip-yong { background: rgba(201, 162, 39, 0.2); color: #9a6b1a; }
+.ms-sip-badge.ms-sip-hee { background: rgba(26, 122, 74, 0.12); color: #1a7a4a; }
+.ms-sip-badge.ms-sip-gi { background: rgba(192, 57, 46, 0.12); color: #c0392e; }
+.ms-sibi-strong { color: #1a7a4a; font-weight: 600; }
+.ms-sibi-weak { color: #c0392e; }
+.ms-sibi-mid { color: var(--ms-ink); }
+
+.ms-jj-section { margin-top: 0.5rem; }
+.ms-jj-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 10px;
+}
+.ms-jj-card {
+  background: var(--ms-paper);
+  border: 1px solid var(--ms-border);
+  border-radius: 8px;
+  padding: 0.65rem 0.75rem;
+}
+.ms-jj-head { font-size: 0.82rem; margin-bottom: 0.35rem; }
+.ms-jj-label { font-weight: 600; margin-right: 0.35rem; }
+.ms-jj-surface { font-size: 0.76rem; margin: 0.25rem 0; }
+.ms-jj-surf-lab { color: var(--ms-ink-light); margin-right: 0.25rem; }
+.ms-jj-row {
+  font-size: 0.74rem;
+  padding: 0.2rem 0;
+  border-top: 1px dashed var(--ms-border);
+}
+.ms-jj-slot { color: var(--ms-gold); margin-right: 0.25rem; }
+.ms-jj-arrow { margin: 0 0.2rem; color: var(--ms-ink-light); }
+
+.ms-sinsal-section { margin-top: 0.5rem; }
+.ms-sinsal-block { margin-bottom: 0.75rem; }
+.ms-sinsal-sub { font-size: 0.82rem; margin: 0.4rem 0 0.25rem; color: var(--ms-ink); }
+.ms-sinsal-good td:first-child { color: #1a7a4a; }
+.ms-sinsal-bad td:first-child { color: #c0392e; }
+
 .ms-saju-meta {
   font-size: 0.82rem;
   line-height: 1.6;
   color: var(--ms-ink);
 }
 .ms-saju-meta strong { color: var(--ms-gold); }
-
-/* ── 원국 상세 (오행·십신·지장간·십이운성·신살) ─────── */
-.ms-wk-section { margin-top: 0.25rem; }
-.ms-wk-title {
-  font-family: var(--ms-font-serif);
-  font-size: 1rem;
-  margin: 0 0 4px;
-  color: var(--ms-ink);
-}
-.ms-wk-subtitle {
-  font-size: 0.88rem;
-  margin: 0.9rem 0 0.5rem;
-  color: var(--ms-ink);
-  font-weight: 600;
-}
-.ms-wk-note {
-  font-size: 0.78rem;
-  color: var(--ms-ink-light);
-  margin: 0 0 0.75rem;
-}
-.ms-wk-muted { color: var(--ms-ink-light); font-size: 0.78rem; }
-.ms-wk-han { font-family: var(--ms-font-serif); font-weight: 700; }
-.ms-oh-목 { color: #2a7d4f; }
-.ms-oh-화 { color: #b83820; }
-.ms-oh-토 { color: #8b6914; }
-.ms-oh-금 { color: #5a6270; }
-.ms-oh-수 { color: #2d6aab; }
-
-.ms-wk-pillars {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 1rem;
-}
-.ms-wk-pillar {
-  background: var(--ms-paper);
-  border: 1px solid var(--ms-border);
-  border-radius: 8px;
-  padding: 8px 6px 10px;
-  text-align: center;
-}
-.ms-wk-pillar-lab { font-size: 0.72rem; color: var(--ms-ink-light); font-weight: 600; }
-.ms-wk-pillar-gz {
-  font-size: 1.15rem;
-  line-height: 1.35;
-  margin: 4px 0 2px;
-  letter-spacing: 0.08em;
-}
-.ms-wk-pillar-kr { font-size: 0.72rem; color: var(--ms-gold); margin-bottom: 6px; }
-.ms-wk-pillar-meta {
-  margin: 0;
-  text-align: left;
-  font-size: 0.68rem;
-  line-height: 1.45;
-}
-.ms-wk-pillar-meta > div {
-  display: grid;
-  grid-template-columns: 3.2em 1fr;
-  gap: 2px 4px;
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px dashed var(--ms-border);
-}
-.ms-wk-pillar-meta dt { color: var(--ms-ink-light); font-weight: 500; margin: 0; }
-.ms-wk-pillar-meta dd { margin: 0; color: var(--ms-ink); }
-.ms-wk-jjg { display: flex; flex-direction: column; gap: 2px; }
-.ms-wk-jjg-item { display: block; }
-.ms-wk-jjg-slot {
-  display: inline-block;
-  min-width: 2em;
-  font-size: 0.62rem;
-  color: var(--ms-ink-light);
-}
-.ms-wk-kr { font-size: 0.62rem; color: var(--ms-ink-light); }
-
-.ms-sip-yong { color: #9a6b10; font-weight: 700; }
-.ms-sip-hee { color: #2a7d4f; font-weight: 700; }
-.ms-sip-gi { color: #b83820; }
-.ms-sip-badge {
-  display: inline-block;
-  font-size: 0.58rem;
-  padding: 0 4px;
-  border-radius: 6px;
-  margin-left: 2px;
-  vertical-align: middle;
-}
-.ms-sip-badge-yong { background: rgba(176, 120, 48, 0.18); color: #9a6b10; }
-.ms-sip-badge-hee { background: rgba(42, 125, 79, 0.12); color: #2a7d4f; }
-.ms-sip-badge-gi { background: rgba(184, 56, 32, 0.12); color: #b83820; }
-
-.ms-wk-sibi-strong { color: #2a7d4f; font-weight: 600; }
-.ms-wk-sibi-weak { color: #b83820; }
-.ms-wk-sibi-mid { color: var(--ms-ink); }
-
-.ms-wk-sinsal-wrap,
-.ms-wk-sinsal-all { display: flex; flex-wrap: wrap; gap: 4px; }
-.ms-wk-sinsal {
-  font-size: 0.68rem;
-  padding: 2px 7px;
-  border-radius: 10px;
-  border: 1px solid var(--ms-border);
-  background: var(--ms-paper-dk);
-}
-.ms-wk-sinsal-good { border-color: #2a9d6f; color: #1a6b4a; background: #e8f4f0; }
-.ms-wk-sinsal-bad { border-color: #c0395e; color: #8b1a3a; background: #fce8ef; }
-.ms-wk-sinsal-norm { color: var(--ms-ink-light); }
-.ms-wk-sinsal-shared { margin-top: 6px; font-size: 0.78rem; }
-
-.ms-wk-table-wrap {
-  overflow-x: auto;
-  margin-bottom: 1rem;
-  border: 1px solid var(--ms-border);
-  border-radius: 8px;
-  background: var(--ms-paper);
-}
-.ms-wk-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.78rem;
-}
-.ms-wk-table th,
-.ms-wk-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--ms-border);
-  text-align: left;
-  vertical-align: top;
-}
-.ms-wk-table th {
-  background: var(--ms-paper-dk);
-  color: var(--ms-ink-light);
-  font-weight: 600;
-  white-space: nowrap;
-}
-.ms-wk-table tbody tr:last-child td { border-bottom: none; }
-.ms-wk-jjg-cell { font-size: 0.72rem; line-height: 1.5; max-width: 200px; }
-
-.ms-wk-ohaeng-block { margin-bottom: 0.75rem; }
-.ms-wk-oh-bars { display: flex; flex-direction: column; gap: 6px; }
-.ms-wk-oh-row {
-  display: grid;
-  grid-template-columns: 1.5em 1fr 2em;
-  gap: 8px;
-  align-items: center;
-  font-size: 0.8rem;
-}
-.ms-wk-oh-lab { font-weight: 700; }
-.ms-wk-oh-track {
-  height: 8px;
-  background: var(--ms-paper-dk);
-  border-radius: 4px;
-  overflow: hidden;
-}
-.ms-wk-oh-fill { height: 100%; border-radius: 4px; min-width: 2px; }
-.ms-wk-oh-fill.ms-oh-목 { background: #4ade80; }
-.ms-wk-oh-fill.ms-oh-화 { background: #f87171; }
-.ms-wk-oh-fill.ms-oh-토 { background: #fbbf24; }
-.ms-wk-oh-fill.ms-oh-금 { background: #9ca3af; }
-.ms-wk-oh-fill.ms-oh-수 { background: #60a5fa; }
-.ms-wk-oh-num { text-align: right; color: var(--ms-ink-light); font-size: 0.75rem; }
-.ms-wk-oh-note { font-size: 0.75rem; color: var(--ms-ink-light); margin: 6px 0 0; line-height: 1.5; }
-
-@media (max-width: 900px) {
-  .ms-wk-pillars { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 520px) {
-  .ms-wk-pillars { grid-template-columns: 1fr; }
-}
-
 .ms-saju-linked {
   margin-top: 0.6rem;
   padding-top: 0.6rem;
