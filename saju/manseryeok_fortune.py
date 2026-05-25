@@ -267,15 +267,20 @@ def _month_detail_for_ui(m: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def _month_emoji(luck: str, icons: list | None) -> str:
+def _month_emoji(plain_grade: str, icons: list | None = None) -> str:
+    """월 카드 공 색 — 길흉 문구(grade)와 동일하게 맞춤.
+
+    특이아이콘(충·삼합 등)에 🔴가 있어도 전체 판정이 길한 편이면 초록 공을 씁니다.
+    """
+    cls = _GRADE_CLASS.get(plain_grade, "mid")
+    if cls == "good":
+        return "💚"
+    if cls == "caution":
+        return "🔴"
     ic = "".join(icons or [])
     if "🔴" in ic:
         return "🔴"
-    if "✅" in ic:
-        return "💚"
-    if luck in ("대흉우려", "약흉", "흉"):
-        return "🔴"
-    if luck in ("대길우려",):
+    if "✅" in ic or "💚" in ic:
         return "💚"
     return "⚪"
 
@@ -334,7 +339,7 @@ def build_manseryeok_fortune(
                 "grade": plain,
                 "grade_class": _GRADE_CLASS.get(plain, "mid"),
                 "score": float(m.get("길흉점수") or 3),
-                "emoji": _month_emoji(luck, m.get("특이아이콘")),
+                "emoji": _month_emoji(plain, m.get("특이아이콘")),
                 "summary": (m.get("월별_핵심스토리") or m.get("한줄요약") or "")[:160],
                 "action": (m.get("월별_행동지침_텍스트") or "")[:80],
                 "detail": _month_detail_for_ui(m),

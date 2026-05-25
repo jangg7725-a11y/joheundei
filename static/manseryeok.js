@@ -310,6 +310,13 @@ function renderMsSinsalChips(list, limit = 0) {
   }).join('');
 }
 
+function msMonthEmoji(m) {
+  const cls = m.grade_class || 'mid';
+  if (cls === 'good') return '💚';
+  if (cls === 'caution') return '🔴';
+  return '⚪';
+}
+
 function renderMsOhaengBars(ohaeng) {
   const counts = ohaeng?.counts || {};
   const order = ['목', '화', '토', '금', '수'];
@@ -478,7 +485,7 @@ function renderMsFortune(fortune) {
   const monthCells = (mo.months || []).map((m) => `
     <button type="button" class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}"
       data-wol-slot="${m.slot}" aria-label="${m.slot}월 월운 상세 보기">
-      <div class="ms-fort-month-emo">${escHtml(m.emoji || '⚪')}</div>
+      <div class="ms-fort-month-emo">${escHtml(msMonthEmoji(m))}</div>
       <div class="ms-fort-month-num">${m.slot}월</div>
       <div class="ms-fort-month-gz">${escHtml(m.ganzhi || '')}</div>
       <div class="ms-fort-month-grade">${escHtml(m.grade || '')}</div>

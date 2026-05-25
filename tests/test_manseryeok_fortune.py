@@ -53,3 +53,9 @@ def test_build_fortune_has_sewoon_and_twelve_months():
 def test_plain_grade_mapping():
     assert mf._plain_grade("길운") == "길한 편"
     assert mf._plain_grade("흉운") == "조심"
+
+
+def test_month_emoji_follows_plain_grade_not_warning_icon():
+    assert mf._month_emoji("길한 편", ["🔴", "충"]) == "💚"
+    assert mf._month_emoji("조심", ["✅"]) == "🔴"
+    assert mf._month_emoji("보통", None) == "⚪"
