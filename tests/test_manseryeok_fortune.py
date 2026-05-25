@@ -5,6 +5,25 @@ from saju import manseryeok_fortune as mf
 from saju import manseryeok_profile as msp
 
 
+def test_wonguk_has_sipsin_jijanggan_sibiunsung_sinsal():
+    p = msp.compute_manseryeok_profile(
+        calendar="solar",
+        year=1966,
+        month=12,
+        day=15,
+        hour=2,
+        minute=5,
+        gender="female",
+    )
+    wk = p.get("wonguk") or {}
+    year = (wk.get("pillars") or {}).get("year") or {}
+    assert year.get("sip_gan")
+    assert year.get("sibi_stage")
+    assert len(year.get("jijanggan") or []) >= 1
+    assert wk.get("ohaeng", {}).get("counts")
+    assert len(wk.get("sinsal_all") or []) >= 1
+
+
 def test_build_fortune_has_sewoon_and_twelve_months():
     p = msp.compute_manseryeok_profile(
         calendar="solar",

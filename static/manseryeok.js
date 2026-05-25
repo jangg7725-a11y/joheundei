@@ -270,34 +270,175 @@ function applySajuProfile(profile, opts = {}) {
   }
 }
 
+const MS_OH_CLASS = { 목: 'ms-oh-목', 화: 'ms-oh-화', 토: 'ms-oh-토', 금: 'ms-oh-금', 수: 'ms-oh-수' };
+
+function msOhClass(el) {
+  return MS_OH_CLASS[el] || '';
+}
+
+function msSipRoleClass(role) {
+  if (role === 'yong') return 'ms-sip-yong';
+  if (role === 'hee') return 'ms-sip-hee';
+  if (role === 'gi') return 'ms-sip-gi';
+  return '';
+}
+
+function msSipRoleBadge(role) {
+  if (role === 'yong') return '<span class="ms-sip-badge ms-sip-badge-yong">용신</span>';
+  if (role === 'hee') return '<span class="ms-sip-badge ms-sip-badge-hee">희신</span>';
+  if (role === 'gi') return '<span class="ms-sip-badge ms-sip-badge-gi">기신</span>';
+  return '';
+}
+
+function renderMsJijangganRows(items) {
+  if (!items || !items.length) return '<span class="ms-wk-muted">—</span>';
+  return items.map((h) => {
+    const slot = h.slot ? `<span class="ms-wk-jjg-slot">${escHtml(h.slot)}</span>` : '';
+    return `<span class="ms-wk-jjg-item">${slot}<span class="ms-wk-han ${msOhClass(h.element)}">${escHtml(h.gan)}</span><span class="ms-wk-kr">(${escHtml(h.kr)})</span> <strong>${escHtml(h.sipsin || '—')}</strong></span>`;
+  }).join('');
+}
+
+function renderMsSinsalChips(list, limit = 0) {
+  const rows = limit > 0 ? (list || []).slice(0, limit) : (list || []);
+  if (!rows.length) return '';
+  return rows.map((s) => {
+    const luck = s.길흉 === '길' ? 'good' : s.길흉 === '흉' ? 'bad' : 'norm';
+    const where = s.위치 ? ` title="${escHtml(s.위치)}"` : '';
+    return `<span class="ms-wk-sinsal ms-wk-sinsal-${luck}"${where}>${escHtml(s.신살)}</span>`;
+  }).join('');
+}
+
+function renderMsOhaengBars(ohaeng) {
+  const counts = ohaeng?.counts || {};
+  const order = ['목', '화', '토', '금', '수'];
+  const max = Math.max(1, ...order.map((k) => Number(counts[k]) || 0));
+  const cells = order.map((el) => {
+    const n = Number(counts[el]) || 0;
+    const pct = Math.round((n / max) * 100);
+    return `<div class="ms-wk-oh-row"><span class="ms-wk-oh-lab ${msOhClass(el)}">${el}</span><div class="ms-wk-oh-track"><div class="ms-wk-oh-fill ${msOhClass(el)}" style="width:${pct}%"></div></div><span class="ms-wk-oh-num">${n}</span></div>`;
+  }).join('');
+  const lines = (ohaeng?.summary_lines || []).map((l) => escHtml(l)).join(' · ');
+  const dw = ohaeng?.dominant_weak || {};
+  const dwTxt = [
+    dw.strong?.length ? `강 ${dw.strong.join('·')}` : '',
+    dw.weak?.length ? `약 ${dw.weak.join('·')}` : '',
+  ].filter(Boolean).join(' / ');
+  return `<div class="ms-wk-oh-bars">${cells}</div>${lines ? `<p class="ms-wk-oh-note">${lines}</p>` : ''}${dwTxt ? `<p class="ms-wk-oh-note">${escHtml(dwTxt)} (표면+지장간 합산)</p>` : ''}`;
+}
+
+function renderMsWongukPillars(wk) {
+  const order = wk.pillar_order || ['year', 'month', 'day', 'hour'];
+  const pillars = wk.pillars || {};
+  return order.map((pk) => {
+    const row = pillars[pk];
+    if (!row) return '';
+    const sipCls = msSipRoleClass(row.sip_gan_role);
+    const isDay = pk === 'day';
+    const sipGanLabel = isDay ? '일간(본인)' : escHtml(row.sip_gan || '—');
+    const sibiCls = ['장생', '관대', '건록', '제왕'].includes(row.sibi_stage) ? 'strong'
+      : ['병', '사', '묘', '절'].includes(row.sibi_stage) ? 'weak' : 'mid';
+    const sinsLocal = renderMsSinsalChips(row.sinsal);
+    return `
+    <article class="ms-wk-pillar">
+      <div class="ms-wk-pillar-lab">${escHtml(row.label)}</div>
+      <div class="ms-wk-pillar-gz">
+        <span class="ms-wk-han ${msOhClass(row.gan_element)}">${escHtml(row.gan)}</span>
+        <span class="ms-wk-han ${msOhClass(row.zhi_element)}">${escHtml(row.zhi)}</span>
+      </div>
+      <div class="ms-wk-pillar-kr">${escHtml(row.label_kr || '')}</div>
+      <dl class="ms-wk-pillar-meta">
+        <div><dt>천간 십신</dt><dd class="${sipCls}">${sipGanLabel}${msSipRoleBadge(row.sip_gan_role)}</dd></div>
+        <div><dt>지지 십신</dt><dd>${escHtml(row.sip_zhi_main || '—')}${row.sip_zhi_summary ? `<span class="ms-wk-muted"> · ${escHtml(row.sip_zhi_summary)}</span>` : ''}</dd></div>
+        <div><dt>십이운성</dt><dd class="ms-wk-sibi ms-wk-sibi-${sibiCls}" title="${escHtml(row.sibi_meaning || '')}">${escHtml(row.sibi_stage || '—')}</dd></div>
+        <div><dt>지장간</dt><dd class="ms-wk-jjg">${renderMsJijangganRows(row.jijanggan)}</dd></div>
+        <div><dt>오행</dt><dd><span class="${msOhClass(row.gan_element)}">${escHtml(row.gan_element)}</span> · <span class="${msOhClass(row.zhi_element)}">${escHtml(row.zhi_element)}</span></dd></div>
+        ${sinsLocal ? `<div><dt>신살</dt><dd class="ms-wk-sinsal-wrap">${sinsLocal}</dd></div>` : ''}
+      </dl>
+    </article>`;
+  }).join('');
+}
+
+function renderMsWongukTable(wk) {
+  const order = wk.pillar_order || ['year', 'month', 'day', 'hour'];
+  const pillars = wk.pillars || {};
+  const body = order.map((pk) => {
+    const row = pillars[pk];
+    if (!row) return '';
+    const jjg = (row.jijanggan || []).map((h) =>
+      `${h.slot || ''} ${h.gan}→${h.sipsin || '—'}`
+    ).join(' / ');
+    const sins = (row.sinsal || []).map((s) => s.신살).join(' · ');
+    const sipCls = msSipRoleClass(row.sip_gan_role);
+    const sipGan = pk === 'day' ? '일간' : (row.sip_gan || '—');
+    return `<tr>
+      <th>${escHtml(row.label)}</th>
+      <td><span class="ms-wk-han ${msOhClass(row.gan_element)}">${escHtml(row.gan)}</span> <small>${escHtml(row.gan_kr)}</small></td>
+      <td><span class="ms-wk-han ${msOhClass(row.zhi_element)}">${escHtml(row.zhi)}</span> <small>${escHtml(row.zhi_kr)}</small></td>
+      <td class="${sipCls}">${escHtml(sipGan)}${msSipRoleBadge(row.sip_gan_role)}</td>
+      <td>${escHtml(row.sibi_stage || '—')}</td>
+      <td class="ms-wk-muted">${escHtml(row.sibi_meaning || '')}</td>
+      <td class="ms-wk-jjg-cell">${escHtml(jjg)}</td>
+      <td>${sins ? renderMsSinsalChips(row.sinsal) : '<span class="ms-wk-muted">—</span>'}</td>
+    </tr>`;
+  }).join('');
+  return `
+    <div class="ms-wk-table-wrap">
+      <table class="ms-wk-table">
+        <thead><tr>
+          <th>주</th><th>천간</th><th>지지</th><th>십신</th><th>십이운성</th><th>의미</th><th>지장간·십신</th><th>신살</th>
+        </tr></thead>
+        <tbody>${body}</tbody>
+      </table>
+    </div>`;
+}
+
 function renderSajuSummary(p) {
   const box = document.getElementById('msSajuSummary');
   if (!box) return;
   const name = p.user_name ? `${escHtml(p.user_name)}님 · ` : '';
   const solar = p.solar?.label || '';
   const lunar = p.lunar?.label || '';
-  const pillars = (p.pillars || []).map((row) => `
-    <div class="ms-saju-pillar">
-      <div class="lab">${escHtml(row.label)}</div>
-      <div class="gz">${escHtml(row.pillar)}</div>
-      <div class="sub">${escHtml(row.label_kr)}</div>
-    </div>
-  `).join('');
-  const mp = p.match_params || {};
   const il = p.ilwoon_today || {};
-  const sins = (p.sinsal_highlights || []).slice(0, 3).map((s) =>
-    `${escHtml(s.신살)}(${escHtml(s.길흉)})`
-  ).join(' · ');
+  const wk = p.wonguk;
+
+  let wongukHtml = '';
+  if (wk?.pillars) {
+    const sinsAll = renderMsSinsalChips(wk.sinsal_all);
+    const sinsShared = (wk.sinsal_shared || []).length
+      ? `<p class="ms-wk-sinsal-shared"><span class="ms-wk-muted">전체</span> ${renderMsSinsalChips(wk.sinsal_shared)}</p>`
+      : '';
+    wongukHtml = `
+      <section class="ms-wk-section" aria-label="사주 원국">
+        <h4 class="ms-wk-title">사주 원국 · 四柱</h4>
+        <p class="ms-wk-note">년 · 월 · 일 · 시 — 오행·십신·지장간·십이운성·신살 (K사주마당 품 원국과 동일 축)</p>
+        <div class="ms-wk-pillars">${renderMsWongukPillars(wk)}</div>
+        ${renderMsWongukTable(wk)}
+        <div class="ms-wk-ohaeng-block">
+          <h4 class="ms-wk-subtitle">오행 분포</h4>
+          ${renderMsOhaengBars(wk.ohaeng)}
+        </div>
+        ${sinsAll ? `<div class="ms-wk-sinsal-block"><h4 class="ms-wk-subtitle">신살</h4><div class="ms-wk-sinsal-all">${sinsAll}</div>${sinsShared}</div>` : ''}
+      </section>`;
+  } else {
+    const pillars = (p.pillars || []).map((row) => `
+      <div class="ms-saju-pillar">
+        <div class="lab">${escHtml(row.label)}</div>
+        <div class="gz">${escHtml(row.pillar)}</div>
+        <div class="sub">${escHtml(row.label_kr)}</div>
+      </div>
+    `).join('');
+    wongukHtml = `<div class="ms-saju-pillars">${pillars}</div>`;
+  }
+
   box.innerHTML = `
     <div class="ms-saju-summary-head">
       <h3>${name}일간 ${escHtml(p.day_master)}(${escHtml(p.day_master_kr)}) · ${escHtml(p.day_master_element)}</h3>
       <span class="ms-saju-meta">${escHtml(solar)}</span>
     </div>
-    <div class="ms-saju-pillars">${pillars}</div>
+    ${wongukHtml}
     <p class="ms-saju-meta"><strong>음력</strong> ${escHtml(lunar)} · <strong>용신</strong> ${escHtml(p.yongsin?.용신_오행 || '')} · <strong>기신</strong> ${escHtml(p.yongsin?.기신_오행 || '')}</p>
     <p class="ms-saju-meta">${escHtml(p.yongsin?.판단_요약 || '')}</p>
     <p class="ms-saju-meta"><strong>오늘 일운</strong> ${escHtml(il.간지 || '')} ${escHtml(il.간지한글 || '')} — ${escHtml(il.길흉등급 || '')} · ${escHtml((il.한줄판정 || '').slice(0, 80))}</p>
-    ${sins ? `<p class="ms-saju-meta"><strong>신살</strong> ${sins}</p>` : ''}
   `;
   box.classList.remove('fallback-hidden');
 }
