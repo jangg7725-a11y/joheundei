@@ -18,6 +18,8 @@ const API = {
 };
 
 const MS_PROFILE_KEY = 'ms_manseryeok_profile_v1';
+/** 정적 JS/CSS 캐시 무력화 — 배포 후 강력 새로고침 없이도 월운 클릭·등급 아이콘 반영 */
+const MS_ASSET_VERSION = '20260519b';
 
 /* ── 상태 ────────────────────────────────────────────── */
 let _allData   = [];
@@ -686,17 +688,33 @@ function renderSajuSummary(p) {
   box.classList.remove('fallback-hidden');
 }
 
+function msFortuneMonthEmoji(m) {
+  const cls = m?.grade_class || 'mid';
+  if (cls === 'good') return '💚';
+  if (cls === 'caution') return '🔴';
+  return '⚪';
+}
+
+function getMsFortuneMonths() {
+  const cached = _msFortuneCache?.monthly?.months;
+  if (cached?.length) return cached;
+  const wrap = document.getElementById('msFortuneWrap');
+  return wrap?._msFortuneData?.monthly?.months || [];
+}
+
 function renderMsFortune(fortune) {
   const wrap = document.getElementById('msFortuneWrap');
   if (!wrap) return;
   if (!fortune?.sewoon) {
     _msFortuneCache = null;
+    wrap._msFortuneData = null;
     wrap.innerHTML = '';
     wrap.classList.add('fallback-hidden');
     return;
   }
 
   _msFortuneCache = fortune;
+  wrap._msFortuneData = fortune;
   const se = fortune.sewoon;
   const mo = fortune.monthly || {};
   const cy = fortune.center_year || se.year;
@@ -717,11 +735,12 @@ function renderMsFortune(fortune) {
 
   const monthCells = (mo.months || []).map((m) => {
     const slot = Number(m.slot) || 0;
+    const emo = msFortuneMonthEmoji(m) || m.emoji || '⚪';
     return `
     <button type="button" class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}"
       data-ms-wol-slot="${slot}" aria-label="${slot}월 월운 상세 보기"
       aria-expanded="false">
-      <div class="ms-fort-month-emo">${escHtml(m.emoji || '⚪')}</div>
+      <div class="ms-fort-month-emo" aria-hidden="true">${emo}</div>
       <div class="ms-fort-month-num">${slot}월</div>
       <div class="ms-fort-month-gz">${escHtml(m.ganzhi || '')}</div>
       <div class="ms-fort-month-grade">${escHtml(m.grade || '')}</div>
@@ -815,11 +834,20 @@ function renderMsFortune(fortune) {
 function initMsFortuneMonthClicks() {
   if (window._msFortuneMonthClickInited) return;
   window._msFortuneMonthClickInited = true;
-  document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-ms-wol-slot]');
+  const onMonthPick = (e) => {
+    const btn = e.target.closest('.ms-fort-month[data-ms-wol-slot]');
     if (!btn || !btn.closest('#msFortuneWrap')) return;
     e.preventDefault();
     e.stopPropagation();
+    const slot = Number(btn.getAttribute('data-ms-wol-slot') || btn.dataset.msWolSlot);
+    if (slot >= 1 && slot <= 12) showMsWolwoonMonth(slot);
+  };
+  document.addEventListener('click', onMonthPick);
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const btn = e.target.closest?.('.ms-fort-month[data-ms-wol-slot]');
+    if (!btn || !btn.closest('#msFortuneWrap')) return;
+    e.preventDefault();
     const slot = Number(btn.getAttribute('data-ms-wol-slot') || btn.dataset.msWolSlot);
     if (slot >= 1 && slot <= 12) showMsWolwoonMonth(slot);
   });
@@ -840,7 +868,7 @@ function bindMsFortuneMonthButtons(wrap) {
 }
 
 function buildMsWolwoonMonthHtml(slot) {
-  const months = _msFortuneCache?.monthly?.months || [];
+  const months = getMsFortuneMonths();
   const m = months.find((x) => Number(x.slot) === Number(slot));
   if (!m) return '';
   const d = m.detail || m;
@@ -926,7 +954,7 @@ function _setActiveMsFortuneMonth(slot) {
   });
 }
 
-function openMsFortuneDetailModal(html) {
+function openMsFortuneDetailModal(html, slot) {
   const backdrop = document.getElementById('modalBackdrop');
   const modal = document.getElementById('detailModal');
   const content = document.getElementById('modalContent');
@@ -935,6 +963,7 @@ function openMsFortuneDetailModal(html) {
   const actions = document.querySelector('.ms-modal-actions');
   if (actions) actions.style.display = 'none';
   modal.dataset.mode = 'wolwoon';
+  modal.setAttribute('aria-label', slot ? `${slot}월 월운 상세` : '월운 상세');
   content.innerHTML = html;
   content.scrollTop = 0;
   backdrop.classList.add('open');
@@ -948,7 +977,10 @@ function openMsFortuneDetailModal(html) {
 
 function showMsWolwoonMonth(slot) {
   const html = buildMsWolwoonMonthHtml(slot);
-  if (!html) return;
+  if (!html) {
+    console.warn('[manseryeok] 월운 상세 없음 — slot=', slot, 'months=', getMsFortuneMonths().length);
+    return;
+  }
 
   _setActiveMsFortuneMonth(slot);
 
@@ -957,11 +989,14 @@ function showMsWolwoonMonth(slot) {
     panel.innerHTML = html;
     panel.classList.remove('fallback-hidden');
     requestAnimationFrame(() => {
-      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
-  openMsFortuneDetailModal(html);
+  const modalOk = openMsFortuneDetailModal(html, slot);
+  if (!modalOk && panel) {
+    document.getElementById('msFortuneWrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 }
 
 window.msShowWolwoonMonth = showMsWolwoonMonth;

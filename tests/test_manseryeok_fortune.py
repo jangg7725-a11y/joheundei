@@ -38,6 +38,31 @@ def test_plain_grade_mapping():
     assert mf._plain_grade("흉운") == "조심"
 
 
+def test_month_emoji_matches_grade_label():
+    """길한 편=💚, 조심=🔴 — 충 경고 아이콘이 있어도 카드 색 공은 등급과 일치."""
+    assert mf._month_emoji("길한 편", "대흉우려", ["🔴"]) == "💚"
+    assert mf._month_emoji("조심", "대길우려", ["✅"]) == "🔴"
+    assert mf._month_emoji("보통", "보통", []) == "⚪"
+    p = msp.compute_manseryeok_profile(
+        calendar="solar",
+        year=1966,
+        month=9,
+        day=19,
+        hour=18,
+        minute=27,
+        gender="female",
+    )
+    for m in (p.get("fortune") or {}).get("monthly", {}).get("months") or []:
+        grade = m.get("grade")
+        emo = m.get("emoji")
+        if grade == "길한 편":
+            assert emo == "💚", f"slot {m.get('slot')}"
+        elif grade == "조심":
+            assert emo == "🔴", f"slot {m.get('slot')}"
+        elif grade == "보통":
+            assert emo == "⚪", f"slot {m.get('slot')}"
+
+
 def test_fortune_uses_unteim_and_differs_by_daymaster():
     p_a = msp.compute_manseryeok_profile(
         calendar="solar",
