@@ -92,6 +92,13 @@ def test_report_no_voice_openers_global() -> None:
     _assert_no_banned_openers(texts, "1966-female")
 
 
+def test_manseryeok_voice_soft_tone() -> None:
+    out = tn.manseryeok_voice("천을귀인은 도움 경험이 있습니다. 보시면 되십니다.")
+    assert "있으십니다" not in out
+    assert "되십니다" not in out
+    assert "있습니다" in out
+
+
 def test_strip_voice_openers() -> None:
     raw = "전통 명리를 바탕으로 보면, 입춘을 지난 인월입니다."
     assert tn.strip_voice_openers(raw).startswith("입춘")

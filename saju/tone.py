@@ -434,6 +434,37 @@ _TRUNCATED_AFTER_BRACKET_RE = re.compile(
 )
 
 
+_STIFF_HONORIFIC_FIXES: Tuple[Tuple[str, str], ...] = (
+    ("있으십니다", "있습니다"),
+    ("되십니다", "됩니다"),
+    ("보이십니다", "보입니다"),
+    ("없으십니다", "없습니다"),
+    ("필요하십니다", "필요합니다"),
+    ("가능하십니다", "가능합니다"),
+    ("쉽지 않으십니다", "쉽지 않습니다"),
+    ("드러나십니다", "드러납니다"),
+    ("발동되십니다", "발동됩니다"),
+    ("비치십니다", "비칩니다"),
+    ("이십니다", "입니다"),
+    ("하십시오", "해 주세요"),
+    ("유의하시기 바랍니다", "유의해 주세요"),
+    ("챙기시면 좋습니다", "챙기시면 좋아요"),
+    ("하시면 좋습니다", "하시면 좋아요"),
+    ("권해 드립니다", "권해 드려요"),
+)
+
+
+def soften_stiff_honorific(text: str) -> str:
+    """하십시오체(-으십니다)를 해요·합니다체로 완화합니다."""
+    if not text or not isinstance(text, str):
+        return text
+    t = str(text)
+    for old, new in sorted(_STIFF_HONORIFIC_FIXES, key=lambda x: -len(x[0])):
+        if old:
+            t = t.replace(old, new)
+    return t
+
+
 def truncate_narrative_text(text: str, max_len: int = 400) -> str:
     """총운·월운 서사를 길이 제한할 때 문장·단락 경계에서 자르고, 끊긴 【】 블록을 제거합니다."""
     if not text or not isinstance(text, str):
@@ -464,13 +495,19 @@ def truncate_narrative_text(text: str, max_len: int = 400) -> str:
 
 
 def manseryeok_voice(text: str) -> str:
-    """만세력 총운·월운 서사 — 법적 안전 치환 + 해체 종결을 존댓말로."""
+    """만세력 총운·월운 서사 — 법적 안전 + 해체 종결을 부드러운 존댓말(합니다/해요)로."""
     if not text or not isinstance(text, str):
         return text
-    t = voice_text_wolwoon(str(text).strip())
+    t = sanitize_legal_tone(str(text).strip())
     if not t or not _HANGUL_RE.search(t):
         return text
-    return polish_plain_endings(t)
+    for old, new in _LEGAL_SAFE_REPLACEMENTS:
+        if old and new is not None:
+            t = t.replace(old, new)
+    t = t.replace("당신은", "회원님은").replace("당신의", "회원님의")
+    t = polish_plain_endings(t)
+    t = soften_stiff_honorific(t)
+    return t.strip() if t else text
 
 
 def _voice_manseryeok_str(key: str, value: str) -> str:

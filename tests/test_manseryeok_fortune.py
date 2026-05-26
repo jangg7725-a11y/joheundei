@@ -112,6 +112,19 @@ def test_manseryeok_voice_plain_to_honorific() -> None:
     assert "작동합니다" in tn.manseryeok_voice("기반이 작동한다.")
 
 
+def test_manseryeok_voice_avoids_sipnida_honorific() -> None:
+    """만세력 해설은 -으십니다(하십시오체) 대신 -습니다/-해요 톤."""
+    assert "있으십니다" not in tn.manseryeok_voice("도움 경험이 있습니다.")
+    assert "있습니다" in tn.manseryeok_voice("도움 경험이 있습니다.")
+    out = tn.manseryeok_voice(
+        "영향을 미칠 수 있습니다. 보시면 되십니다. 필요하십니다."
+    )
+    assert "있으십니다" not in out
+    assert "되십니다" not in out
+    assert "필요하십니다" not in out
+    assert "됩니다" in out or "좋아요" in out
+
+
 def test_fortune_story_avoids_plain_endings() -> None:
     p = msp.compute_manseryeok_profile(
         calendar="solar",
@@ -131,7 +144,9 @@ def test_fortune_story_avoids_plain_endings() -> None:
     for marker in _PLAIN_ENDING_MARKERS:
         assert marker not in blob, f"plain ending {marker!r} in fortune text"
     assert not re.search(r"연결되는 단계\.", blob)
-    assert re.search(r"(습니다|입니다|세요|하시면)", blob)
+    assert re.search(r"(습니다|입니다|세요|해요|좋아요)", blob)
+    assert "있으십니다" not in blob
+    assert "되십니다" not in blob
     for line in se.get("story") or []:
         assert not re.search(r"】\s*한\s*$", str(line))
         assert not str(line).rstrip().endswith("한")
