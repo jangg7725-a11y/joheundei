@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   await loadAllData();
   initTabs();
   initSajuPanel();
+  initMsFortuneMonthClicks();
   initCalendarTab();
   initTaekilTab();
   if (typeof initMsGoonghapTab === 'function') initMsGoonghapTab();
@@ -714,15 +715,18 @@ function renderMsFortune(fortune) {
     cautKw.length ? `<p class="ms-fort-kw caution">⚠️ ${cautKw.map((k) => escHtml(String(k))).join(' · ')}</p>` : '',
   ].join('');
 
-  const monthCells = (mo.months || []).map((m) => `
+  const monthCells = (mo.months || []).map((m) => {
+    const slot = Number(m.slot) || 0;
+    return `
     <button type="button" class="ms-fort-month ms-fort-month--${m.grade_class || 'mid'}"
-      data-wol-slot="${m.slot}" aria-label="${m.slot}월 월운 상세 보기">
+      data-ms-wol-slot="${slot}" aria-label="${slot}월 월운 상세 보기"
+      aria-expanded="false">
       <div class="ms-fort-month-emo">${escHtml(m.emoji || '⚪')}</div>
-      <div class="ms-fort-month-num">${m.slot}월</div>
+      <div class="ms-fort-month-num">${slot}월</div>
       <div class="ms-fort-month-gz">${escHtml(m.ganzhi || '')}</div>
       <div class="ms-fort-month-grade">${escHtml(m.grade || '')}</div>
-    </button>
-  `).join('');
+    </button>`;
+  }).join('');
 
   const bestLine = (mo.best_months || []).slice(0, 3).map((b) =>
     `${b.절월번호}월(${escHtml(b.월주간지 || '')})`
@@ -794,7 +798,8 @@ function renderMsFortune(fortune) {
     <section class="ms-fortune-monthly">
       <h3 class="ms-fort-title">${cy}년 월별 운세</h3>
       <p class="ms-fort-note">${escHtml(mo.slot_note || '절기 기준 월(입춘부터 1월)입니다.')}</p>
-      <div class="ms-fort-month-strip">${monthCells}</div>
+      <div class="ms-fort-month-strip" role="group" aria-label="${cy}년 월별 운세 카드">${monthCells}</div>
+      <div id="msWolwoonDetailPanel" class="ms-wolwoon-detail-panel fallback-hidden" aria-live="polite"></div>
       ${mo.first_half ? `<p class="ms-fort-half">📈 ${escHtml(mo.first_half)}</p>` : ''}
       ${mo.second_half ? `<p class="ms-fort-half">📉 ${escHtml(mo.second_half)}</p>` : ''}
       ${bestLine ? `<p class="ms-fort-tip good">💚 좋은 흐름: ${bestLine}</p>` : ''}
@@ -803,24 +808,41 @@ function renderMsFortune(fortune) {
     <p class="ms-fort-disclaimer">참고용 안내입니다. 중요한 결정은 여러 정보를 함께 보세요.</p>
   `;
   wrap.classList.remove('fallback-hidden');
-  bindMsWolwoonMonthClicks(wrap);
+  bindMsFortuneMonthButtons(wrap);
 }
 
-function bindMsWolwoonMonthClicks(wrap) {
-  if (!wrap || wrap.dataset.wolBound) return;
-  wrap.dataset.wolBound = '1';
-  wrap.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-wol-slot]');
-    if (!btn) return;
-    const slot = Number(btn.dataset.wolSlot);
-    if (slot) showMsWolwoonMonth(slot);
+/** 문서·카드 양쪽에서 월별 운세 클릭을 받습니다 (재렌더 후에도 동작). */
+function initMsFortuneMonthClicks() {
+  if (window._msFortuneMonthClickInited) return;
+  window._msFortuneMonthClickInited = true;
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-ms-wol-slot]');
+    if (!btn || !btn.closest('#msFortuneWrap')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const slot = Number(btn.getAttribute('data-ms-wol-slot') || btn.dataset.msWolSlot);
+    if (slot >= 1 && slot <= 12) showMsWolwoonMonth(slot);
   });
 }
 
-function showMsWolwoonMonth(slot) {
+function bindMsFortuneMonthButtons(wrap) {
+  if (!wrap) return;
+  wrap.querySelectorAll('[data-ms-wol-slot]').forEach((btn) => {
+    if (btn.dataset.msWolBound === '1') return;
+    btn.dataset.msWolBound = '1';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const slot = Number(btn.getAttribute('data-ms-wol-slot') || btn.dataset.msWolSlot);
+      if (slot >= 1 && slot <= 12) showMsWolwoonMonth(slot);
+    });
+  });
+}
+
+function buildMsWolwoonMonthHtml(slot) {
   const months = _msFortuneCache?.monthly?.months || [];
   const m = months.find((x) => Number(x.slot) === Number(slot));
-  if (!m) return;
+  if (!m) return '';
   const d = m.detail || m;
   const cy = _msFortuneCache?.center_year || _msFortuneCache?.sewoon?.year || '';
 
@@ -893,19 +915,56 @@ function showMsWolwoonMonth(slot) {
     </div>` : ''}
     <p class="ms-fort-note" style="margin-top:0.75rem">절기 기준 월입니다. 양력 1~12월과 다를 수 있습니다.</p>
   `;
+  return html;
+}
 
+function _setActiveMsFortuneMonth(slot) {
+  document.querySelectorAll('#msFortuneWrap [data-ms-wol-slot]').forEach((btn) => {
+    const on = Number(btn.getAttribute('data-ms-wol-slot')) === Number(slot);
+    btn.classList.toggle('is-active', on);
+    btn.setAttribute('aria-expanded', on ? 'true' : 'false');
+  });
+}
+
+function openMsFortuneDetailModal(html) {
+  const backdrop = document.getElementById('modalBackdrop');
   const modal = document.getElementById('detailModal');
   const content = document.getElementById('modalContent');
+  if (!backdrop || !modal || !content) return false;
+
   const actions = document.querySelector('.ms-modal-actions');
   if (actions) actions.style.display = 'none';
   modal.dataset.mode = 'wolwoon';
-  document.getElementById('modalBackdrop').classList.add('open');
-  modal.classList.add('open');
   content.innerHTML = html;
   content.scrollTop = 0;
+  backdrop.classList.add('open');
+  modal.classList.add('open');
   document.body.style.overflow = 'hidden';
-  modal.focus({ preventScroll: true });
+  try {
+    modal.focus({ preventScroll: true });
+  } catch (_) { /* focus optional */ }
+  return true;
 }
+
+function showMsWolwoonMonth(slot) {
+  const html = buildMsWolwoonMonthHtml(slot);
+  if (!html) return;
+
+  _setActiveMsFortuneMonth(slot);
+
+  const panel = document.getElementById('msWolwoonDetailPanel');
+  if (panel) {
+    panel.innerHTML = html;
+    panel.classList.remove('fallback-hidden');
+    requestAnimationFrame(() => {
+      panel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    });
+  }
+
+  openMsFortuneDetailModal(html);
+}
+
+window.msShowWolwoonMonth = showMsWolwoonMonth;
 
 function goToSajuMatchTab() {
   const tab = document.querySelector('[data-tab="saju"]');
@@ -1668,10 +1727,13 @@ function renderModal(item) {
 }
 
 function closeModal() {
-  document.getElementById('modalBackdrop').classList.remove('open');
+  const backdrop = document.getElementById('modalBackdrop');
   const modal = document.getElementById('detailModal');
-  modal.classList.remove('open');
-  delete modal.dataset.mode;
+  if (backdrop) backdrop.classList.remove('open');
+  if (modal) {
+    modal.classList.remove('open');
+    delete modal.dataset.mode;
+  }
   const actions = document.querySelector('.ms-modal-actions');
   if (actions) actions.style.display = '';
   document.body.style.overflow = '';

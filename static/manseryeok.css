@@ -1810,6 +1810,21 @@
 }
 .ms-fort-month--good { background: rgba(72, 160, 110, 0.12); }
 .ms-fort-month--caution { background: rgba(200, 72, 85, 0.1); }
+.ms-fort-month.is-active {
+  border-color: var(--ms-gold);
+  box-shadow: 0 0 0 2px rgba(184, 134, 11, 0.35);
+  transform: translateY(-1px);
+}
+.ms-wolwoon-detail-panel {
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--ms-radius);
+  border: 1px solid var(--ms-border);
+  background: #fff;
+  box-shadow: var(--ms-shadow);
+  max-height: min(70vh, 520px);
+  overflow-y: auto;
+}
 .ms-fort-month-emo { font-size: 0.85rem; }
 .ms-fort-month-num { font-weight: 700; margin-top: 0.1rem; }
 .ms-fort-month-gz { font-size: 0.72rem; margin: 0.08rem 0; }
