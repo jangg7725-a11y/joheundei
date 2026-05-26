@@ -1816,7 +1816,8 @@
   transform: translateY(-1px);
 }
 .ms-wolwoon-detail-panel {
-  margin: 0.5rem 0 0.75rem;
+  max-width: 920px;
+  margin: 0.5rem auto 0.75rem;
   padding: 0.85rem 1rem;
   border-radius: var(--ms-radius);
   border: 1px solid var(--ms-border);
@@ -1824,6 +1825,36 @@
   box-shadow: var(--ms-shadow);
   max-height: min(70vh, 520px);
   overflow-y: auto;
+}
+.ms-wolwoon-detail-panel.is-open {
+  border-color: var(--ms-gold);
+  box-shadow: 0 4px 16px rgba(139, 100, 40, 0.2);
+}
+.ms-wol-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.45rem;
+  border-bottom: 1px solid var(--ms-border);
+  font-family: var(--ms-font-serif);
+}
+.ms-wol-panel-close {
+  border: 1px solid var(--ms-border);
+  background: var(--ms-paper);
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  line-height: 1;
+}
+.ms-wol-panel-close:hover {
+  border-color: var(--ms-gold);
+  color: var(--ms-gold);
+}
+.ms-fort-month {
+  pointer-events: auto;
 }
 .ms-fort-month-emo { font-size: 0.85rem; }
 .ms-fort-month-num { font-weight: 700; margin-top: 0.1rem; }

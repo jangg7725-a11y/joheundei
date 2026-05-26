@@ -19,7 +19,8 @@ const API = {
 
 const MS_PROFILE_KEY = 'ms_manseryeok_profile_v1';
 /** 정적 JS/CSS 캐시 무력화 — 배포 후 강력 새로고침 없이도 월운 클릭·등급 아이콘 반영 */
-const MS_ASSET_VERSION = '20260519b';
+const MS_ASSET_VERSION = '20260519c';
+const MS_FORTUNE_MONTHS_KEY = 'ms_fortune_months_v1';
 
 /* ── 상태 ────────────────────────────────────────────── */
 let _allData   = [];
@@ -72,13 +73,12 @@ function msOriginal(item) {
    초기화
 ══════════════════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', async () => {
-  await loadAllData();
   initTabs();
   initSajuPanel();
-  initMsFortuneMonthClicks();
   initCalendarTab();
   initTaekilTab();
   if (typeof initMsGoonghapTab === 'function') initMsGoonghapTab();
+  await loadAllData();
 });
 
 async function loadAllData() {
@@ -695,11 +695,37 @@ function msFortuneMonthEmoji(m) {
   return '⚪';
 }
 
-function getMsFortuneMonths() {
-  const cached = _msFortuneCache?.monthly?.months;
-  if (cached?.length) return cached;
+function getMsFortuneData() {
+  if (_msFortuneCache?.monthly) return _msFortuneCache;
   const wrap = document.getElementById('msFortuneWrap');
-  return wrap?._msFortuneData?.monthly?.months || [];
+  if (wrap?._msFortuneData?.monthly) return wrap._msFortuneData;
+  try {
+    const raw = sessionStorage.getItem(MS_FORTUNE_MONTHS_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed?.monthly?.months?.length) return parsed;
+    }
+  } catch (_) { /* ignore */ }
+  return null;
+}
+
+function persistMsFortuneMonths(fortune) {
+  if (!fortune?.monthly?.months?.length) return;
+  try {
+    const cy = fortune.center_year || fortune.sewoon?.year;
+    sessionStorage.setItem(
+      MS_FORTUNE_MONTHS_KEY,
+      JSON.stringify({
+        center_year: cy,
+        sewoon: { year: cy },
+        monthly: { months: fortune.monthly.months },
+      }),
+    );
+  } catch (_) { /* ignore */ }
+}
+
+function getMsFortuneMonths() {
+  return getMsFortuneData()?.monthly?.months || [];
 }
 
 function renderMsFortune(fortune) {
@@ -715,6 +741,7 @@ function renderMsFortune(fortune) {
 
   _msFortuneCache = fortune;
   wrap._msFortuneData = fortune;
+  persistMsFortuneMonths(fortune);
   const se = fortune.sewoon;
   const mo = fortune.monthly || {};
   const cy = fortune.center_year || se.year;
@@ -818,7 +845,6 @@ function renderMsFortune(fortune) {
       <h3 class="ms-fort-title">${cy}년 월별 운세</h3>
       <p class="ms-fort-note">${escHtml(mo.slot_note || '절기 기준 월(입춘부터 1월)입니다.')}</p>
       <div class="ms-fort-month-strip" role="group" aria-label="${cy}년 월별 운세 카드">${monthCells}</div>
-      <div id="msWolwoonDetailPanel" class="ms-wolwoon-detail-panel fallback-hidden" aria-live="polite"></div>
       ${mo.first_half ? `<p class="ms-fort-half">📈 ${escHtml(mo.first_half)}</p>` : ''}
       ${mo.second_half ? `<p class="ms-fort-half">📉 ${escHtml(mo.second_half)}</p>` : ''}
       ${bestLine ? `<p class="ms-fort-tip good">💚 좋은 흐름: ${bestLine}</p>` : ''}
@@ -842,7 +868,7 @@ function initMsFortuneMonthClicks() {
     const slot = Number(btn.getAttribute('data-ms-wol-slot') || btn.dataset.msWolSlot);
     if (slot >= 1 && slot <= 12) showMsWolwoonMonth(slot);
   };
-  document.addEventListener('click', onMonthPick);
+  document.addEventListener('click', onMonthPick, true);
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' && e.key !== ' ') return;
     const btn = e.target.closest?.('.ms-fort-month[data-ms-wol-slot]');
@@ -851,6 +877,41 @@ function initMsFortuneMonthClicks() {
     const slot = Number(btn.getAttribute('data-ms-wol-slot') || btn.dataset.msWolSlot);
     if (slot >= 1 && slot <= 12) showMsWolwoonMonth(slot);
   });
+}
+
+function initMsModalControls() {
+  const backdrop = document.getElementById('modalBackdrop');
+  const closeBtn = document.getElementById('msModalCloseBtn');
+  if (backdrop && backdrop.dataset.msBound !== '1') {
+    backdrop.dataset.msBound = '1';
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) closeModal();
+    });
+  }
+  if (closeBtn && closeBtn.dataset.msBound !== '1') {
+    closeBtn.dataset.msBound = '1';
+    closeBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      closeModal();
+    });
+  }
+  const panel = document.getElementById('msWolwoonDetailPanel');
+  if (panel && panel.dataset.msBound !== '1') {
+    panel.dataset.msBound = '1';
+    panel.addEventListener('click', (e) => {
+      const close = e.target.closest('[data-ms-wol-panel-close]');
+      if (close) hideMsWolwoonPanel();
+    });
+  }
+}
+
+function hideMsWolwoonPanel() {
+  const panel = document.getElementById('msWolwoonDetailPanel');
+  if (!panel) return;
+  panel.innerHTML = '';
+  panel.classList.add('fallback-hidden');
+  panel.classList.remove('is-open');
+  _setActiveMsFortuneMonth(0);
 }
 
 function bindMsFortuneMonthButtons(wrap) {
@@ -872,7 +933,8 @@ function buildMsWolwoonMonthHtml(slot) {
   const m = months.find((x) => Number(x.slot) === Number(slot));
   if (!m) return '';
   const d = m.detail || m;
-  const cy = _msFortuneCache?.center_year || _msFortuneCache?.sewoon?.year || '';
+  const fortune = getMsFortuneData();
+  const cy = fortune?.center_year || fortune?.sewoon?.year || new Date().getFullYear();
 
   const flagLabels = {
     삼합완성: '삼합 완성',
@@ -885,8 +947,10 @@ function buildMsWolwoonMonthHtml(slot) {
     .filter(([, v]) => v)
     .map(([k]) => flagLabels[k] || k);
 
-  const overlapLi = (d.overlap || []).map((t) => `<li>${escHtml(t)}</li>`).join('');
-  const actionLi = (d.actions || []).map((t) => `<li>${escHtml(t)}</li>`).join('');
+  const overlapRaw = Array.isArray(d.overlap) ? d.overlap : (d.overlap ? [d.overlap] : []);
+  const actionsRaw = Array.isArray(d.actions) ? d.actions : (d.actions ? [d.actions] : []);
+  const overlapLi = overlapRaw.map((t) => `<li>${escHtml(t)}</li>`).join('');
+  const actionLi = actionsRaw.map((t) => `<li>${escHtml(t)}</li>`).join('');
 
   const html = `
     <div class="ms-modal-cat"><span class="ms-cat-badge cat-명리">월운</span></div>
@@ -948,7 +1012,7 @@ function buildMsWolwoonMonthHtml(slot) {
 
 function _setActiveMsFortuneMonth(slot) {
   document.querySelectorAll('#msFortuneWrap [data-ms-wol-slot]').forEach((btn) => {
-    const on = Number(btn.getAttribute('data-ms-wol-slot')) === Number(slot);
+    const on = Number(slot) >= 1 && Number(btn.getAttribute('data-ms-wol-slot')) === Number(slot);
     btn.classList.toggle('is-active', on);
     btn.setAttribute('aria-expanded', on ? 'true' : 'false');
   });
@@ -976,30 +1040,46 @@ function openMsFortuneDetailModal(html, slot) {
 }
 
 function showMsWolwoonMonth(slot) {
-  const html = buildMsWolwoonMonthHtml(slot);
+  let html = '';
+  try {
+    html = buildMsWolwoonMonthHtml(slot);
+  } catch (err) {
+    console.error('[manseryeok] 월운 상세 생성 오류', err);
+  }
   if (!html) {
     console.warn('[manseryeok] 월운 상세 없음 — slot=', slot, 'months=', getMsFortuneMonths().length);
+    const panel = document.getElementById('msWolwoonDetailPanel');
+    if (panel) {
+      panel.innerHTML =
+        `<p class="ms-fort-note">월운 데이터를 불러오지 못했습니다. <strong>사주 계산</strong>을 다시 눌러 주세요.</p>`;
+      panel.classList.remove('fallback-hidden');
+      panel.classList.add('is-open');
+    }
     return;
   }
 
   _setActiveMsFortuneMonth(slot);
 
+  const panelHead = `
+    <div class="ms-wol-panel-head">
+      <strong>${slot}월 월운 상세</strong>
+      <button type="button" class="ms-wol-panel-close" data-ms-wol-panel-close aria-label="월운 상세 닫기">✕</button>
+    </div>`;
   const panel = document.getElementById('msWolwoonDetailPanel');
   if (panel) {
-    panel.innerHTML = html;
+    panel.innerHTML = panelHead + html;
     panel.classList.remove('fallback-hidden');
+    panel.classList.add('is-open');
     requestAnimationFrame(() => {
       panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
 
-  const modalOk = openMsFortuneDetailModal(html, slot);
-  if (!modalOk && panel) {
-    document.getElementById('msFortuneWrap')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  openMsFortuneDetailModal(html, slot);
 }
 
 window.msShowWolwoonMonth = showMsWolwoonMonth;
+window.closeModal = closeModal;
 
 function goToSajuMatchTab() {
   const tab = document.querySelector('[data-tab="saju"]');
@@ -1767,7 +1847,13 @@ function closeModal() {
   if (backdrop) backdrop.classList.remove('open');
   if (modal) {
     modal.classList.remove('open');
-    delete modal.dataset.mode;
+    if (modal.dataset.mode === 'wolwoon') {
+      delete modal.dataset.mode;
+      const content = document.getElementById('modalContent');
+      if (content) content.innerHTML = '';
+    } else {
+      delete modal.dataset.mode;
+    }
   }
   const actions = document.querySelector('.ms-modal-actions');
   if (actions) actions.style.display = '';
@@ -1891,3 +1977,7 @@ function truncate(str, max) {
   if (!str) return '';
   return str.length > max ? str.slice(0, max) + '…' : str;
 }
+
+/* 월운 클릭·모달 — 문헌 DB 로딩과 무관하게 즉시 등록 */
+initMsFortuneMonthClicks();
+initMsModalControls();

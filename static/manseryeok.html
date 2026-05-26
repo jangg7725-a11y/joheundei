@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;400;600;700&family=Noto+Sans+KR:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/style.css">
-<link rel="stylesheet" href="/static/manseryeok.css?v=20260519b">
+<link rel="stylesheet" href="/static/manseryeok.css?v=20260519c">
 </head>
 <body class="manseryeok-body">
 
@@ -96,6 +96,8 @@
 
   <div class="ms-saju-summary fallback-hidden" id="msSajuSummary" aria-live="polite"></div>
   <div class="ms-fortune-wrap fallback-hidden" id="msFortuneWrap" aria-live="polite"></div>
+  <!-- 월운 상세: innerHTML 재렌더와 분리(클릭 후 내용 유지) -->
+  <div id="msWolwoonDetailPanel" class="ms-wolwoon-detail-panel fallback-hidden" aria-live="polite"></div>
 </section>
 
 <!-- ── 탭 네비게이션 ── -->
@@ -431,9 +433,9 @@
 <!-- ══════════════════════════════════════ -->
 <!-- 상세 모달                              -->
 <!-- ══════════════════════════════════════ -->
-<div class="ms-modal-backdrop" id="modalBackdrop" onclick="closeModal()"></div>
+<div class="ms-modal-backdrop" id="modalBackdrop"></div>
 <div class="ms-modal" id="detailModal" role="dialog" aria-modal="true" aria-label="문헌 상세" tabindex="-1">
-  <button class="ms-modal-close" onclick="closeModal()" aria-label="닫기">✕</button>
+  <button type="button" class="ms-modal-close" id="msModalCloseBtn" aria-label="닫기">✕</button>
   <div class="ms-modal-content" id="modalContent"></div>
   <div class="ms-modal-actions">
     <button class="ms-modal-pdf-btn" onclick="printModal()">🖨 이 항목 인쇄</button>
@@ -441,7 +443,7 @@
   </div>
 </div>
 
-<script src="/static/manseryeok.js?v=20260519b"></script>
-<script src="/static/manseryeok_goonghap.js?v=20260519b"></script>
+<script src="/static/manseryeok.js?v=20260519c"></script>
+<script src="/static/manseryeok_goonghap.js?v=20260519c"></script>
 </body>
 </html>

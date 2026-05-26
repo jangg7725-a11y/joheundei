@@ -710,7 +710,13 @@ async def manseryeok_page():
     page = STATIC_DIR / "manseryeok.html"
     if not page.is_file():
         raise HTTPException(status_code=500, detail="static/manseryeok.html 파일이 없습니다.")
-    return FileResponse(page)
+    return FileResponse(
+        page,
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+        },
+    )
 
 
 @app.post("/api/manseryeok/compute")
