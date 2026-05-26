@@ -257,7 +257,7 @@ def _wolwoon_period_extras(
                     "길흉": "길",
                     "글자": glyph,
                     "위치": scope,
-                    "해석": f"{pk_label[pk]}({nz})와 육합 — 협력·인연이 붙기 쉬운 달입니다.",
+                    "해석": f"{pk_label[pk]}({nz})와 육합 — 협력·인연이 붙는 달입니다.",
                     "중첩": False,
                 },
                 key=f"{scope}육합",
@@ -290,7 +290,7 @@ def _wolwoon_period_extras(
                 "길흉": "흉",
                 "글자": period_zhi,
                 "위치": scope,
-                "해석": "세운 지지와 월운 지지가 같아 과열·중첩되기 쉬운 달입니다. 무리한 확장은 줄이세요.",
+                "해석": "세운 지지와 월운 지지가 같아 과열·중첩되는 달입니다. 무리한 확장은 줄이세요.",
                 "중첩": period_zhi in native_zhi,
             },
             key="세운월운 복음",
@@ -715,7 +715,7 @@ def _append_native_pillar_stars(
                 "길",
                 z,
                 where,
-                "삼합 왕지(中神)에 해당하는 자리로 권위·주관·존재감이 두드러지기 쉽습니다.",
+                "삼합 왕지(中神)에 해당하는 자리로 권위·주관·존재감이 강합니다.",
             )
         )
 
@@ -729,7 +729,7 @@ def _append_native_pillar_stars(
                 luck="중",
                 target_zhi=dh,
                 zhis=zhis,
-                note=f"{label} 기준 도화(桃花) 지지로 인기·이성·표현력이 붙기 쉽습니다.",
+                note=f"{label} 기준 도화(桃花) 지지로 인기·이성·표현력이 풍부합니다.",
             )
 
     _append_branch_star(
@@ -739,7 +739,7 @@ def _append_native_pillar_stars(
         luck="중",
         target_zhi=_hongyeom_branch(day_master),
         zhis=zhis,
-        note="홍염(红艳)으로 매력·대인 접촉이 강해지나 감정 기복·관계 변수를 조절할 필요가 있습니다.",
+        note="홍염(红艳)으로 매력·대인 접촉이 강하나 감정 기복·관계 변수를 주의해야 합니다.",
     )
     _append_branch_star(
         rows,
@@ -748,7 +748,7 @@ def _append_native_pillar_stars(
         luck="길",
         target_zhi=_mungok_branch(day_master),
         zhis=zhis,
-        note="문곡(文曲)으로 예술·표현·설득력·학습 재능이 살아나기 쉬운 별입니다.",
+        note="문곡(文曲)으로 예술·표현·설득력·학습 재능이 있습니다.",
     )
     _append_branch_star(
         rows,
@@ -779,7 +779,7 @@ def _append_native_pillar_stars(
                 where,
                 (
                     f"일주 순공(旬空) {glyphs}에 해당하는 지지로 "
-                    "허무·실속 부족·인연 공허를 의식할 필요가 있습니다."
+                    "허무·실속 부족·인연 공허가 드러납니다."
                 ),
             )
         )
@@ -824,7 +824,7 @@ def analyze_sinsal(
                     "길",
                     z,
                     _format_where(pos),
-                    "학문·시험·글씨 재능이 살아나기 쉬운 별입니다.",
+                    "학문·시험·글씨 재능이 있습니다.",
                 )
             )
 
@@ -838,7 +838,7 @@ def analyze_sinsal(
                     "길",
                     z,
                     _format_where(pos),
-                    "배움의 기운이 두터워 전공·자격에 유리한 편입니다.",
+                    "배움의 기운이 두터워 전공·자격에 유리합니다.",
                 )
             )
 
@@ -880,7 +880,7 @@ def analyze_sinsal(
                     "길",
                     z,
                     _format_where(pos),
-                    "복록·생활안정에 긍정적으로 작용하기 쉬운 별입니다.",
+                    "복록·생활안정에 긍정적으로 작용합니다.",
                 )
             )
 
@@ -888,8 +888,8 @@ def analyze_sinsal(
     ylm, doh, hwg = _yeolma_dohwa_hwagae(year_zhi)
     for tag, marker, msg in (
         ("역마살", ylm, "이동·변동·해외·직무 전환 에너지가 강해졌다 약해졌다 합니다."),
-        ("도화살", doh, "인기·이성·표현력이 붙으나 관계 번복도 따라올 수 있습니다."),
-        ("화개살", hwg, "종교·예술·고독·내면 탐구 기질이 배경에 깔리기 쉽습니다."),
+        ("도화살", doh, "인기·이성·표현력이 풍부하나 관계 번복에 주의해야 합니다."),
+        ("화개살", hwg, "종교·예술·고독·내면 탐구 기질이 배경에 깔립니다."),
     ):
         if not marker:
             continue
@@ -908,7 +908,7 @@ def analyze_sinsal(
                     "흉",
                     jz,
                     _format_where(pos),
-                    "급변·탈취·우발적 손실 기운을 동반할 수 있어 재물·계약을 안정적으로 가져가야 합니다.",
+                    "급변·탈취·우발적 손실 기운을 동반합니다. 재물·계약을 안정적으로 관리하세요.",
                 )
             )
 
@@ -922,7 +922,7 @@ def analyze_sinsal(
                     "흉",
                     wz,
                     _format_where(pos),
-                    "망실·허탕·계획 차질을 일으키기 쉬운 공망형 긴장입니다.",
+                    "망실·허탕·계획 차질의 공망형 긴장입니다.",
                 )
             )
 
@@ -950,7 +950,7 @@ def analyze_sinsal(
                     "흉",
                     yr,
                     _format_where(pos),
-                    "칼날·금속·수술·결단력이 강해 한쪽으로는 부상 소인이 되기도 합니다.",
+                    "칼날·금속·수술·결단력이 강하며 부상·수술 소인이 됩니다.",
                 )
             )
 
@@ -988,7 +988,7 @@ def analyze_sinsal(
                 "흉",
                 "寅巳申亥",
                 _format_where(hits),
-                "정신 피로·불안·신경 과민이 올라오기 쉬워 숙면·스트레스 관리가 필요합니다.",
+                "정신 피로·불안·신경 과민이 올라옵니다. 숙면·스트레스 관리가 필요합니다.",
             )
         )
 
@@ -1002,7 +1002,7 @@ def analyze_sinsal(
                 "흉",
                 sm,
                 _format_where(sm_pos),
-                "상가·조문·비보 이벤트와 연결되기 쉬워 가족 건강을 챙깁니다.",
+                "상가·조문·비보 이벤트와 연결됩니다. 가족 건강을 챙기세요.",
             )
         )
     dk_pos = _positions_with_zhi(zhis, dk)
@@ -1030,7 +1030,7 @@ def analyze_sinsal(
             _format_where(km_hit) if km_hit else "원국 지지 해당 없음",
             (
                 "일주 순공(旬空)에 해당하는 지지는 허무·실속 부족·인연 공허로 읽습니다. "
-                "대운·세운에서 공망 지지를 충(沖)하면 충공(沖空)으로 오히려 활성화될 수 있습니다."
+                "대운·세운에서 공망 지지를 충(沖)하면 충공(沖空)으로 오히려 활성화됩니다."
             ),
         )
     )
@@ -1085,19 +1085,19 @@ def _period_star_rules(month_zhi: str, *, day_pillar: str = "") -> Tuple[Tuple[s
         ("복성귀인", "길", lambda dm, yz, yg, g, z: z in _bokseong(dm), "복록·인연·완충 기운이 붙습니다."),
         ("월덕귀인", "길", lambda dm, yz, yg, g, z, _wg=wg: bool(_wg and g == _wg), "월덕으로 재난·소송을 덜어 주는 덕성 별입니다."),
         ("천덕귀인", "길", lambda dm, yz, yg, g, z, _cg=cg: bool(_cg and g == _cg), "하늘의 덕으로 큰 화를 멀리하는 길신입니다."),
-        ("역마살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[0], "이동·전환·외부 활동이 늘기 쉽습니다."),
+        ("역마살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[0], "이동·전환·외부 활동이 늘어납니다."),
         ("도화살", "중", lambda dm, yz, yg, g, z: z in {_dohwa_branch_by_stem(dm), _dohwa_branch_by_stem(yg), _yeolma_dohwa_hwagae(yz)[1]}, "이성·매력·대인 접촉이 활발해집니다."),
         ("화개살", "중", lambda dm, yz, yg, g, z: z == _yeolma_dohwa_hwagae(yz)[2], "예술·종교·고독·내면 탐구 기운이 붙습니다."),
         ("장성살", "길", lambda dm, yz, yg, g, z: z in _SANHE_WANG_ZHI, "권위·주관·존재감이 강해지는 시기입니다."),
-        ("홍염살", "중", lambda dm, yz, yg, g, z: z == _hongyeom_branch(dm), "매력·대인 접촉이 늘기 쉬우나 감정 기복을 조절하세요."),
+        ("홍염살", "중", lambda dm, yz, yg, g, z: z == _hongyeom_branch(dm), "매력·대인 접촉이 강하나 감정 기복을 주의해야 합니다."),
         ("문곡귀인", "길", lambda dm, yz, yg, g, z: z == _mungok_branch(dm), "예술·표현·학습 재능이 살아납니다."),
         ("천복귀인", "길", lambda dm, yz, yg, g, z: z == _cheonbok_branch(dm), "복덕·후원·안정 기운이 붙습니다."),
-        ("공망살", "흉", lambda dm, yz, yg, g, z, _km=km_day: z in _km, "공망 지지에 해당해 허실·인연 공허를 의식하세요."),
+        ("공망살", "흉", lambda dm, yz, yg, g, z, _km=km_day: z in _km, "공망 지지에 해당해 허실·인연 공허가 드러납니다."),
         ("겁살", "흉", lambda dm, yz, yg, g, z: z == _period_jiesha_zhi(yz), "급변·탈취·우발 손실을 조심하세요."),
         ("망신살", "흉", lambda dm, yz, yg, g, z: z == _period_wangshen_zhi(yz), "망실·허탕·계획 차질을 의식하세요."),
         ("백호살", "흉", None, "급성·외상·수술·교통 리스크를 의식하세요. (백호 지와 충·일치 시)"),
         ("양인살", "흉", lambda dm, yz, yg, g, z: z == _yangin_branch(dm), "결단력은 강하나 충동·외상·수술 주의가 필요합니다."),
-        ("원진살", "흉", None, "반복 갈등·거리두기 이슈가 생기기 쉽습니다."),
+        ("원진살", "흉", None, "반복 갈등·거리두기 이슈가 생깁니다."),
         ("상문살", "흉", lambda dm, yz, yg, g, z: z == gj.BRANCHES[(_BRANCH_IDX[yz] + 2) % 12], "조문·상가·가족 건강을 챙기세요."),
         ("조객살", "흉", lambda dm, yz, yg, g, z: z == gj.BRANCHES[(_BRANCH_IDX[yz] - 2) % 12], "애도·이별·마음 공황을 조심하세요."),
     )
