@@ -422,25 +422,35 @@ body.tarot-mode .footer {
 }
 
 body.tarot-mode.has-tarot-draw-dock .layout {
-  padding-bottom: calc(7.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 0;
+}
+
+body.tarot-mode.has-tarot-draw-dock {
+  padding-bottom: calc(9.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 .tarot-draw-dock {
   position: fixed;
-  left: 50%;
+  left: 0;
+  right: 0;
   bottom: 0;
-  transform: translateX(-50%);
-  z-index: 75;
-  width: min(100%, 36rem);
+  z-index: 100;
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 auto;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-  padding: 0.55rem 0.65rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(201, 168, 76, 0.2);
-  background: rgba(20, 16, 32, 0.96);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  gap: 0.4rem;
+  padding: 0.5rem 0.65rem calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(201, 168, 76, 0.22);
+  background: rgba(20, 16, 32, 0.98);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.42);
+}
+
+.tarot-draw-dock[hidden] {
+  display: none !important;
 }
 
 .tarot-draw-dock .btn {
@@ -772,8 +782,13 @@ body.tarot-mode .tarot-phase-draw {
   flex-direction: column;
   max-width: 36rem;
   margin: 0 auto;
-  min-height: calc(100dvh - 4.5rem);
-  padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 0.35rem 0.35rem;
+  min-height: calc(100dvh - 5rem);
+  padding: calc(2.5rem + env(safe-area-inset-top, 0px)) 0.35rem 0;
+}
+
+body.tarot-mode.tarot-draw-active .tarot-phase-draw {
+  min-height: calc(100dvh - 4rem);
+  justify-content: flex-start;
 }
 
 .tarot-phase-result {
@@ -1020,6 +1035,13 @@ body.tarot-mode .tarot-badge {
   min-width: 0;
 }
 
+body.tarot-mode.tarot-draw-active .tarot-deck-stage {
+  flex: 1 1 auto;
+  min-height: calc(100dvh - 14rem);
+  justify-content: flex-end;
+  padding-bottom: 0.25rem;
+}
+
 .tarot-instruction {
   text-align: center;
   margin: 0 0 0.5rem;
@@ -1053,6 +1075,17 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   padding: 0;
   --fan-center-x: 38%;
   --fan-pivot: clamp(12rem, 32vh, 20rem);
+}
+
+body.tarot-mode.tarot-draw-active .tarot-deck-fan {
+  height: clamp(13rem, 36vh, 20rem);
+  min-height: clamp(12rem, 32vh, 18rem);
+  --fan-center-x: 50%;
+  --fan-pivot: clamp(7.5rem, 20vh, 12rem);
+}
+
+body.tarot-mode.tarot-draw-active .tarot-deck-fan .tarot-card-slot {
+  bottom: 0;
 }
 
 .tarot-deck-fan .tarot-card-slot {
@@ -1773,9 +1806,20 @@ body.tarot-mode .tarot-status:empty {
     --fan-pivot: clamp(11rem, 28vh, 17rem);
   }
 
+  body.tarot-mode.tarot-draw-active .tarot-deck-fan {
+    height: clamp(11rem, 34vh, 17rem);
+    min-height: clamp(10rem, 30vh, 16rem);
+    --fan-center-x: 50%;
+    --fan-pivot: clamp(6.5rem, 18vh, 10rem);
+  }
+
   .tarot-deck-fan .tarot-card-slot {
     --tarot-card-w: clamp(2.8rem, 7.5vw, 3.8rem);
     bottom: 8%;
+  }
+
+  body.tarot-mode.tarot-draw-active .tarot-deck-fan .tarot-card-slot {
+    bottom: 0;
   }
 }
 
