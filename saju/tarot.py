@@ -35,7 +35,7 @@ SPREADS: dict[str, dict[str, Any]] = {
     "today": {"label": "오늘의 타로", "count": 1},
     "week": {"label": "이주의 타로", "count": 3},
     "month": {"label": "이달의 타로", "count": 7},
-    "year": {"label": "올해의 타로", "count": 12},
+    "year": {"label": "올해의 타로", "count": 5},
     "worry": {"label": "고민 타로", "count": 3},
     "love": {"label": "연애 타로", "count": 7},
     "deep": {"label": "심층 타로", "count": 10},
@@ -62,7 +62,13 @@ SPREAD_POSITIONS: dict[str, list[dict[str, str]]] = {
         {"label": "6", "role": "다가오는 전망"},
         {"label": "7", "role": "한 달의 마무리"},
     ],
-    "year": [{"label": f"{m}월", "role": f"{m}월의 기운"} for m in range(1, 13)],
+    "year": [
+        {"label": "봄", "role": "한 해의 출발과 싹"},
+        {"label": "여름", "role": "성장과 확장의 기운"},
+        {"label": "가을", "role": "수확과 정리의 시기"},
+        {"label": "겨울", "role": "내면과 마무리"},
+        {"label": "총운", "role": "올해를 관통하는 메시지"},
+    ],
     "love": [
         {"label": "나", "role": "나의 마음과 태도"},
         {"label": "상대", "role": "상대의 에너지"},

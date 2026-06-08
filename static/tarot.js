@@ -10,11 +10,11 @@
       featured: true,
       badge: "NEW",
     },
-    { key: "week", icon: "⭐", subtitle: "이번 주 흐름 읽기" },
-    { key: "month", icon: "🌕", subtitle: "달의 주기로 보는 운" },
-    { key: "year", icon: "∞", subtitle: "한 해를 꿰뚫는 한 장" },
-    { key: "worry", icon: "💭", subtitle: "답을 찾고 싶을 때" },
-    { key: "love", icon: "💕", subtitle: "마음을 읽는 시간" },
+    { key: "week", icon: "⭐", subtitle: "3장 스토리 · 이번 주 흐름" },
+    { key: "month", icon: "🌕", subtitle: "7장 스토리 · 달의 주기" },
+    { key: "year", icon: "∞", subtitle: "5장 스토리 · 계절의 흐름" },
+    { key: "worry", icon: "💭", subtitle: "3장 스토리 · 답을 찾을 때" },
+    { key: "love", icon: "💕", subtitle: "7장 스토리 · 마음을 읽는 시간" },
   ];
   const FAN_SPREAD_DEG = 196;
   const DEAL_SHUFFLE_MS = 850;
@@ -487,11 +487,14 @@
       const badge = item.badge
         ? `<span class="tarot-menu-badge">${escapeHtml(item.badge)}</span>`
         : "";
-      return `<button type="button" class="tarot-menu-card${featured}" data-spread="${escapeHtml(item.key)}" role="listitem">
+      const count = info.count || 1;
+      const countLabel = count > 1 ? `${count}장` : "1장";
+      return `<button type="button" class="tarot-menu-card${featured}" data-spread="${escapeHtml(item.key)}" role="listitem" aria-label="${escapeHtml(info.label)} ${countLabel}">
         <span class="tarot-menu-icon" aria-hidden="true">${item.icon}</span>
         <span class="tarot-menu-text">
           <span class="tarot-menu-title-row">
             <span class="tarot-menu-title">${escapeHtml(info.label)}</span>
+            <span class="tarot-menu-count">${escapeHtml(countLabel)}</span>
             ${badge}
           </span>
           <span class="tarot-menu-sub">${escapeHtml(item.subtitle)}</span>
@@ -914,7 +917,8 @@
 
     setResultLayout(false);
     activeCardIdx = 0;
-    displayCardResult(selectedCards[0], false);
+    displayCardResult(selectedCards[0], true);
+    await refreshReadingForActiveCard();
   }
 
   function resetDeckSelection() {

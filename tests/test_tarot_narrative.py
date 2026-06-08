@@ -41,10 +41,10 @@ def test_build_spread_story_week_has_acts() -> None:
     assert "씨앗" in story["narrative"] or sections[0]["name"] in story["narrative"]
 
 
-def test_build_spread_story_year_quarters() -> None:
-    sections = _sample_sections(12)
+def test_build_spread_story_year_seasons() -> None:
+    sections = _sample_sections(5)
     story = tn.build_spread_story("year", "올해의 타로", "종합운", sections)
-    assert story["narrative_sections"][1]["title"].startswith("1분기")
+    assert story["narrative_sections"][1]["title"].startswith("1막")
     assert "올해" in story["synthesis"]
 
 
