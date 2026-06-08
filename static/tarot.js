@@ -27,6 +27,7 @@
     tarotSky: document.getElementById("tarot-sky"),
     bottomNav: document.getElementById("bottom-nav"),
     tarotHomeTop: document.getElementById("tarot-home-top-btn"),
+    drawDock: document.getElementById("tarot-draw-dock"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
     homePhase: document.getElementById("tarot-home-phase"),
     menuGrid: document.getElementById("tarot-menu-grid"),
@@ -439,10 +440,22 @@
     });
   }
 
+  function syncTarotChrome() {
+    const isDraw = !!(els.drawPhase && !els.drawPhase.hidden);
+    const isResult = !!(els.resultPhase && !els.resultPhase.hidden);
+    document.body.classList.toggle("tarot-draw-active", isDraw);
+    document.body.classList.toggle("has-tarot-draw-dock", isDraw);
+    if (els.drawDock) els.drawDock.hidden = !isDraw;
+    if (els.tarotHomeTop) {
+      els.tarotHomeTop.hidden = !(isDraw || isResult);
+    }
+  }
+
   function showHomePhase() {
     if (els.homePhase) els.homePhase.hidden = false;
     if (els.drawPhase) els.drawPhase.hidden = true;
     if (els.resultPhase) els.resultPhase.hidden = true;
+    syncTarotChrome();
   }
 
   function updateDrawSpreadLabel() {
@@ -519,8 +532,10 @@
         }
       }
     }
-    if (els.tarotHomeTop) {
-      els.tarotHomeTop.hidden = !isTarot;
+    if (!isTarot) {
+      document.body.classList.remove("tarot-draw-active", "has-tarot-draw-dock");
+      if (els.drawDock) els.drawDock.hidden = true;
+      if (els.tarotHomeTop) els.tarotHomeTop.hidden = true;
     }
     els.modeBtns.forEach((btn) => {
       const on = btn.dataset.appMode === mode;
@@ -529,6 +544,7 @@
     });
     if (isTarot) {
       showHomePhase();
+      syncTarotChrome();
     }
     if (isTarot && !meta) {
       initTarot();
@@ -589,12 +605,14 @@
     if (els.drawPhase) els.drawPhase.hidden = false;
     if (els.resultPhase) els.resultPhase.hidden = true;
     updateDrawSpreadLabel();
+    syncTarotChrome();
   }
 
   function showResultPhase() {
     if (els.homePhase) els.homePhase.hidden = true;
     if (els.drawPhase) els.drawPhase.hidden = true;
     if (els.resultPhase) els.resultPhase.hidden = false;
+    syncTarotChrome();
   }
 
   function renderDeckLoading() {
