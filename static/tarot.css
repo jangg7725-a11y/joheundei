@@ -240,22 +240,24 @@ body.tarot-mode .footer {
 
 .tarot-hero-card-preview {
   position: absolute;
-  inset: 22%;
+  inset: 18%;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  background: linear-gradient(160deg, rgba(18, 26, 38, 0.92), rgba(8, 12, 20, 0.96));
-  border: 1px solid rgba(201, 168, 76, 0.35);
+  overflow: hidden;
+  border-radius: 14px;
+  background: #f3ecdf;
+  border: 1px solid rgba(201, 168, 76, 0.42);
   box-shadow:
-    0 10px 28px rgba(0, 0, 0, 0.45),
-    0 0 24px rgba(201, 168, 76, 0.12);
+    0 10px 28px rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .tarot-hero-card-preview img {
-  width: 58%;
-  height: auto;
-  border-radius: 6px;
-  opacity: 0.95;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
 }
 
 .tarot-chip-scroll {
