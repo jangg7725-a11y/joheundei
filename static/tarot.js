@@ -16,7 +16,7 @@
     { key: "worry", icon: "💭", subtitle: "3장 스토리 · 답을 찾을 때" },
     { key: "love", icon: "💕", subtitle: "7장 스토리 · 마음을 읽는 시간" },
   ];
-  const FAN_SPREAD_DEG = 196;
+  const FAN_SPREAD_DEG = 228;
   const DEAL_SHUFFLE_MS = 850;
   const DEAL_SPREAD_MS = 1400;
 

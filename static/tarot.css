@@ -802,8 +802,9 @@ body.tarot-mode .tarot-phase-draw {
 }
 
 body.tarot-mode.tarot-draw-active .tarot-phase-draw {
-  min-height: calc(100dvh - 4rem);
+  min-height: calc(100dvh - 3.5rem);
   justify-content: flex-start;
+  overflow: visible;
 }
 
 .tarot-phase-result {
@@ -1052,9 +1053,11 @@ body.tarot-mode .tarot-badge {
 
 body.tarot-mode.tarot-draw-active .tarot-deck-stage {
   flex: 1 1 auto;
-  min-height: calc(100dvh - 14rem);
-  justify-content: flex-end;
-  padding-bottom: 0.25rem;
+  min-height: calc(100dvh - 11rem);
+  justify-content: flex-start;
+  padding-top: 0.15rem;
+  padding-bottom: calc(10rem + env(safe-area-inset-bottom, 0px));
+  overflow: visible;
 }
 
 .tarot-instruction {
@@ -1092,15 +1095,27 @@ body.tarot-mode .tarot-deck-stage .tarot-instruction {
   --fan-pivot: clamp(12rem, 32vh, 20rem);
 }
 
+body.tarot-mode.tarot-draw-active .tarot-deck-area {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  min-height: calc(100dvh - 15rem);
+  overflow: visible;
+}
+
 body.tarot-mode.tarot-draw-active .tarot-deck-fan {
-  height: clamp(13rem, 36vh, 20rem);
-  min-height: clamp(12rem, 32vh, 18rem);
+  flex: 1 1 auto;
+  height: clamp(24rem, calc(100dvh - 13rem), 40rem);
+  min-height: clamp(22rem, calc(100dvh - 14rem), 38rem);
+  margin-top: auto;
   --fan-center-x: 50%;
-  --fan-pivot: clamp(7.5rem, 20vh, 12rem);
+  --fan-pivot: clamp(15rem, 42vh, 24rem);
 }
 
 body.tarot-mode.tarot-draw-active .tarot-deck-fan .tarot-card-slot {
-  bottom: 0;
+  bottom: 2%;
+  --tarot-card-w: clamp(3rem, 7.2vw, 5.5rem);
 }
 
 .tarot-deck-fan .tarot-card-slot {
@@ -1821,11 +1836,15 @@ body.tarot-mode .tarot-status:empty {
     --fan-pivot: clamp(11rem, 28vh, 17rem);
   }
 
+  body.tarot-mode.tarot-draw-active .tarot-deck-area {
+    min-height: calc(100dvh - 14rem);
+  }
+
   body.tarot-mode.tarot-draw-active .tarot-deck-fan {
-    height: clamp(11rem, 34vh, 17rem);
-    min-height: clamp(10rem, 30vh, 16rem);
+    height: clamp(22rem, calc(100dvh - 12rem), 34rem);
+    min-height: clamp(20rem, calc(100dvh - 13rem), 32rem);
     --fan-center-x: 50%;
-    --fan-pivot: clamp(6.5rem, 18vh, 10rem);
+    --fan-pivot: clamp(12rem, 38vh, 18rem);
   }
 
   .tarot-deck-fan .tarot-card-slot {
@@ -1834,7 +1853,8 @@ body.tarot-mode .tarot-status:empty {
   }
 
   body.tarot-mode.tarot-draw-active .tarot-deck-fan .tarot-card-slot {
-    bottom: 0;
+    --tarot-card-w: clamp(2.65rem, 7vw, 4.2rem);
+    bottom: 2%;
   }
 }
 
