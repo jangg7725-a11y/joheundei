@@ -1305,11 +1305,220 @@
   function updateResultsChrome() {
     const bottomNav = document.getElementById("bottom-nav");
     const dash = document.getElementById("dashboard-summary");
+    const pocketBridge = document.getElementById("pocket-bridge");
+    const pocketCards = document.getElementById("pocket-category-cards");
     const show = !results.hidden;
     const mobile = window.matchMedia("(max-width: 768px)").matches;
     document.body.classList.toggle("has-bottom-nav", show && mobile);
     if (bottomNav) bottomNav.hidden = !show || !mobile;
     if (dash && !show) dash.hidden = true;
+    if (pocketBridge) pocketBridge.classList.toggle("fallback-hidden", !show);
+    if (pocketCards) pocketCards.classList.toggle("fallback-hidden", !show);
+  }
+
+  const POCKET_CATEGORIES = [
+    {
+      id: "love",
+      emoji: "💗",
+      title: "이 사람, 내 짝일까?",
+      catKey: "1_연애_궁합",
+      storyPick: (story) =>
+        story?.성격_분석?.대인관계_스타일 ||
+        story?.일주_해설 ||
+        story?.월주_해설 ||
+        "",
+      fallback: "인연의 흐름에 숨은 패턴이 있습니다. 맞는 시기와 상대의 기운은…",
+    },
+    {
+      id: "wealth",
+      emoji: "💰",
+      title: "버는 사주 vs 새는 사주, 당신은?",
+      catKey: "3_재물운",
+      storyPick: (story) =>
+        story?.재물_패턴?.평생_재물_흐름 ||
+        story?.재물_패턴?.버는_방식 ||
+        story?.재물_패턴?.부자_가능성_판정 ||
+        "",
+      fallback: "재물 그릇과 흐름에 차이가 있습니다. 채워지는 시기와 방향은…",
+    },
+    {
+      id: "career",
+      emoji: "💼",
+      title: "직장운 vs 사업운, 어느 쪽?",
+      catKey: "2_직업_사회운",
+      storyPick: (story) =>
+        story?.직업_적성?.직업_핵심_이유 ||
+        story?.직업_적성?.사업_적합 ||
+        "",
+      fallback: "일과 성취에 맞는 방향이 사주 안에 있습니다. 더 잘 맞는 길은…",
+    },
+    {
+      id: "health",
+      emoji: "🌿",
+      title: "타고난 체질, 사주로 보는 법",
+      catKey: "4_건강",
+      storyPick: (story) =>
+        story?.건강_평생?.장수_가능성 ||
+        (Array.isArray(story?.건강_평생?.건강_유지_조언)
+          ? story.건강_평생.건강_유지_조언[0]
+          : "") ||
+        "",
+      fallback: "타고난 체질과 에너지 균형이 보입니다. 잘 맞는 관리법은…",
+    },
+  ];
+
+  const POCKET_NEG_STAMP =
+    /새는\s*사주|버는\s*사주\s*(아닙|이\s*아닙)|당신은\s*(새는|버는)|흉운|불리한\s*사주|나쁜\s*사주|재물이\s*새|손실만|이별\s*운|갈등만/;
+
+  const POCKET_NEG_TONE =
+    /(?:주의|조심|피하|손실|갈등|허탕|공허|약해|없어|적으면|나쁜|위험|번복|이탈|스트레스가\s*건강의\s*가장\s*큰\s*적)/;
+
+  const POCKET_POS_TONE =
+    /(?:유리|좋은|기회|풍부|큰|도움|복|성장|안정|조화|매력|재능|강점|채워|살아|두터|귀인|발전|가능|잘\s*맞|상승|확장|조절이\s*관계\s*안정)/;
+
+  function splitTeaserSentences(text) {
+    return String(text || "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .split(/(?<=[.。!?…])\s+/)
+      .map((s) => s.trim())
+      .filter((s) => s.length >= 6);
+  }
+
+  function pocketSentenceScore(sentence) {
+    const s = String(sentence || "");
+    let score = 0;
+    if (POCKET_NEG_STAMP.test(s)) score -= 4;
+    if (POCKET_NEG_TONE.test(s)) score -= 1;
+    if (POCKET_POS_TONE.test(s)) score += 2;
+    if (/…$/.test(s)) score += 0.5;
+    return score;
+  }
+
+  function pickHopefulSentence(sentences, { avoid = "" } = {}) {
+    const pool = sentences.filter((s) => s && s !== avoid);
+    if (!pool.length) return "";
+    const ranked = pool
+      .map((s) => ({ s, score: pocketSentenceScore(s) }))
+      .sort((a, b) => b.score - a.score);
+    const best = ranked.find((x) => x.score >= 0) || ranked[0];
+    if (POCKET_NEG_STAMP.test(best.s)) return "";
+    return best.s;
+  }
+
+  function finishTeaserCliffhanger(text) {
+    let t = String(text || "").trim();
+    if (!t) return "";
+    t = t.replace(/[.。]+$/, "");
+    if (!/[…?]$/.test(t)) t += "…";
+    return t;
+  }
+
+  function buildPocketTeaser(summary, storyExtra, fallback) {
+    const sumSents = splitTeaserSentences(summary);
+    const storySents = splitTeaserSentences(storyExtra);
+    let line1 = "";
+    let line2 = "";
+
+    const firstSum = sumSents[0] || "";
+    const firstSumOk =
+      firstSum &&
+      !POCKET_NEG_STAMP.test(firstSum) &&
+      pocketSentenceScore(firstSum) >= 0;
+
+    if (firstSumOk) {
+      line1 = firstSum;
+      line2 =
+        pickHopefulSentence(storySents, { avoid: line1 }) ||
+        pickHopefulSentence(sumSents.slice(1), { avoid: line1 });
+    } else {
+      line1 =
+        pickHopefulSentence(sumSents) ||
+        pickHopefulSentence(storySents) ||
+        sumSents.find((s) => !POCKET_NEG_STAMP.test(s)) ||
+        "";
+      if (line1) {
+        const restStory = storySents.filter((s) => s !== line1);
+        const restSum = sumSents.filter((s) => s !== line1);
+        line2 =
+          pickHopefulSentence(restStory, { avoid: line1 }) ||
+          pickHopefulSentence(restSum, { avoid: line1 });
+      }
+    }
+
+    const merged = [line1, line2].filter(Boolean).join(" ");
+    if (
+      !merged ||
+      POCKET_NEG_STAMP.test(merged) ||
+      pocketSentenceScore(merged) < -2
+    ) {
+      return finishTeaserCliffhanger(fallback);
+    }
+    return finishTeaserCliffhanger(merged);
+  }
+
+  function showPocketComingSoon() {
+    let toast = document.getElementById("pocket-toast");
+    if (!toast) {
+      toast = document.createElement("div");
+      toast.id = "pocket-toast";
+      toast.className = "pocket-toast";
+      toast.setAttribute("role", "status");
+      toast.setAttribute("aria-live", "polite");
+      document.body.appendChild(toast);
+    }
+    toast.textContent = "곧 오픈됩니다! 준비 중이에요 🙏";
+    toast.classList.add("show");
+    clearTimeout(showPocketComingSoon._hideTimer);
+    showPocketComingSoon._hideTimer = setTimeout(() => {
+      toast.classList.remove("show");
+    }, 2800);
+  }
+
+  function renderPocketCategoryCards(r) {
+    const mount = document.getElementById("pocket-category-cards");
+    const bridge = document.getElementById("pocket-bridge");
+    if (!mount) return;
+
+    const cat = r["분석_카테고리"] || {};
+    const story = r["원국_스토리텔링"] || {};
+    const cards = POCKET_CATEGORIES.map((spec) => {
+      const block = cat[spec.catKey];
+      const summary = block?.[SK] || "";
+      const storyLine = spec.storyPick(story);
+      const teaser = buildPocketTeaser(summary, storyLine, spec.fallback);
+      return `
+        <article class="pocket-card" data-pocket-id="${escapeHtml(spec.id)}">
+          <div class="pocket-card-head">
+            <span class="pocket-card-emoji" aria-hidden="true">${spec.emoji}</span>
+            <h3 class="pocket-card-title">${escapeHtml(spec.title)}</h3>
+          </div>
+          <div class="pocket-card-body">
+            <p class="pocket-teaser">${escapeHtml(teaser)}</p>
+            <div class="pocket-locked-zone">
+              <div class="pocket-locked-fade" aria-hidden="true"></div>
+              <p class="pocket-locked-hint" aria-hidden="true">전체 풀이 · 근거 · 조언 · 시기 분석</p>
+              <button type="button" class="pocket-unlock-btn" data-pocket-unlock>
+                전체 풀이 보기 <span aria-hidden="true">🔒</span>
+              </button>
+            </div>
+          </div>
+        </article>`;
+    }).join("");
+
+    mount.innerHTML = cards;
+    mount.classList.remove("fallback-hidden");
+    if (bridge) {
+      bridge.classList.remove("fallback-hidden");
+      bridge.setAttribute("aria-hidden", "false");
+    }
+
+    mount.querySelectorAll("[data-pocket-unlock]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        showPocketComingSoon();
+      });
+    });
   }
 
   function renderCategoryCompact(title, block) {
@@ -3160,6 +3369,7 @@
 
     renderSamjaeBar(r);
     renderDashboardSummary(r);
+    renderPocketCategoryCards(r);
     renderTab0(r);
     renderTab1(r);
     renderTab2(r);
@@ -3184,6 +3394,8 @@
     statusEl.textContent = "계산 중…";
     statusEl.classList.remove("error");
     results.hidden = true;
+    document.getElementById("pocket-category-cards")?.classList.add("fallback-hidden");
+    document.getElementById("pocket-bridge")?.classList.add("fallback-hidden");
     updateResultsChrome();
 
     const fd = new FormData(form);

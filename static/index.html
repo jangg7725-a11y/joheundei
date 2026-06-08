@@ -8,9 +8,9 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&family=Nanum+Brush+Script&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css?v=20260521-signboard" />
-  <link rel="stylesheet" href="/static/tarot.css?v=20260521-signboard" />
+  <link rel="stylesheet" href="/static/tarot.css?v=20260605-home" />
   <link rel="stylesheet" href="/static/maehwa.css?v=20260521-fortune" />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="tarot-sky" id="tarot-sky" hidden aria-hidden="true">
@@ -65,11 +65,11 @@
   </header>
 
   <main class="layout">
-    <nav class="app-mode-nav app-mode-nav--services" aria-label="서비스 선택">
-      <button type="button" class="app-mode-btn active" data-app-mode="saju" aria-pressed="true">사주 분석</button>
-      <button type="button" class="app-mode-btn" data-app-mode="tarot" aria-pressed="false">오행 타로</button>
-      <button type="button" class="app-mode-btn" data-app-mode="maehwa" aria-pressed="false">매화역수</button>
-      <a href="/manseryeok" class="manseryeok-entry-btn">
+    <nav class="app-mode-nav app-mode-nav--services" id="app-mode-nav" aria-label="서비스 선택">
+      <button type="button" class="app-mode-btn app-mode-btn--saju active" data-app-mode="saju" aria-pressed="true">사주 분석</button>
+      <button type="button" class="app-mode-btn app-mode-btn--tarot" data-app-mode="tarot" aria-pressed="false">오행 타로</button>
+      <button type="button" class="app-mode-btn app-mode-btn--maehwa" data-app-mode="maehwa" aria-pressed="false">매화역수</button>
+      <a href="/manseryeok" class="manseryeok-entry-btn app-mode-btn--manseryeok">
         <span class="entry-icon" aria-hidden="true">📅</span>
         <span class="entry-label">萬歲曆</span>
       </a>
@@ -332,6 +332,9 @@
 
       <div id="dashboard-summary" class="dashboard-summary" hidden aria-label="오늘의 핵심 요약"></div>
 
+      <p id="pocket-bridge" class="pocket-bridge fallback-hidden" aria-hidden="true">당신의 사주, 더 깊이 들여다볼까요? ↓</p>
+      <div id="pocket-category-cards" class="pocket-cards fallback-hidden" aria-label="카테고리 맛보기" aria-live="polite"></div>
+
       <div class="tabs-wrap" id="result-tabs">
         <div class="tab-bar" role="tablist" aria-label="결과 구역">
           <button type="button" class="tab active" role="tab" aria-selected="true" data-tab="0" id="tab-0">📋 원국</button>
@@ -355,26 +358,47 @@
     </div>
 
     <section class="tarot-app" id="tarot-main" hidden aria-labelledby="tarot-heading">
-      <div class="tarot-phase tarot-phase-draw" id="tarot-draw-phase">
-        <div class="tarot-draw-layout">
-          <nav class="tarot-spread-rail" aria-label="타로 스프레드">
-            <header class="tarot-head tarot-head--rail">
-              <p class="tarot-badge">오행·천간·운명</p>
-              <h2 id="tarot-heading">오행 타로</h2>
-            </header>
-            <div class="tarot-spread-tabs tab-bar" id="tarot-spread-tabs" role="tablist"></div>
-            <div class="tarot-rail-actions">
-              <button type="button" class="btn tarot-btn-shuffle" id="tarot-shuffle" disabled>🔀 카드 섞기</button>
-              <button type="button" class="btn tarot-btn-random" id="tarot-random-pick" disabled>✨ 랜덤 뽑기</button>
-              <button type="button" class="btn tarot-btn-reading" id="tarot-view-reading" hidden disabled>📖 해석 보기</button>
-              <button type="button" class="btn tarot-btn-redraw" id="tarot-redraw" disabled>↺ 다시 뽑기</button>
-            </div>
-          </nav>
-          <div class="tarot-deck-stage">
-            <p class="tarot-instruction" id="tarot-instruction">카드를 직접 골라 주세요.</p>
-            <div class="tarot-deck-area" id="tarot-deck-area" aria-live="polite"></div>
+      <div class="tarot-phase tarot-phase-home" id="tarot-home-phase">
+        <header class="tarot-home-head">
+          <p class="tarot-home-badge">Five Elements Tarot</p>
+          <h2 id="tarot-heading">오행 타로</h2>
+          <p class="tarot-home-lead">60장의 카드 중 하나를 선택하세요</p>
+        </header>
+
+        <div class="tarot-hero-orbit" aria-hidden="true">
+          <div class="tarot-orbit-ring tarot-orbit-ring--outer"></div>
+          <div class="tarot-orbit-ring tarot-orbit-ring--inner"></div>
+          <div class="tarot-hero-card-preview">
+            <img src="/static/tarot/back/back.png" alt="" width="120" height="200" />
           </div>
         </div>
+
+        <div class="tarot-chip-scroll" role="tablist" aria-label="타로 카테고리">
+          <span class="tarot-chip active" role="tab" aria-selected="true">오행·천간·운명</span>
+        </div>
+
+        <h3 class="tarot-menu-label">타로 메뉴</h3>
+        <div class="tarot-menu-grid" id="tarot-menu-grid" role="list"></div>
+
+        <button type="button" class="tarot-cta-draw" id="tarot-cta-draw">✦ 지금 카드 뽑기 ✦</button>
+      </div>
+
+      <div class="tarot-phase tarot-phase-draw" id="tarot-draw-phase" hidden>
+        <div class="tarot-draw-topbar">
+          <button type="button" class="tarot-back-home" id="tarot-back-home" aria-label="타로 메뉴로">← 메뉴</button>
+          <p class="tarot-draw-spread-label" id="tarot-draw-spread-label"></p>
+        </div>
+        <div class="tarot-deck-stage">
+          <p class="tarot-instruction" id="tarot-instruction">카드를 직접 골라 주세요.</p>
+          <div class="tarot-deck-area" id="tarot-deck-area" aria-live="polite"></div>
+        </div>
+        <div class="tarot-draw-actions">
+          <button type="button" class="btn tarot-btn-shuffle" id="tarot-shuffle" disabled>🔀 카드 섞기</button>
+          <button type="button" class="btn tarot-btn-random" id="tarot-random-pick" disabled>✨ 랜덤 뽑기</button>
+          <button type="button" class="btn tarot-btn-reading" id="tarot-view-reading" hidden disabled>📖 해석 보기</button>
+          <button type="button" class="btn tarot-btn-redraw" id="tarot-redraw" disabled>↺ 다시 뽑기</button>
+        </div>
+        <div class="tarot-spread-tabs tab-bar fallback-hidden" id="tarot-spread-tabs" role="tablist" hidden></div>
       </div>
 
       <div class="tarot-phase tarot-phase-result" id="tarot-result-phase" hidden>
@@ -422,6 +446,21 @@
       </div>
 
       <p class="tarot-status status" id="tarot-status" aria-live="polite"></p>
+
+      <nav class="tarot-bottom-nav" id="tarot-bottom-nav" aria-label="타로 내비게이션" hidden>
+        <button type="button" class="tarot-bottom-nav-btn active" data-tarot-nav="home" aria-current="page">
+          <span class="tarot-bottom-nav-icon" aria-hidden="true">🏠</span>
+          <span>홈</span>
+        </button>
+        <button type="button" class="tarot-bottom-nav-btn" data-tarot-nav="draw">
+          <span class="tarot-bottom-nav-icon" aria-hidden="true">🃏</span>
+          <span>뽑기</span>
+        </button>
+        <button type="button" class="tarot-bottom-nav-btn" data-tarot-nav="saju">
+          <span class="tarot-bottom-nav-icon" aria-hidden="true">☯</span>
+          <span>사주</span>
+        </button>
+      </nav>
     </section>
 
     <section class="maehwa-app card panel" id="maehwa-main" hidden aria-labelledby="maehwa-heading">
@@ -490,7 +529,7 @@
 
   <script src="/static/ai-story.js"></script>
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
-  <script src="/static/tarot.js?v=20260521-maehwa"></script>
+  <script src="/static/tarot.js?v=20260605-home"></script>
   <script src="/static/maehwa.js?v=20260521-cal-daily"></script>
 
   <a href="/manseryeok" class="ms-float-btn" title="만세력 바로가기">

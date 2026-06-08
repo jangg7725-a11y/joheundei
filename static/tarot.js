@@ -2,6 +2,20 @@
   "use strict";
 
   const SPREAD_ORDER = ["today", "week", "month", "year", "worry", "love", "deep"];
+  const HOME_MENU = [
+    {
+      key: "today",
+      icon: "🌙",
+      subtitle: "하루를 비추는 별빛 한 장",
+      featured: true,
+      badge: "NEW",
+    },
+    { key: "week", icon: "⭐", subtitle: "이번 주 흐름 읽기" },
+    { key: "month", icon: "🌕", subtitle: "달의 주기로 보는 운" },
+    { key: "year", icon: "∞", subtitle: "한 해를 꿰뚫는 한 장" },
+    { key: "worry", icon: "💭", subtitle: "답을 찾고 싶을 때" },
+    { key: "love", icon: "💕", subtitle: "마음을 읽는 시간" },
+  ];
   const FAN_SPREAD_DEG = 196;
   const DEAL_SHUFFLE_MS = 850;
   const DEAL_SPREAD_MS = 1400;
@@ -14,7 +28,13 @@
     tarotSkyCanvas: document.getElementById("tarot-sky-canvas"),
     tarotMeteors: document.getElementById("tarot-sky-meteors"),
     bottomNav: document.getElementById("bottom-nav"),
+    tarotBottomNav: document.getElementById("tarot-bottom-nav"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
+    homePhase: document.getElementById("tarot-home-phase"),
+    menuGrid: document.getElementById("tarot-menu-grid"),
+    ctaDraw: document.getElementById("tarot-cta-draw"),
+    backHome: document.getElementById("tarot-back-home"),
+    drawSpreadLabel: document.getElementById("tarot-draw-spread-label"),
     spreadTabs: document.getElementById("tarot-spread-tabs"),
     instruction: document.getElementById("tarot-instruction"),
     deckArea: document.getElementById("tarot-deck-area"),
@@ -434,16 +454,83 @@
     });
   }
 
+  function updateTarotBottomNav(active) {
+    if (!els.tarotBottomNav) return;
+    els.tarotBottomNav.querySelectorAll("[data-tarot-nav]").forEach((btn) => {
+      const on = btn.dataset.tarotNav === active;
+      btn.classList.toggle("active", on);
+      btn.setAttribute("aria-current", on ? "page" : "false");
+    });
+  }
+
+  function showHomePhase() {
+    if (els.homePhase) els.homePhase.hidden = false;
+    if (els.drawPhase) els.drawPhase.hidden = true;
+    if (els.resultPhase) els.resultPhase.hidden = true;
+    updateTarotBottomNav("home");
+  }
+
+  function updateDrawSpreadLabel() {
+    if (els.drawSpreadLabel) {
+      els.drawSpreadLabel.textContent = spreadLabel();
+    }
+  }
+
+  function openDrawForSpread(spreadKey) {
+    if (spreadKey && meta?.spreads?.[spreadKey]) {
+      activeSpread = spreadKey;
+      renderSpreadTabs();
+    }
+    showDrawPhase();
+    updateDrawSpreadLabel();
+    if (!deckOrder.length && meta) {
+      resetDeckSelection();
+    } else if (deckOrder.length) {
+      updateInstruction();
+    }
+    updateTarotBottomNav("draw");
+  }
+
+  function renderHomeMenu() {
+    if (!els.menuGrid || !meta) return;
+    els.menuGrid.innerHTML = HOME_MENU.map((item) => {
+      const info = meta.spreads[item.key];
+      if (!info) return "";
+      const featured = item.featured ? " tarot-menu-card--featured" : "";
+      const badge = item.badge
+        ? `<span class="tarot-menu-badge">${escapeHtml(item.badge)}</span>`
+        : "";
+      return `<button type="button" class="tarot-menu-card${featured}" data-spread="${escapeHtml(item.key)}" role="listitem">
+        <span class="tarot-menu-icon" aria-hidden="true">${item.icon}</span>
+        <span class="tarot-menu-text">
+          <span class="tarot-menu-title-row">
+            <span class="tarot-menu-title">${escapeHtml(info.label)}</span>
+            ${badge}
+          </span>
+          <span class="tarot-menu-sub">${escapeHtml(item.subtitle)}</span>
+        </span>
+      </button>`;
+    }).join("");
+
+    els.menuGrid.querySelectorAll("[data-spread]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (pickingLocked || dealing || randomRunning) return;
+        openDrawForSpread(btn.dataset.spread);
+      });
+    });
+  }
+
   function setAppMode(mode) {
     const isTarot = mode === "tarot";
     const isMaehwa = mode === "maehwa";
     if (isTarot) initTarotSky();
     setTarotSkyVisible(isTarot);
-    if (els.sajuMain) els.sajuMain.hidden = isTarot;
+    if (els.sajuMain) els.sajuMain.hidden = isTarot || isMaehwa;
     if (els.tarotMain) els.tarotMain.hidden = !isTarot;
     if (els.maehwaMain) els.maehwaMain.hidden = !isMaehwa;
     document.body.classList.toggle("tarot-mode", isTarot);
     document.body.classList.toggle("maehwa-mode", isMaehwa);
+    document.body.classList.toggle("has-tarot-bottom-nav", isTarot);
     if (els.bottomNav) {
       if (isTarot || isMaehwa) {
         els.bottomNav.dataset.sajuHidden = els.bottomNav.hidden ? "1" : "0";
@@ -459,11 +546,17 @@
         }
       }
     }
+    if (els.tarotBottomNav) {
+      els.tarotBottomNav.hidden = !isTarot;
+    }
     els.modeBtns.forEach((btn) => {
       const on = btn.dataset.appMode === mode;
       btn.classList.toggle("active", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    if (isTarot) {
+      showHomePhase();
+    }
     if (isTarot && !meta) {
       initTarot();
     }
@@ -487,6 +580,7 @@
         activeSpread = btn.dataset.spread;
         renderSpreadTabs();
         updateInstruction();
+        showDrawPhase();
         resetDeckSelection();
       });
     });
@@ -518,11 +612,15 @@
   }
 
   function showDrawPhase() {
+    if (els.homePhase) els.homePhase.hidden = true;
     if (els.drawPhase) els.drawPhase.hidden = false;
     if (els.resultPhase) els.resultPhase.hidden = true;
+    updateDrawSpreadLabel();
+    updateTarotBottomNav("draw");
   }
 
   function showResultPhase() {
+    if (els.homePhase) els.homePhase.hidden = true;
     if (els.drawPhase) els.drawPhase.hidden = true;
     if (els.resultPhase) els.resultPhase.hidden = false;
   }
@@ -828,7 +926,6 @@
   }
 
   function resetDeckSelection() {
-    showDrawPhase();
     setStatus("");
     selectedCards = [];
     pickedIds.clear();
@@ -848,8 +945,10 @@
       ]);
       meta = spreadMeta;
       deckOrder = shuffle((deckData.cards || []).map((c) => ({ id: c.id })));
+      renderHomeMenu();
       renderSpreadTabs();
       renderCategoryTabs();
+      showHomePhase();
       resetDeckSelection();
       setStatus("");
     } catch (err) {
@@ -865,6 +964,41 @@
     btn.addEventListener("click", () => setAppMode(btn.dataset.appMode || "saju"));
   });
 
+  if (els.ctaDraw) {
+    els.ctaDraw.addEventListener("click", () => {
+      if (pickingLocked || dealing || randomRunning) return;
+      openDrawForSpread(activeSpread || "today");
+    });
+  }
+
+  if (els.backHome) {
+    els.backHome.addEventListener("click", () => {
+      if (pickingLocked || dealing || randomRunning) return;
+      showHomePhase();
+    });
+  }
+
+  if (els.tarotBottomNav) {
+    els.tarotBottomNav.querySelectorAll("[data-tarot-nav]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const nav = btn.dataset.tarotNav;
+        if (nav === "home") {
+          if (pickingLocked || dealing || randomRunning) return;
+          showHomePhase();
+          return;
+        }
+        if (nav === "draw") {
+          if (!meta) return;
+          openDrawForSpread(activeSpread || "today");
+          return;
+        }
+        if (nav === "saju") {
+          setAppMode("saju");
+        }
+      });
+    });
+  }
+
   if (els.shuffle) {
     els.shuffle.addEventListener("click", () => shuffleDeck());
   }
@@ -874,6 +1008,7 @@
   if (els.redraw) {
     els.redraw.addEventListener("click", () => {
       if (pickingLocked || dealing || randomRunning) return;
+      showDrawPhase();
       resetDeckSelection();
     });
   }
@@ -885,6 +1020,7 @@
   }
   if (els.backDraw) {
     els.backDraw.addEventListener("click", () => {
+      showDrawPhase();
       resetDeckSelection();
     });
   }
