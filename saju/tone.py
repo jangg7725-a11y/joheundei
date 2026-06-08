@@ -43,27 +43,19 @@ _PHRASE_REPLACEMENTS: Tuple[Tuple[str, str], ...] = (
     ("원국에서 드러나는 충·파·해·형·합 관계가 없거나", "원국에서 눈에 띄는 충·파·해·형·합이 없거나"),
     ("교과서식", "딱딱한 설명식"),
     ("~란 무엇이다", ""),
-    ("읽힙니다", "비치십니다"),
+    ("읽힙니다", "비칩니다"),
     ("읽습니다", "보입니다"),
     ("작용합니다", "깃들어 있습니다"),
     ("작용해", "깃들어"),
-    ("나타납니다", "드러나십니다"),
+    ("나타납니다", "드러납니다"),
     ("나타나", "드러나"),
-    ("발동됩니다", "발동되십니다"),
-    ("검토하세요", "한번 더 살펴보시면 좋습니다"),
-    ("주의하세요", "유의하시기 바랍니다"),
-    ("챙기세요", "챙기시면 좋습니다"),
-    ("들이세요", "들이시면 좋습니다"),
-    ("하세요", "하시면 좋습니다"),
-    ("필요합니다", "필요하십니다"),
-    ("가능합니다", "가능하십니다"),
-    ("어렵습니다", "쉽지 않으십니다"),
-    ("없습니다", "없으십니다"),
-    ("있습니다", "있으십니다"),
-    ("됩니다", "되십니다"),
-    ("보입니다", "보이십니다"),
-    ("드립니다", "말씀드립니다"),
-    ("권합니다", "권해 드립니다"),
+    ("검토하세요", "한번 더 살펴보시면 좋아요"),
+    ("주의하세요", "유의해 주세요"),
+    ("챙기세요", "챙기시면 좋아요"),
+    ("들이세요", "드시면 좋아요"),
+    ("하세요", "하시면 좋아요"),
+    ("드립니다", "드려요"),
+    ("권합니다", "권해 드려요"),
     ("참고로", "참고로"),
     ("당신은", "회원님은"),
     ("당신의", "회원님의"),
@@ -282,6 +274,7 @@ def voice_text_wolwoon(text: str) -> str:
             t = t.replace(old, new)
     t = strip_voice_openers(t)
     t = sanitize_legal_tone(t)
+    t = soften_stiff_honorific(t)
     t = re.sub(r"\s{2,}", " ", t)
     return t.strip() if t else text
 
@@ -298,13 +291,14 @@ def voice_text(text: str) -> str:
         if old and new is not None:
             t = t.replace(old, new)
 
-    t = re.sub(r"해야\s*합니다\.?", "하시는 편이 좋습니다.", t)
-    t = re.sub(r"해야\s*합니다", "하시는 편이 좋습니다", t)
+    t = re.sub(r"해야\s*합니다\.?", "하시는 편이 좋아요.", t)
+    t = re.sub(r"해야\s*합니다", "하시는 편이 좋아요", t)
     t = re.sub(r"것입니다\.?", "것으로 보입니다.", t)
 
     t = strip_voice_openers(t)
     t = sanitize_legal_tone(t)
     t = strip_voice_openers(t)
+    t = soften_stiff_honorific(t)
     t = re.sub(r"\s{2,}", " ", t)
     t = re.sub(r"\n{3,}", "\n\n", t)
     return t.strip() if t else text
@@ -448,10 +442,18 @@ _STIFF_HONORIFIC_FIXES: Tuple[Tuple[str, str], ...] = (
     ("이십니다", "입니다"),
     ("하십시오", "해 주세요"),
     ("유의하시기 바랍니다", "유의해 주세요"),
+    ("한번 더 살펴보시면 좋습니다", "한번 더 살펴보시면 좋아요"),
+    ("살펴보시면 좋습니다", "살펴보시면 좋아요"),
+    ("하시는 편이 좋습니다", "하시는 편이 좋아요"),
     ("챙기시면 좋습니다", "챙기시면 좋아요"),
+    ("들이시면 좋습니다", "드시면 좋아요"),
     ("하시면 좋습니다", "하시면 좋아요"),
+    ("말씀드립니다", "말씀드려요"),
     ("권해 드립니다", "권해 드려요"),
 )
+
+_STIFF_EUSIMNIDA_RE = re.compile(r"([가-힣]{1,6})으십니다")
+_STIFF_ISIMNIDA_RE = re.compile(r"([가-힣]{1,6})이십니다")
 
 
 def soften_stiff_honorific(text: str) -> str:
@@ -462,6 +464,8 @@ def soften_stiff_honorific(text: str) -> str:
     for old, new in sorted(_STIFF_HONORIFIC_FIXES, key=lambda x: -len(x[0])):
         if old:
             t = t.replace(old, new)
+    t = _STIFF_EUSIMNIDA_RE.sub(r"\1습니다", t)
+    t = _STIFF_ISIMNIDA_RE.sub(r"\1입니다", t)
     return t
 
 

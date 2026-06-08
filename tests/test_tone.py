@@ -99,6 +99,50 @@ def test_manseryeok_voice_soft_tone() -> None:
     assert "있습니다" in out
 
 
+_STIFF_ENDINGS = (
+    "있으십니다",
+    "되십니다",
+    "보이십니다",
+    "없으십니다",
+    "필요하십니다",
+    "가능하십니다",
+    "드러나십니다",
+    "발동되십니다",
+    "비치십니다",
+    "유의하시기 바랍니다",
+)
+
+
+def test_voice_text_soft_tone() -> None:
+    raw = (
+        "도움이 필요합니다. 가능합니다. 나타납니다. 주의하세요. "
+        "검토하세요. 있으십니다. 되십니다."
+    )
+    out = tn.voice_text(raw)
+    for stiff in _STIFF_ENDINGS:
+        assert stiff not in out, f"stiff ending {stiff!r} in {out!r}"
+    assert "유의해 주세요" in out or "유의" in out
+    assert "있습니다" in out
+
+
+def test_report_no_stiff_honorific() -> None:
+    r = an.build_report(
+        calendar="lunar",
+        year=1966,
+        month=11,
+        day=4,
+        hour=2,
+        minute=5,
+        gender="female",
+        lunar_leap=False,
+    )
+    texts: list = []
+    _collect_strings(r, texts)
+    joined = "\n".join(t for t in texts if len(t) > 6)
+    for stiff in _STIFF_ENDINGS:
+        assert stiff not in joined, f"report contains stiff {stiff!r}"
+
+
 def test_strip_voice_openers() -> None:
     raw = "전통 명리를 바탕으로 보면, 입춘을 지난 인월입니다."
     assert tn.strip_voice_openers(raw).startswith("입춘")
