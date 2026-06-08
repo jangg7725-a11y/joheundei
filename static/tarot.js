@@ -25,15 +25,12 @@
     tarotMain: document.getElementById("tarot-main"),
     maehwaMain: document.getElementById("maehwa-main"),
     tarotSky: document.getElementById("tarot-sky"),
-    tarotSkyCanvas: document.getElementById("tarot-sky-canvas"),
-    tarotMeteors: document.getElementById("tarot-sky-meteors"),
     bottomNav: document.getElementById("bottom-nav"),
-    tarotBottomNav: document.getElementById("tarot-bottom-nav"),
+    tarotHomeTop: document.getElementById("tarot-home-top-btn"),
     modeBtns: document.querySelectorAll("[data-app-mode]"),
     homePhase: document.getElementById("tarot-home-phase"),
     menuGrid: document.getElementById("tarot-menu-grid"),
     ctaDraw: document.getElementById("tarot-cta-draw"),
-    backHome: document.getElementById("tarot-back-home"),
     drawSpreadLabel: document.getElementById("tarot-draw-spread-label"),
     spreadTabs: document.getElementById("tarot-spread-tabs"),
     instruction: document.getElementById("tarot-instruction"),
@@ -262,27 +259,15 @@
 
   function initTarotSky() {
     if (!els.tarotSky || els.tarotSky.dataset.ready === "1") return;
-    skyAnim.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    skyAnim.stars = buildSkyStars(STAR_COUNT);
-    resizeTarotSkyCanvas();
-    initTarotMeteors();
-    window.addEventListener("resize", resizeTarotSkyCanvas);
+    stopTarotSkyAnim();
     els.tarotSky.dataset.ready = "1";
-    if (!els.tarotSky.hidden) startTarotSkyAnim();
   }
 
   function setTarotSkyVisible(visible) {
     if (!els.tarotSky) return;
     els.tarotSky.hidden = !visible;
     els.tarotSky.setAttribute("aria-hidden", visible ? "false" : "true");
-    if (visible) {
-      if (els.tarotSky.dataset.ready === "1") {
-        resizeTarotSkyCanvas();
-        startTarotSkyAnim();
-      }
-    } else {
-      stopTarotSkyAnim();
-    }
+    if (!visible) stopTarotSkyAnim();
   }
 
   function needCount() {
@@ -454,20 +439,10 @@
     });
   }
 
-  function updateTarotBottomNav(active) {
-    if (!els.tarotBottomNav) return;
-    els.tarotBottomNav.querySelectorAll("[data-tarot-nav]").forEach((btn) => {
-      const on = btn.dataset.tarotNav === active;
-      btn.classList.toggle("active", on);
-      btn.setAttribute("aria-current", on ? "page" : "false");
-    });
-  }
-
   function showHomePhase() {
     if (els.homePhase) els.homePhase.hidden = false;
     if (els.drawPhase) els.drawPhase.hidden = true;
     if (els.resultPhase) els.resultPhase.hidden = true;
-    updateTarotBottomNav("home");
   }
 
   function updateDrawSpreadLabel() {
@@ -488,7 +463,6 @@
     } else if (deckOrder.length) {
       updateInstruction();
     }
-    updateTarotBottomNav("draw");
   }
 
   function renderHomeMenu() {
@@ -530,7 +504,6 @@
     if (els.maehwaMain) els.maehwaMain.hidden = !isMaehwa;
     document.body.classList.toggle("tarot-mode", isTarot);
     document.body.classList.toggle("maehwa-mode", isMaehwa);
-    document.body.classList.toggle("has-tarot-bottom-nav", isTarot);
     if (els.bottomNav) {
       if (isTarot || isMaehwa) {
         els.bottomNav.dataset.sajuHidden = els.bottomNav.hidden ? "1" : "0";
@@ -546,8 +519,8 @@
         }
       }
     }
-    if (els.tarotBottomNav) {
-      els.tarotBottomNav.hidden = !isTarot;
+    if (els.tarotHomeTop) {
+      els.tarotHomeTop.hidden = !isTarot;
     }
     els.modeBtns.forEach((btn) => {
       const on = btn.dataset.appMode === mode;
@@ -616,7 +589,6 @@
     if (els.drawPhase) els.drawPhase.hidden = false;
     if (els.resultPhase) els.resultPhase.hidden = true;
     updateDrawSpreadLabel();
-    updateTarotBottomNav("draw");
   }
 
   function showResultPhase() {
@@ -971,31 +943,10 @@
     });
   }
 
-  if (els.backHome) {
-    els.backHome.addEventListener("click", () => {
+  if (els.tarotHomeTop) {
+    els.tarotHomeTop.addEventListener("click", () => {
       if (pickingLocked || dealing || randomRunning) return;
       showHomePhase();
-    });
-  }
-
-  if (els.tarotBottomNav) {
-    els.tarotBottomNav.querySelectorAll("[data-tarot-nav]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const nav = btn.dataset.tarotNav;
-        if (nav === "home") {
-          if (pickingLocked || dealing || randomRunning) return;
-          showHomePhase();
-          return;
-        }
-        if (nav === "draw") {
-          if (!meta) return;
-          openDrawForSpread(activeSpread || "today");
-          return;
-        }
-        if (nav === "saju") {
-          setAppMode("saju");
-        }
-      });
     });
   }
 

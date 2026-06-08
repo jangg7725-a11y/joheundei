@@ -8,23 +8,19 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&family=Nanum+Brush+Script&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css?v=20260521-signboard" />
-  <link rel="stylesheet" href="/static/tarot.css?v=20260605-home" />
+  <link rel="stylesheet" href="/static/tarot.css?v=20260605-velvet" />
   <link rel="stylesheet" href="/static/maehwa.css?v=20260521-fortune" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div class="tarot-sky" id="tarot-sky" hidden aria-hidden="true">
     <div class="tarot-sky-base"></div>
-    <div class="tarot-sky-nebula"></div>
-    <div class="tarot-sky-nebula tarot-sky-nebula--soft"></div>
-    <div class="tarot-sky-aurora tarot-sky-aurora--a"></div>
-    <div class="tarot-sky-aurora tarot-sky-aurora--b"></div>
-    <canvas class="tarot-sky-canvas" id="tarot-sky-canvas" aria-hidden="true"></canvas>
-    <div class="tarot-sky-meteors" id="tarot-sky-meteors"></div>
-    <div class="tarot-sky-glow tarot-sky-glow--gold"></div>
-    <div class="tarot-sky-glow tarot-sky-glow--violet"></div>
-    <div class="tarot-sky-shimmer"></div>
+    <div class="tarot-sky-velvet" aria-hidden="true"></div>
   </div>
+  <button type="button" class="tarot-home-top-btn" id="tarot-home-top-btn" hidden aria-label="타로 홈">
+    <span class="tarot-home-top-icon" aria-hidden="true">🏠</span>
+    <span class="tarot-home-top-label">홈</span>
+  </button>
   <div class="sansuhwa-bg" id="sansuhwa-bg" aria-hidden="true">
     <img
       class="sansuhwa-bg__art"
@@ -385,7 +381,6 @@
 
       <div class="tarot-phase tarot-phase-draw" id="tarot-draw-phase" hidden>
         <div class="tarot-draw-topbar">
-          <button type="button" class="tarot-back-home" id="tarot-back-home" aria-label="타로 메뉴로">← 메뉴</button>
           <p class="tarot-draw-spread-label" id="tarot-draw-spread-label"></p>
         </div>
         <div class="tarot-deck-stage">
@@ -446,21 +441,6 @@
       </div>
 
       <p class="tarot-status status" id="tarot-status" aria-live="polite"></p>
-
-      <nav class="tarot-bottom-nav" id="tarot-bottom-nav" aria-label="타로 내비게이션" hidden>
-        <button type="button" class="tarot-bottom-nav-btn active" data-tarot-nav="home" aria-current="page">
-          <span class="tarot-bottom-nav-icon" aria-hidden="true">🏠</span>
-          <span>홈</span>
-        </button>
-        <button type="button" class="tarot-bottom-nav-btn" data-tarot-nav="draw">
-          <span class="tarot-bottom-nav-icon" aria-hidden="true">🃏</span>
-          <span>뽑기</span>
-        </button>
-        <button type="button" class="tarot-bottom-nav-btn" data-tarot-nav="saju">
-          <span class="tarot-bottom-nav-icon" aria-hidden="true">☯</span>
-          <span>사주</span>
-        </button>
-      </nav>
     </section>
 
     <section class="maehwa-app card panel" id="maehwa-main" hidden aria-labelledby="maehwa-heading">
@@ -529,7 +509,7 @@
 
   <script src="/static/ai-story.js"></script>
   <script src="/static/script.js?v=20260516-sewoon-center"></script>
-  <script src="/static/tarot.js?v=20260605-home"></script>
+  <script src="/static/tarot.js?v=20260605-velvet"></script>
   <script src="/static/maehwa.js?v=20260521-cal-daily"></script>
 
   <a href="/manseryeok" class="ms-float-btn" title="만세력 바로가기">

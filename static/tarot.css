@@ -61,7 +61,7 @@ body.tarot-mode .ms-float-btn {
 }
 
 body.tarot-mode {
-  background: #050810;
+  background: #1a1428;
   font-family: var(--tarot-font-serif);
 }
 
@@ -114,19 +114,42 @@ body.tarot-mode .footer {
   display: none;
 }
 
-body.tarot-mode.has-tarot-bottom-nav {
-  padding-bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px));
+/* ── 타로 좌상단 홈 ── */
+.tarot-home-top-btn {
+  position: fixed;
+  top: calc(0.55rem + env(safe-area-inset-top, 0px));
+  left: calc(0.55rem + env(safe-area-inset-left, 0px));
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.42rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 168, 76, 0.28);
+  background: rgba(26, 20, 40, 0.88);
+  color: var(--gold);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 
-body.tarot-mode.has-tarot-bottom-nav .tarot-app {
-  padding-bottom: 0.5rem;
+.tarot-home-top-btn:hover {
+  border-color: rgba(201, 168, 76, 0.48);
+  background: rgba(34, 26, 52, 0.92);
 }
 
-/* ── 타로 홈 (심연의 별빛) ── */
+.tarot-home-top-icon {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+/* ── 타로 홈 ── */
 .tarot-phase-home {
   max-width: 28rem;
   margin: 0 auto;
-  padding: 0.25rem 0.35rem 1rem;
+  padding: calc(2.4rem + env(safe-area-inset-top, 0px)) 0.35rem 1rem;
 }
 
 .tarot-home-head {
@@ -176,38 +199,13 @@ body.tarot-mode.has-tarot-bottom-nav .tarot-app {
 
 .tarot-orbit-ring--outer {
   inset: -6%;
-  border-color: rgba(201, 168, 76, 0.14);
-  animation: tarotOrbitSpin 24s linear infinite;
+  border-color: rgba(201, 168, 76, 0.12);
 }
 
 .tarot-orbit-ring--inner {
   inset: 10%;
   border-style: dashed;
-  border-color: rgba(201, 168, 76, 0.28);
-  animation: tarotOrbitSpin 16s linear infinite reverse;
-}
-
-.tarot-orbit-ring--outer::after,
-.tarot-orbit-ring--inner::after {
-  content: "";
-  position: absolute;
-  top: -3px;
-  left: 50%;
-  width: 6px;
-  height: 6px;
-  margin-left: -3px;
-  border-radius: 50%;
-  background: var(--gold);
-  box-shadow: 0 0 10px rgba(201, 168, 76, 0.65);
-}
-
-@keyframes tarotOrbitSpin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+  border-color: rgba(201, 168, 76, 0.2);
 }
 
 .tarot-hero-card-preview {
@@ -367,10 +365,7 @@ body.tarot-mode.has-tarot-bottom-nav .tarot-app {
   font-weight: 700;
   letter-spacing: 0.06em;
   cursor: pointer;
-  box-shadow:
-    0 0 20px rgba(201, 168, 76, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  animation: tarotCtaGlow 2.8s ease-in-out infinite alternate;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .tarot-cta-draw:hover {
@@ -378,47 +373,20 @@ body.tarot-mode.has-tarot-bottom-nav .tarot-app {
   background: linear-gradient(180deg, rgba(201, 168, 76, 0.32), rgba(201, 168, 76, 0.12));
 }
 
-@keyframes tarotCtaGlow {
-  from {
-    box-shadow:
-      0 0 14px rgba(201, 168, 76, 0.12),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  }
-  to {
-    box-shadow:
-      0 0 28px rgba(201, 168, 76, 0.32),
-      inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  }
-}
-
 .tarot-draw-topbar {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  justify-content: center;
   margin-bottom: 0.35rem;
   padding: 0 0.15rem;
 }
 
-.tarot-back-home {
-  flex-shrink: 0;
-  padding: 0.4rem 0.65rem;
-  border-radius: 999px;
-  border: 1px solid rgba(201, 168, 76, 0.28);
-  background: rgba(255, 255, 255, 0.05);
-  color: rgba(220, 228, 240, 0.82);
-  font-family: inherit;
-  font-size: 0.78rem;
-  cursor: pointer;
-}
-
 .tarot-draw-spread-label {
   margin: 0;
-  flex: 1;
   text-align: center;
   font-size: 0.88rem;
   font-weight: 700;
   color: var(--gold);
-  padding-right: 3.5rem;
 }
 
 .tarot-draw-actions {
@@ -438,58 +406,7 @@ body.tarot-mode.has-tarot-bottom-nav .tarot-app {
   grid-column: 1 / -1;
 }
 
-.tarot-bottom-nav {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  z-index: 60;
-  display: flex;
-  justify-content: space-around;
-  gap: 0.25rem;
-  padding: 0.45rem 0.5rem calc(0.45rem + env(safe-area-inset-bottom, 0px));
-  border-top: 1px solid rgba(201, 168, 76, 0.2);
-  background: rgba(6, 10, 18, 0.94);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.tarot-bottom-nav-btn {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  padding: 0.35rem 0.25rem;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: rgba(220, 228, 240, 0.55);
-  font-family: inherit;
-  font-size: 0.68rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tarot-bottom-nav-btn.active {
-  color: var(--gold);
-  background: rgba(201, 168, 76, 0.1);
-}
-
-.tarot-bottom-nav-icon {
-  font-size: 1.05rem;
-  line-height: 1;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tarot-orbit-ring--outer,
-  .tarot-orbit-ring--inner,
-  .tarot-cta-draw {
-    animation: none !important;
-  }
-}
-
-/* ── 타로 별하늘 배경 ── */
+/* ── 타로 배경 (청보라 벨벳) ── */
 .tarot-sky {
   position: fixed;
   inset: 0;
@@ -507,18 +424,27 @@ body.tarot-mode.has-tarot-bottom-nav .tarot-app {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(175deg, #0a1228 0%, #0c1835 28%, #101e3a 52%, #0a1428 78%, #060810 100%);
+    linear-gradient(168deg, #221a38 0%, #1e1634 32%, #1a1428 58%, #141020 100%);
 }
 
-.tarot-sky-nebula {
+.tarot-sky-velvet {
   position: absolute;
-  inset: -15%;
+  inset: 0;
   background:
-    radial-gradient(ellipse 55% 42% at 18% 22%, rgba(88, 118, 180, 0.28) 0%, transparent 62%),
-    radial-gradient(ellipse 45% 38% at 82% 68%, rgba(72, 58, 120, 0.22) 0%, transparent 58%),
-    radial-gradient(ellipse 70% 52% at 50% 100%, rgba(26, 48, 82, 0.5) 0%, transparent 55%);
-  animation: tarotNebulaDrift 38s ease-in-out infinite alternate;
-  will-change: transform;
+    radial-gradient(ellipse 90% 70% at 22% 18%, rgba(88, 68, 138, 0.22) 0%, transparent 58%),
+    radial-gradient(ellipse 80% 60% at 78% 82%, rgba(58, 42, 98, 0.18) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 50% 50%, rgba(42, 32, 72, 0.14) 0%, transparent 62%);
+  opacity: 0.95;
+}
+
+.tarot-sky-nebula,
+.tarot-sky-nebula--soft,
+.tarot-sky-aurora,
+.tarot-sky-meteors,
+.tarot-sky-canvas,
+.tarot-sky-glow,
+.tarot-sky-shimmer {
+  display: none !important;
 }
 
 .tarot-sky-nebula--soft {
@@ -777,7 +703,11 @@ body.tarot-mode .tarot-phase-draw {
 .tarot-phase-draw {
   max-width: 36rem;
   margin: 0 auto;
-  padding: 0.15rem 0.35rem 0.5rem;
+  padding: calc(2.4rem + env(safe-area-inset-top, 0px)) 0.35rem 0.5rem;
+}
+
+.tarot-phase-result {
+  padding-top: calc(2.2rem + env(safe-area-inset-top, 0px));
 }
 
 .tarot-spread-rail {
