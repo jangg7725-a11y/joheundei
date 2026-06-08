@@ -447,7 +447,7 @@
     document.body.classList.toggle("has-tarot-draw-dock", isDraw);
     if (els.drawDock) els.drawDock.hidden = !isDraw;
     if (els.tarotHomeTop) {
-      els.tarotHomeTop.hidden = !(isDraw || isResult);
+      els.tarotHomeTop.hidden = !document.body.classList.contains("tarot-mode");
     }
   }
 
@@ -535,7 +535,9 @@
     if (!isTarot) {
       document.body.classList.remove("tarot-draw-active", "has-tarot-draw-dock");
       if (els.drawDock) els.drawDock.hidden = true;
-      if (els.tarotHomeTop) els.tarotHomeTop.hidden = true;
+    }
+    if (els.tarotHomeTop) {
+      els.tarotHomeTop.hidden = !isTarot;
     }
     els.modeBtns.forEach((btn) => {
       const on = btn.dataset.appMode === mode;
@@ -962,9 +964,12 @@
   }
 
   if (els.tarotHomeTop) {
-    els.tarotHomeTop.addEventListener("click", () => {
+    els.tarotHomeTop.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
       if (pickingLocked || dealing || randomRunning) return;
-      showHomePhase();
+      setAppMode("saju");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     });
   }
 

@@ -65,7 +65,6 @@ body.tarot-mode {
   font-family: var(--tarot-font-serif);
 }
 
-body.tarot-mode .hero,
 body.tarot-mode .layout,
 body.tarot-mode .footer {
   position: relative;
@@ -73,6 +72,8 @@ body.tarot-mode .footer {
 }
 
 body.tarot-mode .hero {
+  position: relative;
+  z-index: 90;
   padding: 0.45rem 1rem 0.25rem;
   min-height: 0;
   pointer-events: none;
@@ -80,11 +81,11 @@ body.tarot-mode .hero {
 
 body.tarot-mode .hero-more {
   pointer-events: auto;
-  z-index: 85;
+  z-index: 92;
 }
 
 body.tarot-mode .more-menu-panel {
-  z-index: 86;
+  z-index: 93;
 }
 
 body.tarot-mode .btn-more-menu {
@@ -149,7 +150,8 @@ body.tarot-mode .footer {
   position: fixed;
   top: calc(0.55rem + env(safe-area-inset-top, 0px));
   left: calc(0.55rem + env(safe-area-inset-left, 0px));
-  z-index: 84;
+  z-index: 91;
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
