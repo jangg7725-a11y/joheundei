@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=East+Sea+Dokdo&family=Nanum+Brush+Script&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css?v=20260521-signboard" />
-  <link rel="stylesheet" href="/static/tarot.css?v=20260605-fanup" />
+  <link rel="stylesheet" href="/static/tarot.css?v=20260605-drawhead" />
   <link rel="stylesheet" href="/static/maehwa.css?v=20260521-fortune" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Serif+KR:wght@400;600;700&display=swap" rel="stylesheet" />
 </head>
@@ -386,11 +386,11 @@
       </div>
 
       <div class="tarot-phase tarot-phase-draw" id="tarot-draw-phase" hidden>
-        <div class="tarot-draw-topbar">
-          <p class="tarot-draw-spread-label" id="tarot-draw-spread-label"></p>
-        </div>
+        <header class="tarot-draw-head">
+          <h2 class="tarot-draw-title" id="tarot-draw-spread-label"></h2>
+          <p class="tarot-draw-instruction" id="tarot-instruction">카드를 직접 골라 주세요.</p>
+        </header>
         <div class="tarot-deck-stage">
-          <p class="tarot-instruction" id="tarot-instruction">카드를 직접 골라 주세요.</p>
           <div class="tarot-deck-area" id="tarot-deck-area" aria-live="polite"></div>
         </div>
         <div class="tarot-spread-tabs tab-bar fallback-hidden" id="tarot-spread-tabs" role="tablist" hidden></div>
