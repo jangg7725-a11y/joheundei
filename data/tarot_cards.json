@@ -29,11 +29,11 @@
     },
     "month": {
       "label": "이달의 타로",
-      "count": 7
+      "count": 5
     },
     "year": {
-      "label": "올해의 타로",
-      "count": 12
+      "label": "신년 타로",
+      "count": 7
     },
     "worry": {
       "label": "고민 타로",

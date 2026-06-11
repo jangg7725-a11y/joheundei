@@ -11,9 +11,9 @@
       badge: "NEW",
     },
     { key: "week", icon: "⭐", subtitle: "3장 스토리 · 이번 주 흐름" },
-    { key: "month", icon: "🌕", subtitle: "7장 스토리 · 달의 주기" },
-    { key: "year", icon: "∞", subtitle: "5장 스토리 · 계절의 흐름" },
-    { key: "worry", icon: "💭", subtitle: "3장 스토리 · 답을 찾을 때" },
+    { key: "month", icon: "🌕", subtitle: "5장 스토리 · 한 달의 흐름" },
+    { key: "year", icon: "∞", subtitle: "7장 스토리 · 신년 흐름" },
+    { key: "worry", icon: "💭", subtitle: "3장 · 과거·현재·미래" },
     { key: "love", icon: "💕", subtitle: "7장 스토리 · 마음을 읽는 시간" },
   ];
   const FAN_SPREAD_DEG = 228;
@@ -383,7 +383,7 @@
           ? `<p class="tarot-spread-card-summary">${escapeHtml(pos.scene_summary)}</p>`
           : "";
         const quarterBreak =
-          activeSpread === "year" && idx > 0 && idx % 3 === 0
+          activeSpread === "year" && idx > 0 && idx % 2 === 0
             ? '<span class="tarot-spread-quarter" aria-hidden="true"></span>'
             : "";
         return `${quarterBreak}<figure class="tarot-spread-card">

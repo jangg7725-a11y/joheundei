@@ -29,8 +29,8 @@ READING_CATEGORIES = [
 SPREADS = {
     "today": {"label": "오늘의 타로", "count": 1},
     "week": {"label": "이주의 타로", "count": 3},
-    "month": {"label": "이달의 타로", "count": 7},
-    "year": {"label": "올해의 타로", "count": 5},
+    "month": {"label": "이달의 타로", "count": 5},
+    "year": {"label": "신년 타로", "count": 7},
     "worry": {"label": "고민 타로", "count": 3},
     "love": {"label": "연애 타로", "count": 7},
     "deep": {"label": "심층 타로", "count": 10},
