@@ -73,7 +73,7 @@ SPREAD_POSITIONS: dict[str, list[dict[str, str]]] = {
         {"label": "나", "role": "나의 마음과 태도"},
         {"label": "상대", "role": "상대의 에너지"},
         {"label": "관계", "role": "두 사람 사이의 흐름"},
-        {"label": "장애", "role": "막고 있는 것"},
+        {"label": "변수", "role": "흐름을 시험하는 요인"},
         {"label": "조언", "role": "관계를 위한 제언"},
         {"label": "근접", "role": "가까워질 가능성"},
         {"label": "결말", "role": "앞으로의 방향"},
@@ -175,9 +175,28 @@ def normalize_spread(spread: str) -> str:
     raise ValueError(f"스프레드 없음: {spread}")
 
 
-def reading_text(card: dict[str, Any], category: str, *, reversed: bool) -> str:
+def reading_text(
+    card: dict[str, Any],
+    category: str,
+    *,
+    reversed: bool,
+    spread_key: str | None = None,
+    position_index: int | None = None,
+) -> str:
     cat = normalize_category(category)
     side = "reverse" if reversed else "upright"
+
+    # 고민·이주 3장 — DB temporal(과거·현재·미래) 우선
+    _TEMPORAL_SPREADS = frozenset({"worry", "week"})
+    if spread_key in _TEMPORAL_SPREADS and position_index is not None:
+        temporal = card.get("temporal") or {}
+        axis = ("past", "present", "future")
+        if 0 <= position_index < len(axis):
+            block = temporal.get(axis[position_index], {})
+            temporal_text = block.get(side)
+            if temporal_text:
+                return temporal_text
+
     block = card.get(side) or {}
     text = block.get(cat)
     if not text:
@@ -323,7 +342,14 @@ def spread_reading(
             if i < len(positions_meta)
             else {"label": str(i + 1), "role": "흐름"}
         )
-        excerpt = reading_text(card, cat, reversed=is_rev)
+        use_temporal = spread_key in ("worry", "week") and bool(card.get("temporal"))
+        excerpt = reading_text(
+            card,
+            cat,
+            reversed=is_rev,
+            spread_key=spread_key if use_temporal else None,
+            position_index=i if use_temporal else None,
+        )
         sections.append(
             {
                 "position": i + 1,
@@ -332,6 +358,8 @@ def spread_reading(
                 "card_id": card["id"],
                 "name": card["name"],
                 "keyword": card.get("keyword", ""),
+                "keywords": card.get("keywords") or [],
+                "core": card.get("core") or {},
                 "element": card.get("element", ""),
                 "category_slug": card.get("category_slug", ""),
                 "category_kr": card.get("category_kr", ""),
@@ -339,6 +367,7 @@ def spread_reading(
                 "orient": "역방향" if is_rev else "정방향",
                 "image_url": card.get("image_url"),
                 "excerpt": excerpt,
+                "excerpt_kind": "temporal" if use_temporal else "category",
                 "today_message": card.get("today_message", ""),
             }
         )

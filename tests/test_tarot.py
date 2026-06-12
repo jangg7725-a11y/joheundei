@@ -125,7 +125,10 @@ def test_tarot_spread_narrative_week(client: TestClient) -> None:
     assert len(body["narrative_sections"]) >= 4
     assert body.get("synthesis")
     assert body.get("closing")
-    assert any(s["type"] == "act" for s in body["narrative_sections"])
+    types = [s["type"] for s in body["narrative_sections"]]
+    assert types.count("scene") == 3
+    assert body["positions"][1].get("transition_from_prev")
+    assert "이어집니다" in body["narrative"]
 
 
 def test_tarot_spread_narrative_wrong_count(client: TestClient) -> None:

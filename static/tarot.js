@@ -50,6 +50,7 @@
     singleResult: document.getElementById("tarot-single-result"),
     spreadClosing: document.getElementById("tarot-spread-closing"),
     spreadClosingText: document.getElementById("tarot-spread-closing-text"),
+    spreadSub: document.getElementById("tarot-result-spread-sub"),
     today: document.getElementById("tarot-today"),
     heroBack: document.getElementById("tarot-hero-back"),
     heroFront: document.getElementById("tarot-hero-front"),
@@ -283,6 +284,16 @@
     return meta?.spreads?.[activeSpread]?.label || "타로";
   }
 
+  function spreadResultSub() {
+    if (activeSpread === "worry") {
+      return "과거 → 현재 → 미래 순서로 하나의 이야기로 읽어 보세요.";
+    }
+    if (activeSpread === "week") {
+      return "초반 → 중반 → 후반 순서로 하나의 이야기로 읽어 보세요.";
+    }
+    return "뽑은 순서대로 하나의 이야기로 읽어 보세요.";
+  }
+
   function setStatus(msg, isError) {
     if (!els.status) return;
     els.status.textContent = msg || "";
@@ -382,11 +393,14 @@
         const summary = pos.scene_summary
           ? `<p class="tarot-spread-card-summary">${escapeHtml(pos.scene_summary)}</p>`
           : "";
+        const bridge = pos.transition_from_prev
+          ? `<p class="tarot-spread-bridge">${escapeHtml(pos.transition_from_prev)}</p>`
+          : "";
         const quarterBreak =
           activeSpread === "year" && idx > 0 && idx % 2 === 0
             ? '<span class="tarot-spread-quarter" aria-hidden="true"></span>'
             : "";
-        return `${quarterBreak}<figure class="tarot-spread-card">
+        return `${quarterBreak}${bridge}<figure class="tarot-spread-card">
           <span class="tarot-spread-card-order">${idx + 1}</span>
           <div class="tarot-spread-card-img">
             <img src="${escapeHtml(pos.image_url)}" alt="${escapeHtml(pos.name)}" class="${rev.trim()}" />
@@ -868,6 +882,7 @@
     try {
       const data = await fetchSpreadReading();
       if (els.spreadTitle) els.spreadTitle.textContent = data.spread_label || spreadLabel();
+      if (els.spreadSub) els.spreadSub.textContent = spreadResultSub();
       renderSpreadCards(data.positions || []);
       if (data.narrative_sections?.length) {
         const displaySections = data.narrative_sections.filter((s) => s.type !== "closing");
@@ -911,6 +926,7 @@
     if (isMultiSpread()) {
       setResultLayout(true);
       if (els.spreadTitle) els.spreadTitle.textContent = spreadLabel();
+      if (els.spreadSub) els.spreadSub.textContent = spreadResultSub();
       await refreshSpreadReading(true);
       return;
     }

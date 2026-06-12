@@ -43,6 +43,34 @@ def test_worry_positions_past_present_future() -> None:
     positions = tr.SPREAD_POSITIONS["worry"]
     labels = [p["label"] for p in positions]
     assert labels == ["과거", "현재", "미래"]
+    roles = [p["role"] for p in positions]
+    assert "장애" not in " ".join(roles)
+    assert "막고" not in " ".join(roles)
+
+
+def test_worry_reading_rejects_legacy_now_block_resolve() -> None:
+    """예전 지금·막힘·풀림(1막·장애·조언) UI가 다시 나오지 않도록."""
+    tr.load_deck.cache_clear()
+    cards = [
+        {"card_id": "08", "is_reversed": False},
+        {"card_id": "22", "is_reversed": True},
+        {"card_id": "58", "is_reversed": False},
+    ]
+    out = tr.spread_reading("worry", cards, "종합운")
+    text = out["narrative"]
+    synthesis = out["synthesis"]
+    labels = [p["position_label"] for p in out["positions"]]
+
+    assert labels == ["과거", "현재", "미래"]
+    assert "1막" not in text and "2막" not in text and "3막" not in text
+    assert "막힘" not in synthesis or "조율" in synthesis
+    assert "지금 — 막힘" not in text
+    assert "흐름 정리" not in text
+    assert "세 장의 이야기" in " ".join(
+        s.get("title", "") for s in out["narrative_sections"]
+    )
+    assert "과거" in text and "미래" in text
+    assert out["positions"][0]["position_label"] == "과거"
 
 
 def test_build_spread_story_worry_card_style() -> None:
@@ -76,6 +104,20 @@ def test_spread_reading_includes_position_reading() -> None:
     assert out["positions"][0].get("position_reading")
     assert "집" in out["positions"][0]["position_reading"]
     assert out["positions"][0]["position_label"] == "과거"
+
+
+def test_worry_reading_has_temporal_and_category() -> None:
+    tr.load_deck.cache_clear()
+    cards = [
+        {"card_id": "24", "is_reversed": False},
+        {"card_id": "53", "is_reversed": False},
+        {"card_id": "19", "is_reversed": False},
+    ]
+    out = tr.spread_reading("worry", cards, "연애운")
+    text = out["narrative"]
+    assert "과거" in text
+    assert "마음과 관계" in text or "연애" in text
+    assert "시기입니다" not in text or "흐름으로" in text
 
 
 def test_compose_card_reading_deck_label() -> None:
